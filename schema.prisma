@@ -1,0 +1,152 @@
+/// ------------------------------------------------------------
+/// FlyPorter Project - Prisma Database Schema
+/// Copyright (c) 2025 FlyPorter Team
+///
+/// Licensed under the MIT License.
+/// ------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id     Int      @id @default(autoincrement())
+  role        Role     @default(CUSTOMER)
+  email       String   @unique
+  password    String
+  full_name   String?
+  phone       String?
+  created_at  DateTime @default(now()) @db.Timestamptz
+  updated_at  DateTime @default(now()) @db.Timestamptz
+
+  customerInfo CustomerInfo?
+  bookings     Booking[]
+}
+
+model CustomerInfo {
+  info_id                 Int      @id @default(autoincrement())
+  user_id                 Int      @unique
+  passport_number         String?
+  nationality             String?
+  date_of_birth           DateTime? @db.Date
+  gender                  String?
+  address                 String?
+  emergency_contact_name  String?
+  emergency_contact_phone String?
+
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model City {
+  city_id   Int      @id @default(autoincrement())
+  city_name String
+  country   String?
+  timezone  String?
+  airports  Airport[]
+}
+
+model Airport {
+  airport_id   Int      @id @default(autoincrement())
+  city_id      Int
+  airport_code String   @unique
+  airport_name String
+  city         City     @relation(fields: [city_id], references: [city_id], onDelete: Cascade)
+  originRoutes      Route[] @relation("OriginRoutes")
+  destinationRoutes Route[] @relation("DestinationRoutes")
+  departureFlights  Flight[] @relation("DepartureFlights")
+  arrivalFlights    Flight[] @relation("ArrivalFlights")
+}
+
+model Airline {
+  airline_id   Int      @id @default(autoincrement())
+  airline_name String
+  airline_code String   @unique
+  routes       Route[]
+  flights      Flight[]
+}
+
+model Route {
+  route_id               Int      @id @default(autoincrement())
+  airline_id             Int
+  origin_airport_id      Int
+  destination_airport_id Int
+  domestic               Boolean  @default(true)
+  seasonal               Boolean  @default(false)
+  active                 Boolean  @default(true)
+  notes                  String?
+
+  airline            Airline @relation(fields: [airline_id], references: [airline_id])
+  originAirport      Airport @relation("OriginRoutes", fields: [origin_airport_id], references: [airport_id])
+  destinationAirport Airport @relation("DestinationRoutes", fields: [destination_airport_id], references: [airport_id])
+  flights            Flight[]
+}
+
+model Flight {
+  flight_id           Int       @id @default(autoincrement())
+  airline_id          Int
+  route_id            Int?
+  departure_airport_id Int
+  arrival_airport_id   Int
+  departure_time      DateTime  @db.Timestamptz
+  arrival_time        DateTime  @db.Timestamptz
+  base_price          Decimal   @db.Decimal(10, 2)
+  seat_capacity       Int
+  created_at          DateTime  @default(now()) @db.Timestamptz
+
+  airline    Airline @relation(fields: [airline_id], references: [airline_id])
+  route      Route?  @relation(fields: [route_id], references: [route_id])
+  departureAirport Airport @relation("DepartureFlights", fields: [departure_airport_id], references: [airport_id])
+  arrivalAirport   Airport @relation("ArrivalFlights", fields: [arrival_airport_id], references: [airport_id])
+  seats      Seat[]
+  bookings   Booking[]
+}
+
+model Seat {
+  seat_id       Int      @id @default(autoincrement())
+  flight_id     Int
+  seat_number   String
+  class         SeatClass
+  price_modifier Decimal  @default(1.0) @db.Decimal(5, 2)
+  is_available  Boolean   @default(true)
+
+  flight   Flight   @relation(fields: [flight_id], references: [flight_id], onDelete: Cascade)
+  bookings Booking[]
+}
+
+model Booking {
+  booking_id        Int      @id @default(autoincrement())
+  user_id           Int
+  flight_id         Int
+  seat_id           Int
+  booking_time      DateTime @default(now()) @db.Timestamptz
+  status            BookingStatus @default(PENDING)
+  total_price       Decimal? @db.Decimal(10, 2)
+  confirmation_code String?  @unique
+  updated_at        DateTime @default(now()) @db.Timestamptz
+
+  user   User   @relation(fields: [user_id], references: [user_id])
+  flight Flight @relation(fields: [flight_id], references: [flight_id])
+  seat   Seat   @relation(fields: [seat_id], references: [seat_id])
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum SeatClass {
+  economy
+  business
+  first
+}
