@@ -1,0 +1,40 @@
+# Node dependencies
+node_modules/
+
+# Production build output
+build/
+dist/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Editor settings (VS Code)
+.vscode/
+!.vscode/extensions.json   
+
+# System files
+.DS_Store
+
+# Temporary or cache folders
+.cache/
+tmp/
+temp/
+
+# Framework-specific
+.next/
+out/
+.parcel-cache/
