@@ -33,8 +33,3 @@ pnpm-debug.log*
 .cache/
 tmp/
 temp/
-
-# Framework-specific
-.next/
-out/
-.parcel-cache/
