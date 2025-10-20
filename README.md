@@ -26,13 +26,19 @@ Overall, FlyPorter aims to create a flight booking system that's both technicall
 
 FlyPorter aims to deliver a cloud-native flight booking application that provides a fast and reliable experience for users to search, book, and manage flights. The goal is to design a system that maintains state across deployments and container restarts, integrates payment processing, and runs efficiently on cloud infrastructure using container orchestration.
 
-The application will be structured into three main parts: a React frontend for user interaction, an Express.js backend for core logic and API handling, and a PostgreSQL database for persistent storage. Docker and Docker Compose will be used for local development, while Docker Swarm on DigitalOcean will manage orchestration and load balancing. Persistent volumes will be configured to ensure that flight, booking, and user data remain intact across container updates.
+The application will be structured into three main parts: a React frontend for user interaction, an Express.js backend for core logic and API handling, and a PostgreSQL database for persistent storage. Docker and Docker Compose will be used for local development, while Kubernetes on DigitalOcean will manage orchestration and load balancing. Persistent volumes will be configured to ensure that flight, booking, and user data remain intact across container updates.
 
 ### Core Features
 
-* **Google account login (Integration with external services)**
+* **Docker Containerization and Deployment Provider**
 
-  * Users can use existing Google accounts to log into FlyPorter.
+  * Frontend, backend, and PostgreSQL run in separate Docker containers via Docker Compose for local dev.
+  * Images are pushed to DigitalOcean Container Registry and deployed on DigitalOcean.
+  
+* **Orchestration Approach**
+
+  * Use Kubernetes on DigitalOcean (DOKS) to run and scale services.
+  * Traffic is routed through a DigitalOcean Load Balancer to the app Services.
 
 * **Authentication and Authorization**
 
@@ -68,25 +74,6 @@ The application will be structured into three main parts: a React frontend for u
   * Administrators can manage flights, including creating new routes, adjusting prices, or changing seat availability.
   * The panel is protected by role-based authorization to prevent unauthorized actions.
 
-* **Notifications**
-
-  * When a booking is created, modified, or canceled, the system sends an in-app notification directly to the user dashboard.
-  * Notifications are managed through a dedicated database table and displayed using a live WebSocket connection or polling mechanism.
-
-* **Docker Containerization**
-
-  * Containerize frontend and backend services with Docker and Docker Compose and deploy to DigitalOcean, achieving scalable and highly available production deployment.
-
-* **Deployment and CI/CD**
-
-  * The project will be deployed on DigitalOcean Droplets with Kubernetes for orchestration and load balancing.
-  * A CI/CD pipeline using GitHub Actions will automate builds, tests, and deployments.
-  * Each code push to the main branch will trigger a workflow that rebuilds containers and redeploys the stack.
-
-* **Monitoring and Observability**
-
-  * FlyPorter will include a monitoring dashboard using DigitalOcean’s metrics and alerts for CPU, memory, and disk usage.
-  * Logs and performance data will help the team ensure reliability during high traffic periods.
 
 * **PostgreSQL for flight and booking data**
 
@@ -106,6 +93,41 @@ The following diagram shows the schema:
                      [flights] ───< [seats]
 ```
 
+* **Persistent Storage**
+
+  * Use PostgreSQL for all state.
+  * Attach a DigitalOcean Volume so data survives restarts and updates.
+
+* **Monitoring and Observability**
+
+  * FlyPorter will include a monitoring dashboard using DigitalOcean’s metrics and alerts for CPU, memory, and disk usage.
+  * Logs and performance data will help the team ensure reliability during high traffic periods.
+
+### Advanced Features
+
+* **Serverless Intergration: Notifications**
+
+  * When a booking is created, modified, or canceled, the system sends an in-app notification directly to the user dashboard.
+  * Notifications are managed through a dedicated database table and displayed using a live WebSocket connection or polling mechanism.
+
+*  **Auto-scaling and High Availability**
+  
+   *  Run at least 2 replicas of the app; Kubernetes keeps them on different nodes.
+   *  Enable autoscaling based on CPU/memory to handle traffic spikes.
+  
+*  **Deployment and CI/CD**
+
+  * A CI/CD pipeline using GitHub Actions will automate builds, tests, and deployments.
+  * Each code push to the main branch will trigger a workflow that rebuilds containers and redeploys the stack.
+
+* **Backup and Recovery**
+  * Deploy the database using DigitalOcean Managed Database, which provides automatic daily backups stored securely for the past seven days.
+  * For recovery, the system can restore from any of the last seven daily backups, ensuring quick and reliable recovery with minimal downtime.
+  
+* **Google account login (Integration with external services)**
+
+  * Users can use existing Google accounts to log into FlyPorter.
+
 ### Optional Features
 
 **Email Confirmations**
@@ -124,9 +146,11 @@ PostgreSQL will be the main database, running in containers with persistent stor
 
 The backend, built with Express.js, handles authentication, booking logic, and notifications. RESTful APIs connect frontend and backend. Notifications are delivered in real time through WebSockets or polling.
 
-Docker and Docker Compose will support local development, while Docker Swarm manages orchestration and scaling on DigitalOcean. GitHub Actions will handle CI/CD automation. Monitoring through DigitalOcean metrics and alerts ensures system stability under heavy traffic.
+Docker and Docker Compose will support local development, while Kubernetes manages orchestration and scaling on DigitalOcean. GitHub Actions will handle CI/CD automation. Monitoring through DigitalOcean metrics and alerts ensures system stability under heavy traffic.
 
-These components meet all ECE1779 requirements: containerization, orchestration, persistent storage, CI/CD automation, and observability. The team will first build core booking and database features, then integrate payment, notifications, and monitoring. Optional features like email confirmations or user reviews will be added if time allows.
+How this meets ECE1779: containerization (Docker), orchestration (Kubernetes), persistent storage (PostgreSQL on DO Volumes), deployment provider (DigitalOcean), observability (metrics/alerts). Advanced features please refer to "Advanced Features" part above (more than 2 advanced features). 
+
+Scope & feasibility: Week 1 core booking, DB schema, auth; Week 2 APIs and UI flows; Week 3 WebSockets, CI/CD, and deployment; Week 4 monitoring, backups, polish, and docs.
 
 ---
 
@@ -153,7 +177,7 @@ Each member will focus on a specific area while maintaining close coordination t
 * Add input validation middleware for all backend endpoints
 * Implement seed scripts to populate sample data
 * Ensure persistent data storage using DigitalOcean Volumes
-* Configure Docker Swarm for production orchestration on DigitalOcean
+* Configure Kubernetes for production orchestration on DigitalOcean
 * Implement CI/CD pipeline using GitHub Actions for automated build, test, and deploy
 * Integrate monitoring and alerting via DigitalOcean Metrics Dashboard
 * Document deployment steps and provide setup instructions in README
@@ -178,7 +202,7 @@ Each member will focus on a specific area while maintaining close coordination t
 
 * **Weekly Meeting (Google Meet):** Review progress, plan new tasks, and resolve issues. Frontend and backend will be developed simultaneously, with the frontend team initially using dummy data before backend integration.
 * **Version Control (GitHub):** Use feature branches and pull requests to ensure consistency and prevent conflicts.
-* **Deployment (DigitalOcean):** Docker Compose for local development and Docker Swarm for production deployment once core features are complete.
+* **Deployment (DigitalOcean):** Docker Compose for local development and Kubernetes for production deployment once core features are complete.
 * **Database Monitoring (DigitalOcean):** Use persistent volumes to ensure data availability after container restarts.
 * **Milestone:** By **November 5**, focus on integrating CI/CD, monitoring, and in-app notifications, followed by testing and refinements before submission.
 
