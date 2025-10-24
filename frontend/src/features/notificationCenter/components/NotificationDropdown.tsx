@@ -24,8 +24,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   isLoading = false,
   error = null,
   onMarkAsRead,
-  onMarkAllAsRead,
-  onDeleteNotification
+  onMarkAllAsRead
 }) => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -38,13 +37,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   const handleMarkAllAsRead = () => {
     if (onMarkAllAsRead) {
       onMarkAllAsRead();
-    }
-  };
-
-  const handleDeleteNotification = (e: React.MouseEvent, notificationId: number) => {
-    e.stopPropagation();
-    if (onDeleteNotification) {
-      onDeleteNotification(notificationId);
     }
   };
 
