@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id        Int       @id @default(autoincrement())
+  role           UserRole  @default(customer)
+  email          String    @unique @db.VarChar(100)
+  password_hash  String
+  full_name      String?   @db.VarChar(100)
+  phone          String?   @db.VarChar(20)
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @db.Timestamptz(6)
+  bookings       Booking[]
+  customer_info  CustomerInfo?
+}
+
+model City {
+  city_id     Int      @id @default(autoincrement())
+  city_name   String   @db.VarChar(100)
+  country     String?  @db.VarChar(100)
+  timezone    String?  @db.VarChar(50)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  airports    Airport[]
+}
+
+model Airport {
+  airport_id   Int      @id @default(autoincrement())
+  city_id      Int
+  airport_code String   @unique @db.VarChar(10)
+  airport_name String   @db.VarChar(150)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  city         City     @relation(fields: [city_id], references: [city_id], onDelete: Cascade)
+  departures   Flight[] @relation("DepartureAirport")
+  arrivals     Flight[] @relation("ArrivalAirport")
+  routes_from  Route[]  @relation("OriginAirport")
+  routes_to    Route[]  @relation("DestinationAirport")
+}
+
+model Airline {
+  airline_id   Int      @id @default(autoincrement())
+  airline_name String   @db.VarChar(100)
+  airline_code String   @unique @db.VarChar(10)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  routes       Route[]
+  flights      Flight[]
+}
+
+model Route {
+  route_id               Int      @id @default(autoincrement())
+  airline_id             Int
+  origin_airport_id      Int
+  destination_airport_id Int
+  domestic               Boolean  @default(true)
+  seasonal               Boolean  @default(false)
+  active                 Boolean  @default(true)
+  notes                  String?
+  airline                Airline  @relation(fields: [airline_id], references: [airline_id])
+  origin_airport         Airport  @relation("OriginAirport", fields: [origin_airport_id], references: [airport_id])
+  destination_airport    Airport  @relation("DestinationAirport", fields: [destination_airport_id], references: [airport_id])
+}
+
+model Flight {
+  flight_id           Int      @id @default(autoincrement())
+  airline_id          Int
+  departure_airport_id Int
+  arrival_airport_id   Int
+  departure_time      DateTime @db.Timestamptz(6)
+  arrival_time        DateTime @db.Timestamptz(6)
+  base_price          Decimal  @db.Decimal(10, 2)
+  seat_capacity       Int
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  airline             Airline  @relation(fields: [airline_id], references: [airline_id])
+  departure_airport   Airport  @relation("DepartureAirport", fields: [departure_airport_id], references: [airport_id])
+  arrival_airport     Airport  @relation("ArrivalAirport", fields: [arrival_airport_id], references: [airport_id])
+  seats               Seat[]
+  bookings            Booking[]
+}
+
+model Seat {
+  seat_id       Int      @id @default(autoincrement())
+  flight_id     Int
+  seat_number   String   @db.VarChar(5)
+  class         SeatClass
+  price_modifier Decimal @default(1.0) @db.Decimal(5, 2)
+  is_available  Boolean  @default(true)
+  flight        Flight   @relation(fields: [flight_id], references: [flight_id], onDelete: Cascade)
+  bookings      Booking[]
+  @@unique([flight_id, seat_number])
+}
+
+model Booking {
+  booking_id        Int       @id @default(autoincrement())
+  user_id           Int
+  flight_id         Int
+  seat_id           Int
+  booking_time      DateTime  @default(now()) @db.Timestamptz(6)
+  status            BookingStatus
+  total_price       Decimal?  @db.Decimal(10, 2)
+  confirmation_code String?   @unique @db.VarChar(12)
+  updated_at        DateTime  @default(now()) @db.Timestamptz(6)
+  user              User      @relation(fields: [user_id], references: [user_id])
+  flight            Flight    @relation(fields: [flight_id], references: [flight_id])
+  seat              Seat      @relation(fields: [seat_id], references: [seat_id])
+}
+
+model CustomerInfo {
+  info_id                 Int      @id @default(autoincrement())
+  user_id                 Int      @unique
+  passport_number         String?  @db.VarChar(30)
+  nationality             String?  @db.VarChar(50)
+  date_of_birth           DateTime? @db.Date
+  gender                  String?  @db.VarChar(10)
+  address                 String? 
+  emergency_contact_name  String?  @db.VarChar(100)
+  emergency_contact_phone String?  @db.VarChar(20)
+  user                    User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+enum UserRole {
+  customer
+  admin
+}
+
+enum SeatClass {
+  economy
+  business
+  first
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+}
