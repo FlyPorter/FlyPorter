@@ -15,3 +15,4 @@ router.put("/:code", authMiddleware, requireAdmin, updateAirportHandler);
 router.delete("/:code", authMiddleware, requireAdmin, deleteAirportHandler);
 
 export default router;
+

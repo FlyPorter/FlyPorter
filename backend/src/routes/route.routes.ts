@@ -14,3 +14,4 @@ router.post("/", authMiddleware, requireAdmin, createRouteHandler);
 router.delete("/:id", authMiddleware, requireAdmin, deleteRouteHandler);
 
 export default router;
+

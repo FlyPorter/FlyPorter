@@ -40,3 +40,4 @@ export async function deleteRouteHandler(req: Request, res: Response) {
     return sendError(res, msg, status);
   }
 }
+

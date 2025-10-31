@@ -57,3 +57,4 @@ export async function deleteAirportHandler(req: Request, res: Response) {
     return sendError(res, msg, status);
   }
 }
+
