@@ -9,7 +9,7 @@
     "dev": "nodemon --watch src --exec tsx src/server.ts"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node scripts/seed.ts"
   },
   "keywords": [],
   "author": "",
