@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id       Int            @id @default(autoincrement())
+  role          UserRole       @default(customer)
+  email         String         @unique @db.VarChar(100)
+  password_hash String
+  created_at    DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime       @default(now()) @db.Timestamptz(6)
+  bookings      Booking[]
+  customer_info CustomerInfo?
+  notifications Notification[]
+}
+
+model City {
+  city_name  String    @id @db.VarChar(100)
+  country    String?   @db.VarChar(100)
+  timezone   String?   @db.VarChar(50)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  airports   Airport[]
+}
+
+model Airport {
+  airport_code String   @id @db.VarChar(10)
+  city_name    String
+  airport_name String   @db.VarChar(150)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  city         City     @relation(fields: [city_name], references: [city_name], onDelete: Cascade)
+  routes_from  Route[]  @relation("OriginAirport")
+  routes_to    Route[]  @relation("DestinationAirport")
+}
+
+model Airline {
+  airline_code String   @id @db.VarChar(10)
+  airline_name String   @db.VarChar(100)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  flights      Flight[]
+}
+
+model Route {
+  route_id                 Int      @id @default(autoincrement())
+  origin_airport_code      String
+  destination_airport_code String
+  origin_airport           Airport  @relation("OriginAirport", fields: [origin_airport_code], references: [airport_code])
+  destination_airport      Airport  @relation("DestinationAirport", fields: [destination_airport_code], references: [airport_code])
+  flights                  Flight[]
+}
+
+model Flight {
+  flight_id      Int            @id @default(autoincrement())
+  route_id       Int
+  airline_code   String
+  departure_time DateTime       @db.Timestamptz(6)
+  arrival_time   DateTime       @db.Timestamptz(6)
+  base_price     Decimal        @db.Decimal(10, 2)
+  seat_capacity  Int
+  created_at     DateTime       @default(now()) @db.Timestamptz(6)
+  route          Route          @relation(fields: [route_id], references: [route_id], onDelete: Cascade)
+  airline        Airline        @relation(fields: [airline_code], references: [airline_code], onDelete: Cascade)
+  seats          Seat[]
+  bookings       Booking[]
+  notifications  Notification[]
+}
+
+model Seat {
+  flight_id      Int
+  seat_number    String    @db.VarChar(5)
+  class          SeatClass
+  price_modifier Decimal   @default(1.0) @db.Decimal(5, 2)
+  is_available   Boolean   @default(true)
+  flight         Flight    @relation(fields: [flight_id], references: [flight_id], onDelete: Cascade)
+  bookings       Booking[]
+
+  @@id([flight_id, seat_number])
+}
+
+model Booking {
+  booking_id        Int            @id @default(autoincrement())
+  user_id           Int
+  flight_id         Int
+  seat_number       String         @db.VarChar(5)
+  booking_time      DateTime       @default(now()) @db.Timestamptz(6)
+  status            BookingStatus
+  total_price       Decimal?       @db.Decimal(10, 2)
+  confirmation_code String?        @unique @db.VarChar(12)
+  updated_at        DateTime       @default(now()) @db.Timestamptz(6)
+  user              User           @relation(fields: [user_id], references: [user_id])
+  flight            Flight         @relation(fields: [flight_id], references: [flight_id])
+  seat              Seat           @relation(fields: [flight_id, seat_number], references: [flight_id, seat_number])
+  notifications     Notification[]
+}
+
+model CustomerInfo {
+  info_id                 Int      @id @default(autoincrement())
+  user_id                 Int      @unique
+  full_name               String   @db.VarChar(100)
+  phone                   String?  @db.VarChar(20)
+  passport_number         String   @db.VarChar(30)
+  date_of_birth           DateTime @db.Date
+  emergency_contact_name  String?  @db.VarChar(100)
+  emergency_contact_phone String?  @db.VarChar(20)
+  user                    User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model Notification {
+  notification_id Int              @id @default(autoincrement())
+  user_id         Int
+  booking_id      Int?
+  flight_id       Int?
+  type            NotificationType
+  title           String           @db.VarChar(200)
+  message         String           @db.Text
+  is_read         Boolean          @default(false)
+  created_at      DateTime         @default(now()) @db.Timestamptz(6)
+  user            User             @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  booking         Booking?         @relation(fields: [booking_id], references: [booking_id], onDelete: Cascade)
+  flight          Flight?          @relation(fields: [flight_id], references: [flight_id], onDelete: Cascade)
+}
+
+enum UserRole {
+  customer
+  admin
+}
+
+enum SeatClass {
+  economy
+  business
+  first
+}
+
+enum BookingStatus {
+  confirmed
+  cancelled
+}
+
+enum NotificationType {
+  booking_confirmed
+  booking_cancelled
+  flight_cancelled
+}
