@@ -66,3 +66,4 @@ export async function deleteRouteById(route_id: number) {
     select: { route_id: true, origin_airport_code: true, destination_airport_code: true },
   });
 }
+

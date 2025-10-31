@@ -21,3 +21,4 @@ router.patch("/:code", authMiddleware, requireAdmin, updateAirlineHandler);
 router.delete("/:code", authMiddleware, requireAdmin, deleteAirlineHandler);
 
 export default router;
+
