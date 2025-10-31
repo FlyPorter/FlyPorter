@@ -18,6 +18,17 @@ const PRICE_MODIFIER = {
   economy: 1.0,
 } as const;
 
+function formatDuration(departure: Date, arrival: Date): string {
+  const diffMs = arrival.getTime() - departure.getTime();
+  const totalMinutes = Math.floor(diffMs / (1000 * 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const parts: string[] = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  return parts.length > 0 ? parts.join(" ") : "0m";
+}
+
 async function findOrCreateRoute(params: { origin_airport_code: string; destination_airport_code: string; }) {
   const origin = params.origin_airport_code.toUpperCase();
   const dest = params.destination_airport_code.toUpperCase();
@@ -127,11 +138,14 @@ export async function createFlight(input: CreateFlightByRouteIdInput) {
 
   await generateSeatsForFlight(created.flight_id, input.seat_capacity);
 
-  return created;
+  return {
+    ...created,
+    duration: formatDuration(created.departure_time, created.arrival_time),
+  };
 }
 
 export async function listFlights() {
-  return prisma.flight.findMany({
+  const flights = await prisma.flight.findMany({
     orderBy: { flight_id: "asc" },
     select: {
       flight_id: true,
@@ -150,10 +164,14 @@ export async function listFlights() {
       airline: { select: { airline_code: true, airline_name: true } },
     },
   });
+  return flights.map((f) => ({
+    ...f,
+    duration: formatDuration(f.departure_time, f.arrival_time),
+  }));
 }
 
 export async function getFlightById(flight_id: number) {
-  return prisma.flight.findUnique({
+  const flight = await prisma.flight.findUnique({
     where: { flight_id },
     select: {
       flight_id: true,
@@ -172,6 +190,11 @@ export async function getFlightById(flight_id: number) {
       airline: { select: { airline_code: true, airline_name: true } },
     },
   });
+  if (!flight) return null;
+  return {
+    ...flight,
+    duration: formatDuration(flight.departure_time, flight.arrival_time),
+  };
 }
 
 export async function updateFlightById(
@@ -231,7 +254,10 @@ export async function updateFlightById(
     },
   });
 
-  return updated;
+  return {
+    ...updated,
+    duration: formatDuration(updated.departure_time, updated.arrival_time),
+  };
 }
 
 export async function deleteFlightById(flight_id: number) {
