@@ -1,12 +1,10 @@
 # FlyPorter - Flight Ticket Booking System
 
-Yuan Wang: 1002766526
+Yueheng Shi: 1012569267
 
 Yiyang Wang: 1010033278
 
 Zihan Wan: 1011617779
-
-Yiyang Liu: 1011770512
 
 ## 1. Motivation
 
