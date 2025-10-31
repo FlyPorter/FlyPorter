@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import { registerUser, loginUser } from "../services/auth.service.js";
 import { sendSuccess, sendError } from "../utils/response.util.js";
+import { generateToken } from "../utils/jwt.util.js";
+import passport from "../config/passport.js";
 
 export async function register(req: Request, res: Response) {
   try {
@@ -57,5 +59,43 @@ export async function login(req: Request, res: Response) {
       401
     );
   }
+}
+
+export function googleAuth(req: Request, res: Response) {
+  passport.authenticate("google", { scope: ["profile", "email"] })(req, res);
+}
+
+export function googleCallback(req: Request, res: Response) {
+  passport.authenticate("google", { session: false }, (err: any, user: any, info: any) => {
+    if (err) {
+      return sendError(res, "Authentication failed", 500);
+    }
+    if (!user) {
+      if (info?.message === "EMAIL_EXISTS") {
+        return sendError(res, `Email ${info.email} is already registered`, 409);
+      }
+      return sendError(res, "Authentication failed", 401);
+    }
+
+    const token = generateToken({
+      userId: user.user_id,
+      email: user.email,
+      role: user.role,
+    });
+
+    return sendSuccess(
+      res,
+      {
+        user: {
+          user_id: user.user_id,
+          email: user.email,
+          role: user.role,
+        },
+        token,
+      },
+      "Google login successful",
+      200
+    );
+  })(req, res);
 }
 

@@ -69,6 +69,11 @@ export async function loginUser(input: LoginInput) {
     throw new Error("Invalid email or password");
   }
 
+  // Check if user has password_hash (not OAuth user)
+  if (!user.password_hash) {
+    throw new Error("Please login with Google");
+  }
+
   // Verify password
   const isValidPassword = await verifyPassword(password, user.password_hash);
 
