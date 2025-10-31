@@ -9,3 +9,6 @@ node_modules
 /node_modules
 package-lock.json
 /backend/node_modules
+
+# TypeScript build output
+dist/
