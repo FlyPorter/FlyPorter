@@ -58,3 +58,4 @@ export async function deleteAirportHandler(req: Request, res: Response) {
   }
 }
 
+

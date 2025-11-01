@@ -3,28 +3,30 @@ import { registerUser, loginUser } from "../services/auth.service.js";
 import { sendSuccess, sendError } from "../utils/response.util.js";
 import { generateToken } from "../utils/jwt.util.js";
 import passport from "../config/passport.js";
+import { env } from "../config/env.js";
 
 export async function register(req: Request, res: Response) {
   try {
     const { email, password, role } = req.body;
 
     // Validate input
-    if (!email || !password || !role) {
-      return sendError(res, "Email, password, and role are required", 400);
+    if (!email || !password) {
+      return sendError(res, "Email and password are required", 400);
     }
 
-    // Normalize role (convert to lowercase to match enum)
-    const normalizedRole = role.toLowerCase();
-
-    // Validate role
-    if (normalizedRole !== "customer" && normalizedRole !== "admin") {
-      return sendError(res, "Role must be 'customer' or 'admin'", 400);
+    // Reject role parameter - all registered users are customers
+    if (role !== undefined) {
+      return sendError(
+        res,
+        "Role cannot be specified during registration. All registered users are customers. Admin accounts are pre-configured.",
+        400
+      );
     }
 
+    // All registered users are customers (admin accounts are pre-configured)
     const result = await registerUser({
       email,
       password,
-      role: normalizedRole as "customer" | "admin",
     });
 
     return sendSuccess(res, result, "User registered successfully", 201);
@@ -62,10 +64,16 @@ export async function login(req: Request, res: Response) {
 }
 
 export function googleAuth(req: Request, res: Response) {
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    return sendError(res, "Google OAuth is not configured", 503);
+  }
   passport.authenticate("google", { scope: ["profile", "email"] })(req, res);
 }
 
 export function googleCallback(req: Request, res: Response) {
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    return sendError(res, "Google OAuth is not configured", 503);
+  }
   passport.authenticate("google", { session: false }, (err: any, user: any, info: any) => {
     if (err) {
       return sendError(res, "Authentication failed", 500);
@@ -97,5 +105,12 @@ export function googleCallback(req: Request, res: Response) {
       200
     );
   })(req, res);
+}
+
+export async function logout(req: Request, res: Response) {
+  // For JWT-based auth, logout is primarily a client-side action
+  // The client should remove the token from storage
+  // This endpoint confirms the logout and can be used for logging/analytics
+  return sendSuccess(res, { message: "Logged out successfully" }, "Logout successful", 200);
 }
 

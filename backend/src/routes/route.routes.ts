@@ -1,7 +1,13 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireAdmin } from "../middlewares/role.middleware.js";
-import { createRouteHandler, listRoutesHandler, getRouteHandler, deleteRouteHandler } from "../controllers/route.controller.js";
+import {
+  createRouteHandler,
+  listRoutesHandler,
+  getRouteHandler,
+  updateRouteHandler,
+  deleteRouteHandler,
+} from "../controllers/route.controller.js";
 
 const router = Router();
 
@@ -11,7 +17,9 @@ router.get("/:id", getRouteHandler);
 
 // Admin mutations
 router.post("/", authMiddleware, requireAdmin, createRouteHandler);
+router.patch("/:id", authMiddleware, requireAdmin, updateRouteHandler);
 router.delete("/:id", authMiddleware, requireAdmin, deleteRouteHandler);
 
 export default router;
+
 

@@ -1,6 +1,12 @@
 import type { Request, Response } from "express";
 import { sendSuccess, sendError } from "../utils/response.util.js";
-import { createRoute, listRoutes, getRouteById, deleteRouteById } from "../services/route.service.js";
+import {
+  createRoute,
+  listRoutes,
+  getRouteById,
+  updateRouteById,
+  deleteRouteById,
+} from "../services/route.service.js";
 
 export async function createRouteHandler(req: Request, res: Response) {
   const { origin_airport_code, destination_airport_code } = req.body || {};
@@ -27,6 +33,32 @@ export async function getRouteHandler(req: Request, res: Response) {
   return sendSuccess(res, item);
 }
 
+export async function updateRouteHandler(req: Request, res: Response) {
+  const idParam = req.params.id;
+  const id = Number(idParam);
+  if (!idParam || Number.isNaN(id)) return sendError(res, "valid id is required", 400);
+
+  const { origin_airport_code, destination_airport_code } = req.body || {};
+
+  // At least one field must be provided
+  if (!origin_airport_code && !destination_airport_code) {
+    return sendError(
+      res,
+      "At least one of origin_airport_code or destination_airport_code is required",
+      400
+    );
+  }
+
+  try {
+    const updated = await updateRouteById(id, { origin_airport_code, destination_airport_code });
+    return sendSuccess(res, updated, "Route updated");
+  } catch (e: any) {
+    const msg = e?.message || "Failed to update route";
+    const status = msg.includes("not found") ? 404 : 400;
+    return sendError(res, msg, status);
+  }
+}
+
 export async function deleteRouteHandler(req: Request, res: Response) {
   const idParam = req.params.id;
   const id = Number(idParam);
@@ -40,4 +72,5 @@ export async function deleteRouteHandler(req: Request, res: Response) {
     return sendError(res, msg, status);
   }
 }
+
 
