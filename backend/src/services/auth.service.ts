@@ -1,12 +1,10 @@
 import { prisma } from "../config/prisma.js";
 import { hashPassword, verifyPassword } from "../utils/hash.util.js";
 import { generateToken } from "../utils/jwt.util.js";
-import { UserRole } from "@prisma/client";
 
 export interface RegisterInput {
   email: string;
   password: string;
-  role: UserRole;
 }
 
 export interface LoginInput {
@@ -15,7 +13,7 @@ export interface LoginInput {
 }
 
 export async function registerUser(input: RegisterInput) {
-  const { email, password, role } = input;
+  const { email, password } = input;
 
   // Check if user already exists
   const existingUser = await prisma.user.findUnique({
@@ -29,12 +27,12 @@ export async function registerUser(input: RegisterInput) {
   // Hash password
   const password_hash = await hashPassword(password);
 
-  // Create user
+  // Create user - always as customer (admin accounts are pre-configured)
   const user = await prisma.user.create({
     data: {
       email,
       password_hash,
-      role,
+      role: "customer",
     },
     select: {
       user_id: true,

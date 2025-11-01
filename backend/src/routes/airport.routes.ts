@@ -16,3 +16,4 @@ router.delete("/:code", authMiddleware, requireAdmin, deleteAirportHandler);
 
 export default router;
 
+

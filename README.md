@@ -2,6 +2,11 @@ Backend stack: Express.js + TypeScript + Prisma + PostgreSQL
 
 - [Development Guide](#development-guide)
 
+admin account:
+
+admin@123.com
+
+admin123
 
 ### Database Setup
 
