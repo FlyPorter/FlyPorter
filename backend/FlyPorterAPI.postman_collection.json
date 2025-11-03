@@ -1,0 +1,1130 @@
+{
+  "info": {
+    "_postman_id": "flyporter-api-collection",
+    "name": "FlyPorter API",
+    "description": "Complete API collection for the FlyPorter Mobile booking journey.\n\nSuggested flow using seed data:\n1. GET /flight → selects a seed flight and stores flightId/bookingDate\n2. GET /seat/{{flightId}} → stores seatNumber\n3. POST /auth/register or /auth/login → stores authToken/userId\n4. PATCH /profile → add passenger info (required)\n5. POST /payment/validate → mock card check\n6. POST /bookings → confirm booking and store bookingId\n\nSeed script also provisions admin helpers for creating custom flights when needed.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "flightId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "routeId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "seatNumber",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bookingDate",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Flights",
+      "item": [
+        {
+          "name": "Search Flights",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/flight",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "flight"
+              ]
+            },
+            "description": "List all available flights (public). Automatically stores the first flight for quick testing."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    const flights = Array.isArray(response.data) ? response.data : [];",
+                  "    const firstFlight = flights[0];",
+                  "    if (firstFlight && firstFlight.flight_id) {",
+                  "        pm.collectionVariables.set('flightId', firstFlight.flight_id);",
+                  "        console.log('✈️ Selected flight:', firstFlight.flight_id);",
+                  "    }",
+                  "    if (firstFlight && firstFlight.departure_time) {",
+                  "        pm.collectionVariables.set('bookingDate', firstFlight.departure_time);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "description": "List available flights (seed data ready to use). Selects the first result for quick testing."
+        },
+        {
+          "name": "Get Flight by ID",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/flight/{{flightId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "flight",
+                "{{flightId}}"
+              ]
+            },
+            "description": "Get flight details by ID (no auth required)"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const flight = pm.response.json().data;",
+                  "    if (flight && flight.flight_id) {",
+                  "        pm.collectionVariables.set('flightId', flight.flight_id);",
+                  "    }",
+                  "    if (flight && flight.departure_time) {",
+                  "        pm.collectionVariables.set('bookingDate', flight.departure_time);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Flights (Filters Optional)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/flight",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "flight"
+              ]
+            },
+            "description": "Example of querying flights with optional filters (public)."
+          },
+          "response": [],
+          "description": "Optional filtered search example. Adjust query params as needed."
+        }
+      ],
+      "description": "Flight search and details (public endpoints)"
+    },
+    {
+      "name": "Seats",
+      "item": [
+        {
+          "name": "Get Seats for Flight",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/seat/{{flightId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "seat",
+                "{{flightId}}"
+              ]
+            },
+            "description": "Get all seats for a flight (no auth required)"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    const seats = Array.isArray(response.data) ? response.data : [];",
+                  "    const availableSeat = seats.find((seat) => seat.is_available);",
+                  "    if (availableSeat) {",
+                  "        pm.collectionVariables.set('seatNumber', availableSeat.seat_number);",
+                  "        console.log('🪑 Selected seat:', availableSeat.seat_number);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Seat availability (public). Run after choosing a flight to auto-select the first open seat."
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.token) {",
+                  "        pm.collectionVariables.set('authToken', response.data.token);",
+                  "        console.log('Token saved:', response.data.token);",
+                  "    }",
+                  "    if (response.data && response.data.user && response.data.user.user_id) {",
+                  "        pm.collectionVariables.set('userId', response.data.user.user_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register a new customer account. All registered users are customers by default."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.token) {",
+                  "        pm.collectionVariables.set('authToken', response.data.token);",
+                  "        console.log('Token saved:', response.data.token);",
+                  "    }",
+                  "    if (response.data && response.data.user && response.data.user.user_id) {",
+                  "        pm.collectionVariables.set('userId', response.data.user.user_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login with email and password. Returns JWT token."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Logout (primarily client-side token removal)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Authentication endpoints for customer accounts."
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "profile"
+              ]
+            },
+            "description": "Get current user's profile (User + CustomerInfo)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    console.log('✅ Profile updated - Ready to book flights!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"John Doe\",\n  \"phone\": \"+1234567890\",\n  \"passport_number\": \"AB123456\",\n  \"date_of_birth\": \"1990-01-01\",\n  \"emergency_contact_name\": \"Jane Doe\",\n  \"emergency_contact_phone\": \"+0987654321\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "profile"
+              ]
+            },
+            "description": "⚠️ REQUIRED BEFORE BOOKING!\n\nUpdate current user's profile with passenger information. You MUST provide at least:\n- full_name\n- passport_number\n- date_of_birth\n\nWithout this, booking will fail with 'Customer information required' error."
+          },
+          "response": [],
+          "description": "Update passenger details. full_name, passport_number, and date_of_birth are required before booking."
+        }
+      ],
+      "description": "Profile management (must supply passenger info before booking)."
+    },
+    {
+      "name": "Payment",
+      "item": [
+        {
+          "name": "Validate Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    const valid = response.data && response.data.valid;",
+                  "    if (valid) {",
+                  "        console.log('💳 Payment details validated');",
+                  "    } else {",
+                  "        console.warn('Payment validation failed');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cardNumber\": \"4111111111111111\",\n  \"expiry\": \"2026-12\",\n  \"ccv\": \"123\",\n  \"bookingDate\": \"{{bookingDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payment/validate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment",
+                "validate"
+              ]
+            },
+            "description": "Mock payment validation. Call before creating a booking."
+          },
+          "response": []
+        }
+      ],
+      "description": "Mock payment validation before confirming a booking."
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Create Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    const booking = response.data;",
+                  "    if (booking && booking.booking_id) {",
+                  "        pm.collectionVariables.set('bookingId', booking.booking_id);",
+                  "        console.log('✅ Booking created with ID:', booking.booking_id);",
+                  "    }",
+                  "    if (booking && booking.confirmation_code) {",
+                  "        console.log('🎫 Confirmation:', booking.confirmation_code);",
+                  "    }",
+                  "    if (booking && booking.seat_number) {",
+                  "        pm.collectionVariables.set('seatNumber', booking.seat_number);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flight_id\": {{flightId}},\n  \"seat_number\": \"{{seatNumber}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "description": "Create a booking using the selected flight and seat variables. Requires login, completed passenger profile, and a successful payment validation."
+          },
+          "response": [],
+          "description": "Create a booking using the selected flight and seat. Requires login, completed profile, and a successful payment validation."
+        },
+        {
+          "name": "Get All Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "description": "Get all bookings for logged-in user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Upcoming Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings?filter=upcoming",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "filter",
+                  "value": "upcoming"
+                }
+              ]
+            },
+            "description": "Get only upcoming confirmed bookings"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Past Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings?filter=past",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "filter",
+                  "value": "past"
+                }
+              ]
+            },
+            "description": "Get past or cancelled bookings"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Booking by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "{{bookingId}}"
+              ]
+            },
+            "description": "Get a specific booking by ID"
+          },
+          "response": [],
+          "description": "Retrieve a specific booking using the saved bookingId variable."
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings",
+                "{{bookingId}}"
+              ]
+            },
+            "description": "Cancel a booking (marks as cancelled and frees the seat)"
+          },
+          "response": [],
+          "description": "Cancel the saved booking. Seat becomes available again."
+        }
+      ],
+      "description": "Booking management. Run after selecting a flight/seat, completing your profile, and validating payment."
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get All Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            },
+            "description": "Get all notifications for logged-in user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/unread/count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "unread",
+                "count"
+              ]
+            },
+            "description": "Get count of unread notifications"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/1/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "1",
+                "read"
+              ]
+            },
+            "description": "Mark a specific notification as read"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "read-all"
+              ]
+            },
+            "description": "Mark all notifications as read"
+          },
+          "response": []
+        }
+      ],
+      "description": "Notification management. Booking confirmations and cancellations appear here."
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "Create Customer Info",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": {{userId}},\n  \"full_name\": \"John Doe\",\n  \"phone\": \"+1234567890\",\n  \"passport_number\": \"AB123456\",\n  \"date_of_birth\": \"1990-01-01\",\n  \"emergency_contact_name\": \"Jane Doe\",\n  \"emergency_contact_phone\": \"+0987654321\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            },
+            "description": "Create customer info. Customers can only create their own info, admins can create for any user."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{userId}}"
+              ]
+            },
+            "description": "Get customer info by user ID. Customers can only view their own info, admins can view any user's info."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Customer Info",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"John Smith\",\n  \"phone\": \"+1234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{userId}}"
+              ]
+            },
+            "description": "Update customer info by user ID. Customers can only update their own info, admins can update any user's info."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Customer Info",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{userId}}"
+              ]
+            },
+            "description": "Delete customer info by user ID. Customers can only delete their own info, admins can delete any user's info."
+          },
+          "response": []
+        }
+      ],
+      "description": "Customer information management. Usually handled via /profile for customers."
+    },
+    {
+      "name": "Admin Setup",
+      "item": [
+        {
+          "name": "1. Create Airline",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    console.log('✅ Airline created successfully');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"airline_code\": \"FP\",\n  \"airline_name\": \"FlyPorter Airlines\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/airline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "airline"
+              ]
+            },
+            "description": "Admin: Create an airline (FlyPorter Airlines)"
+          },
+          "response": []
+        },
+        {
+          "name": "2. Create Route",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.route_id) {",
+                  "        pm.collectionVariables.set('routeId', response.data.route_id);",
+                  "        console.log('✅ Route created with ID:', response.data.route_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin_airport_code\": \"YYZ\",\n  \"destination_airport_code\": \"YVR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/route",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "route"
+              ]
+            },
+            "description": "Admin: Create a route (YYZ to YVR)"
+          },
+          "response": []
+        },
+        {
+          "name": "3. Create Flight",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.flight_id) {",
+                  "        pm.collectionVariables.set('flightId', response.data.flight_id);",
+                  "        console.log('✅ Flight created with ID:', response.data.flight_id);",
+                  "        console.log('🪑 Seats auto-generated!');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin_airport_code\": \"YYZ\",\n  \"destination_airport_code\": \"YVR\",\n  \"airline_code\": \"FP\",\n  \"departure_time\": \"2025-12-15T08:00:00Z\",\n  \"arrival_time\": \"2025-12-15T11:30:00Z\",\n  \"base_price\": 249.99,\n  \"seat_capacity\": 24\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/flight",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "flight"
+              ]
+            },
+            "description": "Admin: Create a flight with seats automatically generated"
+          },
+          "response": []
+        },
+        {
+          "name": "4. View Generated Seats",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Flight has', response.data.length, 'seats');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/seat/{{flightId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "seat",
+                "{{flightId}}"
+              ]
+            },
+            "description": "View all seats for the created flight"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Flight",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"base_price\": 299.99\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/flight/{{flightId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "flight",
+                "{{flightId}}"
+              ]
+            },
+            "description": "Admin: Update flight details"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Flight",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/flight/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "flight",
+                "1"
+              ]
+            },
+            "description": "Admin: Delete a flight"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Airlines",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/airline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "airline"
+              ]
+            },
+            "description": "Get all airlines (public)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Routes",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/route",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "route"
+              ]
+            },
+            "description": "Get all routes (public)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Admin endpoints for creating custom data. Seed script already creates sample flights and seats."
+    },
+    {
+      "name": "Airports",
+      "item": [
+        {
+          "name": "Get All Airports",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/airport",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "airport"
+              ]
+            },
+            "description": "Get all airports (no auth required)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Airport information (public endpoints)."
+    },
+    {
+      "name": "Cities",
+      "item": [
+        {
+          "name": "Get All Cities",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/city",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "city"
+              ]
+            },
+            "description": "Get all cities (no auth required)"
+          },
+          "response": []
+        }
+      ],
+      "description": "City information (public endpoints)."
+    }
+  ]
+}

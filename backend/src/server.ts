@@ -8,6 +8,10 @@ import routeRoutes from "./routes/route.routes.js";
 import flightRoutes from "./routes/flight.routes.js";
 import seatRoutes from "./routes/seat.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+import profileRoutes from "./routes/profile.routes.js";
+import bookingRoutes from "./routes/booking.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
+import customerRoutes from "./routes/customer.routes.js";
 import { env } from "./config/env.js";
 
 const app = express();
@@ -24,6 +28,10 @@ app.use(`${env.API_PREFIX}/route`, routeRoutes);
 app.use(`${env.API_PREFIX}/flight`, flightRoutes);
 app.use(`${env.API_PREFIX}/seat`, seatRoutes);
 app.use(`${env.API_PREFIX}/payment`, paymentRoutes);
+app.use(`${env.API_PREFIX}/profile`, profileRoutes);
+app.use(`${env.API_PREFIX}/bookings`, bookingRoutes);
+app.use(`${env.API_PREFIX}/notifications`, notificationRoutes);
+app.use(`${env.API_PREFIX}/customers`, customerRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

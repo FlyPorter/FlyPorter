@@ -94,6 +94,40 @@ cd backend
 >    npx prisma migrate dev --name init
 >    ```
 
+### Seed the Database
+
+Under `backend` folder:
+
+1. Seed initial data (run once per fresh setup)
+   ```
+   cd backend
+   npx prisma db seed
+   ```
+
+   This creates:
+   - Admin user: `admin@123.com` / `admin123`
+   - Demo customer user with passenger profiles: 
+      - `customer.one@example.com` / `password123`
+      - `customer.two@example.com` / `password123`
+   - 4 Cities: Toronto, Vancouver, Montreal, Ottawa
+   - 4 Airports: YYZ, YVR, YUL, YOW
+   - 2 Airlines: FlyPorter, Air Canada
+   - 6 Routes between the cities
+   - 3 future-dated flights with generated seats (ready to book)
+
+2. Re-seed (optional)
+   - You can run `npx prisma db seed` again to add the same baseline data if you cleared the tables.
+   - For a clean reset, run:
+     ```
+     npx prisma migrate reset
+     npx prisma db seed
+     ```
+
+3. Quick test (optional)
+   - Start the server (see below), then import `backend/FlyPorterAPI.postman_collection.json` into Postman.
+   - Follow the flow: `GET /flight` → `GET /seat/{flightId}` → `POST /auth/register|login` → `PATCH /profile` (add name, passport, DOB) → `POST /payment/validate` → `POST /bookings`.
+   - See `backend/POSTMAN_GUIDE.md` for details.
+
 ### Run the Backend Server after Database Setup
 
 Under `backend` folder:
