@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { getFlightSeats} from '../api/seatApi';
 
 // get seat style based on status
-const getSeatStyle = (seat: Seat, selectedSeat: Seat | null, currentSeat: Seat | null) => {
+const getSeatStyle = (seat: Seat, selectedSeat: Seat | null, currentSeat: Seat | null | undefined) => {
   if (seat.status !== 'AVAILABLE') {
     return seat.status === 'BOOKED'
       ? 'bg-gray-200 text-gray-500 cursor-not-allowed border-2 border-gray-300'
@@ -14,12 +14,12 @@ const getSeatStyle = (seat: Seat, selectedSeat: Seat | null, currentSeat: Seat |
   }
   
   // Check if this is the current seat
-  if (currentSeat?.seatNumber === seat.seatNumber) {
+  if (currentSeat?.id === seat.id) {
     return 'bg-green-500 text-white hover:bg-green-600 border-green-300';
   }
   
   // If the seat is available, check if it's selected
-  return selectedSeat?.seatNumber === seat.seatNumber
+  return selectedSeat?.id === seat.id
     ? 'bg-blue-500 text-white hover:bg-blue-600 border-blue-300'
     : 'bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-300';
 };
@@ -92,7 +92,7 @@ const SeatModify: React.FC<SeatSelectionProps> = ({
             <p className="text-sm sm:text-base text-muted-foreground">Flight ID: {flightId}</p>
             {currentSeat && (
               <div className="mt-3 p-2 bg-blue-50 rounded border border-blue-200">
-                <p className="text-sm font-medium text-blue-800">Current Seat: {currentSeat.seatNumber}</p>
+                <p className="text-sm font-medium text-blue-800">Current Seat: {currentSeat.id}</p>
               </div>
             )}
           </div>
@@ -102,7 +102,7 @@ const SeatModify: React.FC<SeatSelectionProps> = ({
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
               {seats.map((seat) => (
                 <Button
-                  key={seat.seatNumber}
+                  key={seat.id}
                   onClick={() => handleSeatSelect(seat)}
                   variant={seat.status === 'AVAILABLE' ? 'outline' : 'ghost'}
                   className={`
@@ -111,7 +111,7 @@ const SeatModify: React.FC<SeatSelectionProps> = ({
                     ${getSeatStyle(seat, selectedSeat, currentSeat)}
                   `}
                 >
-                  {seat.seatNumber}
+                  {seat.id}
                 </Button>
               ))}
             </div>
@@ -138,7 +138,7 @@ const SeatModify: React.FC<SeatSelectionProps> = ({
             <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-primary/10 rounded-md">
               <h3 className="text-lg sm:text-xl font-medium mb-2">Selected Seat</h3>
               <p className="text-sm sm:text-base">
-                Seat Number: {selectedSeat.seatNumber}
+                Seat Number: {selectedSeat.id}
               </p>
             </div>
           )}

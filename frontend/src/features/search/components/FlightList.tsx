@@ -41,7 +41,12 @@ const FlightList: React.FC<FlightListProps> = ({
         <Card
           key={flight.id}
           className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-          onClick={() => onSelectFlight(flight)}
+          style={{ pointerEvents: 'auto' }}
+          onClick={() => {
+            if (onSelectFlight) {
+              onSelectFlight(flight);
+            }
+          }}
         >
           <div className="flex flex-col sm:flex-row justify-between items-start space-y-2 sm:space-y-0">
             <div className="flex-1 w-full">

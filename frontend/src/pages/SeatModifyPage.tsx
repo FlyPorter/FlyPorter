@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import SeatModify from '../features/dashboard/components/SeatModify';
-import { Seat } from '../features/seatSelection/types';
+import { Seat } from '../features/dashboard/types';
 import NavigationBar from '../components/NavigationBar';
 
 import { API_BASE_URL } from "../config";
@@ -29,21 +29,36 @@ const SeatModifyPage: React.FC = () => {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const response = await fetch(`${API_BASE_URL}/ticket/${bookingId}`, {
+        const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}`, {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
         });
 
         if (response.ok) {
-          const bookingData = await response.json();
+          const responseData = await response.json();
+          const bookingData = responseData.success && responseData.data ? responseData.data : responseData;
+          
           // Extract current seat information if available
           if (bookingData.seat_number) {
+            const seatModifier = bookingData.seat?.price_modifier 
+              ? Number(bookingData.seat.price_modifier) 
+              : 1;
+            
+            // Parse seat number to extract row and column if possible (e.g., "1A" -> row: 1, column: 0)
+            const seatNumberStr = bookingData.seat_number.toString();
+            const match = seatNumberStr.match(/^(\d+)([A-Z])?$/);
+            const row = match ? parseInt(match[1]) : 0;
+            const column = match && match[2] ? match[2].charCodeAt(0) - 65 : 0;
+            
             setCurrentSeat({
-              seatNumber: bookingData.seat_number,
+              id: bookingData.seat_number.toString(),
+              row: row,
+              column: column,
               status: 'BOOKED',
-              price: bookingData.price || 0,
-              version: 0 // Default to economy
+              price: seatModifier,
+              version: bookingData.seat?.class === 'first' ? 2 : bookingData.seat?.class === 'business' ? 1 : 0
             });
           }
         }
@@ -64,28 +79,58 @@ const SeatModifyPage: React.FC = () => {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Unauthorized: No token found");
 
-      const response = await fetch(`${API_BASE_URL}/ticket/${bookingId}`, {
-        method: "PUT",
+      // Since backend doesn't have a direct update booking seat endpoint,
+      // we need to cancel the current booking and create a new one
+      // First, get the current booking details
+      const bookingResponse = await fetch(`${API_BASE_URL}/bookings/${bookingId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!bookingResponse.ok) {
+        throw new Error("Failed to fetch current booking");
+      }
+
+      const bookingData = await bookingResponse.json();
+      const booking = bookingData.success && bookingData.data ? bookingData.data : bookingData;
+
+      // Cancel the current booking
+      const cancelResponse = await fetch(`${API_BASE_URL}/bookings/${bookingId}`, {
+        method: "DELETE",
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!cancelResponse.ok) {
+        const errorData = await cancelResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || "Failed to cancel current booking");
+      }
+
+      // Create a new booking with the new seat
+      const createResponse = await fetch(`${API_BASE_URL}/bookings`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          seat_number: selectedSeat.seatNumber.toString(),
-          price: selectedSeat.price
+          flight_id: booking.flight_id,
+          seat_number: selectedSeat.id
         }),
       });
 
-      if (!response.ok) {
-        if (response.status === 401) throw new Error("Unauthorized: Invalid token");
-        if (response.status === 400) throw new Error("Invalid input or seat unavailable");
-        if (response.status === 404) throw new Error("Ticket or seat not found");
-        throw new Error("Failed to modify booking");
+      if (!createResponse.ok) {
+        const errorData = await createResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || "Failed to create new booking with selected seat");
       }
 
       navigate("/dashboard");
-    } catch (err) {
-      setError("Error updating seat. Please try again.");
+    } catch (err: any) {
+      console.error("Error modifying seat:", err);
+      setError(err.message || "Error updating seat. Please try again.");
     } finally {
       setIsUpdating(false);
     }
@@ -120,19 +165,22 @@ const SeatModifyPage: React.FC = () => {
           currentSeat={currentSeat}
         />
         
-        <div className="mt-6 flex justify-center">
+        <div className="mt-6 flex flex-col items-center gap-4">
+          {error && (
+            <div className="text-red-500 text-sm">{error}</div>
+          )}
           <button
             onClick={handleModifySeat}
-            disabled={!selectedSeat}
+            disabled={!selectedSeat || isUpdating}
             className={`
               px-6 py-2 rounded-md text-white font-medium
-              ${selectedSeat 
+              ${selectedSeat && !isUpdating
                 ? 'bg-blue-500 hover:bg-blue-600' 
                 : 'bg-gray-300 cursor-not-allowed'
               }
             `}
           >
-            Continue to Booking
+            {isUpdating ? 'Updating Seat...' : 'Update Seat'}
           </button>
         </div>
       </div>

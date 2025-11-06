@@ -8,9 +8,11 @@ export const getFlightSeats = async (flightId: string): Promise<Seat[]> => {
       throw new Error('No authentication token found');
     }
 
-    const response = await fetch(`${API_BASE_URL}/flight/search`, {
+    // Use the seat endpoint directly: GET /seat/:flight_id
+    const response = await fetch(`${API_BASE_URL}/seat/${flightId}`, {
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
     });
 
@@ -18,20 +20,33 @@ export const getFlightSeats = async (flightId: string): Promise<Seat[]> => {
       throw new Error('Failed to fetch seats');
     }
 
-    const flights = await response.json();
-    const flight = flights.find((f: any) => f.flight_number === flightId);
+    const responseData = await response.json();
+    // Handle the response structure from sendSuccess
+    const seats = responseData.success && responseData.data ? responseData.data : responseData;
     
-    if (!flight) {
-      throw new Error('Flight not found');
+    if (!Array.isArray(seats)) {
+      console.error('Invalid response format. Expected array of seats:', seats);
+      throw new Error('Invalid response format from server');
     }
-
-    const seatInfos = flight.seat_infos || [];
     
-    return seatInfos.map((seat: any) => ({
-      seatNumber: seat.seat_number,
-      status: seat.seat_status,
-      version: seat.version
-    }));
+    // Transform backend seat format to frontend format
+    // Dashboard Seat type requires: id, row, column, status, price, version
+    return seats.map((seat: any) => {
+      // Parse seat number to extract row and column (e.g., "1A" -> row: 1, column: 0)
+      const seatNumberStr = seat.seat_number.toString();
+      const match = seatNumberStr.match(/^(\d+)([A-Z])?$/);
+      const row = match ? parseInt(match[1]) : 0;
+      const column = match && match[2] ? match[2].charCodeAt(0) - 65 : 0;
+      
+      return {
+        id: seat.seat_number.toString(),
+        row: row,
+        column: column,
+        status: seat.is_available ? 'AVAILABLE' : 'UNAVAILABLE',
+        price: Number(seat.price_modifier || 1),
+        version: seat.class === 'first' ? 2 : seat.class === 'business' ? 1 : 0
+      };
+    });
   } catch (error) {
     console.error('Error fetching seats:', error);
     throw error;

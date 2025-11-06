@@ -17,14 +17,16 @@ const ProfilePage: React.FC = () => {
     birth_date: '',
     gender: '',
     address: '',
-    phone_number: ''
+    phone_number: '',
+    passport_number: ''
   });
   const [createForm, setCreateForm] = useState<CreatePassengerPayload>({
     name: '',
     birth_date: '',
     gender: '',
     address: '',
-    phone_number: ''
+    phone_number: '',
+    passport_number: ''
   });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,7 +56,8 @@ const ProfilePage: React.FC = () => {
       birth_date: passenger.birth_date.split('T')[0],
       gender: passenger.gender,
       address: passenger.address || '',
-      phone_number: passenger.phone_number || ''
+      phone_number: passenger.phone_number || '',
+      passport_number: passenger.passport_number || ''
     });
   };
 
@@ -80,7 +83,8 @@ const ProfilePage: React.FC = () => {
         birth_date: '',
         gender: '',
         address: '',
-        phone_number: ''
+        phone_number: '',
+        passport_number: ''
       });
       // Add new passenger at the beginning of the list
       setPassengers(prevPassengers => [newPassenger, ...prevPassengers]);
@@ -96,7 +100,8 @@ const ProfilePage: React.FC = () => {
       birth_date: '',
       gender: '',
       address: '',
-      phone_number: ''
+      phone_number: '',
+      passport_number: ''
     });
   };
 
@@ -179,6 +184,15 @@ const ProfilePage: React.FC = () => {
                     value={createForm.phone_number}
                     onChange={(e) => setCreateForm({ ...createForm, phone_number: e.target.value })}
                     placeholder="Enter phone number"
+                  />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Passport Number *</p>
+                  <Input
+                    value={createForm.passport_number}
+                    onChange={(e) => setCreateForm({ ...createForm, passport_number: e.target.value })}
+                    placeholder="Enter passport number"
+                    required
                   />
                 </div>
                 <div className="flex gap-2">
@@ -277,6 +291,14 @@ const ProfilePage: React.FC = () => {
                             placeholder="Enter phone number"
                           />
                         </div>
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Passport Number</p>
+                          <Input
+                            value={editForm.passport_number}
+                            onChange={(e) => setEditForm({ ...editForm, passport_number: e.target.value })}
+                            placeholder="Enter passport number"
+                          />
+                        </div>
                         <div className="flex gap-2">
                           <Button onClick={() => handleSave(passenger.id)}>
                             Save
@@ -303,6 +325,10 @@ const ProfilePage: React.FC = () => {
                         <div>
                           <p className="text-sm text-gray-500">Phone Number</p>
                           <p>{passenger.phone_number || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Passport Number</p>
+                          <p>{passenger.passport_number || 'Not provided'}</p>
                         </div>
                       </>
                     )}

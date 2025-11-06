@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 
 interface Airline {
-  code: string;
-  name: string;
+  airline_code: string;
+  airline_name: string;
 }
 
 const AddAirlinePage = () => {
@@ -30,10 +30,25 @@ const AddAirlinePage = () => {
       });
       if (!response.ok) throw new Error("Failed to fetch airlines");
 
-      const data = await response.json();
-      setAirlines(data);
+      const responseData = await response.json();
+      
+      // Handle the response structure from sendSuccess
+      const airlinesData = responseData.success && responseData.data 
+        ? responseData.data 
+        : Array.isArray(responseData) 
+          ? responseData 
+          : responseData.data || [];
+      
+      if (!Array.isArray(airlinesData)) {
+        console.error('Invalid response format. Expected array of airlines:', airlinesData);
+        setAirlines([]);
+        return;
+      }
+      
+      setAirlines(airlinesData);
     } catch (err) {
       console.error("Error fetching airlines:", err);
+      setAirlines([]);
     }
   };
 
@@ -49,38 +64,52 @@ const AddAirlinePage = () => {
       const response = await fetch(`${API_BASE_URL}/airline`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ code, name }),
+        body: JSON.stringify({ 
+          airline_code: code.toUpperCase(),
+          airline_name: name 
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Error adding airline.");
+        throw new Error(errorData.message || errorData.error || "Error adding airline.");
+      }
+
+      const responseData = await response.json();
+      if (responseData.success === false) {
+        throw new Error(responseData.message || "Error adding airline.");
       }
 
       fetchAirlines();
       setCode("");
       setName("");
+      setError(null);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Error adding airline.");
     }
   };
 
   const handleUpdateAirline = async (airlineCode: string, newName: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/airline/${airlineCode}`, {
-        method: "PUT",
+        method: "PATCH",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ name: newName }),
+        body: JSON.stringify({ airline_name: newName }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Error updating airline.");
+        throw new Error(errorData.message || errorData.error || "Error updating airline.");
+      }
+
+      const responseData = await response.json();
+      if (responseData.success === false) {
+        throw new Error(responseData.message || "Error updating airline.");
       }
 
       fetchAirlines();
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Error updating airline.");
     }
   };
 
@@ -145,21 +174,21 @@ const AddAirlinePage = () => {
           </thead>
           <tbody>
             {airlines.map((airline) => (
-              <tr key={airline.code} className="border">
-                <td className="border p-2">{airline.code}</td>
+              <tr key={airline.airline_code} className="border">
+                <td className="border p-2">{airline.airline_code}</td>
                 <td className="border p-2">
                   <input
                     type="text"
-                    defaultValue={airline.name}
+                    defaultValue={airline.airline_name}
                     onBlur={(e) =>
-                      handleUpdateAirline(airline.code, e.target.value)
+                      handleUpdateAirline(airline.airline_code, e.target.value)
                     }
                     className="border p-1 rounded w-40"
                   />
                 </td>
                 <td className="border p-2">
                   <button
-                    onClick={() => handleDeleteAirline(airline.code)}
+                    onClick={() => handleDeleteAirline(airline.airline_code)}
                     className="bg-red-500 text-white px-4 py-1 rounded"
                   >
                     Delete

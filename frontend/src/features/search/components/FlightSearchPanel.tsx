@@ -121,33 +121,29 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
   };
 
   const filterAirports = (input: string): Airport[] => {
-    const searchTerm = input.toLowerCase();
-    return airports.filter(airport => 
-      airport.city.toLowerCase().includes(searchTerm) || 
-      airport.code.toLowerCase().includes(searchTerm)
-    ).slice(0, 5); // Limit to 5 suggestions
+    if (!input || input.trim().length === 0 || airports.length === 0) {
+      return [];
+    }
+    const searchTerm = input.toLowerCase().trim();
+    return airports.filter(airport => {
+      const cityMatch = airport.city?.toLowerCase().includes(searchTerm);
+      const codeMatch = airport.code?.toLowerCase().includes(searchTerm);
+      return cityMatch || codeMatch;
+    }).slice(0, 5); // Limit to 5 suggestions
   };
 
   const handleOriginInput = (value: string) => {
     handleRouteChange('origin', value);
-    if (value.length > 0) {
-      setOriginSuggestions(filterAirports(value));
-      setShowOriginSuggestions(true);
-    } else {
-      setOriginSuggestions([]);
-      setShowOriginSuggestions(false);
-    }
+    const filtered = filterAirports(value);
+    setOriginSuggestions(filtered);
+    setShowOriginSuggestions(filtered.length > 0);
   };
 
   const handleDestinationInput = (value: string) => {
     handleRouteChange('destination', value);
-    if (value.length > 0) {
-      setDestinationSuggestions(filterAirports(value));
-      setShowDestinationSuggestions(true);
-    } else {
-      setDestinationSuggestions([]);
-      setShowDestinationSuggestions(false);
-    }
+    const filtered = filterAirports(value);
+    setDestinationSuggestions(filtered);
+    setShowDestinationSuggestions(filtered.length > 0);
   };
 
   const handleSuggestionClick = (type: 'origin' | 'destination', airport: Airport) => {
@@ -302,7 +298,6 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
             value={route.origin}
             placeholder="Enter city name or airport"
             onChange={(e) => handleOriginInput(e.target.value)}
-            onFocus={() => setShowOriginSuggestions(true)}
             disabled={disabled}
           />
           {showOriginSuggestions && originSuggestions.length > 0 && (
@@ -328,7 +323,6 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
             value={route.destination}
             placeholder="Enter city name or airport"
             onChange={(e) => handleDestinationInput(e.target.value)}
-            onFocus={() => setShowDestinationSuggestions(true)}
             disabled={disabled}
           />
           {showDestinationSuggestions && destinationSuggestions.length > 0 && (

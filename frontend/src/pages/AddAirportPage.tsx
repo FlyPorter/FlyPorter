@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 
 interface Airport {
-  code: string;
-  city: string;
+  airport_code: string;
+  city_name: string;
+  airport_name?: string;
 }
 
 const AddAirportPage = () => {
@@ -30,10 +31,25 @@ const AddAirportPage = () => {
       });
       if (!response.ok) throw new Error("Failed to fetch airports");
 
-      const data = await response.json();
-      setAirports(data);
+      const responseData = await response.json();
+      
+      // Handle the response structure from sendSuccess
+      const airportsData = responseData.success && responseData.data 
+        ? responseData.data 
+        : Array.isArray(responseData) 
+          ? responseData 
+          : responseData.data || [];
+      
+      if (!Array.isArray(airportsData)) {
+        console.error('Invalid response format. Expected array of airports:', airportsData);
+        setAirports([]);
+        return;
+      }
+      
+      setAirports(airportsData);
     } catch (err) {
       console.error("Error fetching airports:", err);
+      setAirports([]);
     }
   };
 
@@ -49,19 +65,29 @@ const AddAirportPage = () => {
       const response = await fetch(`${API_BASE_URL}/airport`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ code, city }),
+        body: JSON.stringify({ 
+          airport_code: code.toUpperCase(),
+          airport_name: code.toUpperCase(), // Use code as name if not provided
+          city_name: city 
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Error adding airport.");
+        throw new Error(errorData.message || errorData.error || "Error adding airport.");
+      }
+
+      const responseData = await response.json();
+      if (responseData.success === false) {
+        throw new Error(responseData.message || "Error adding airport.");
       }
 
       fetchAirports();
       setCode("");
       setCity("");
+      setError(null);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Error adding airport.");
     }
   };
 
@@ -70,17 +96,22 @@ const AddAirportPage = () => {
       const response = await fetch(`${API_BASE_URL}/airport/${airportCode}`, {
         method: "PUT",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ city: newCity }),
+        body: JSON.stringify({ airport_name: newCity }), // Backend expects airport_name, not city
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Error updating airport.");
+        throw new Error(errorData.message || errorData.error || "Error updating airport.");
+      }
+
+      const responseData = await response.json();
+      if (responseData.success === false) {
+        throw new Error(responseData.message || "Error updating airport.");
       }
 
       fetchAirports();
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Error updating airport.");
     }
   };
 
@@ -145,21 +176,21 @@ const AddAirportPage = () => {
           </thead>
           <tbody>
             {airports.map((airport) => (
-              <tr key={airport.code} className="border">
-                <td className="border p-2">{airport.code}</td>
+              <tr key={airport.airport_code} className="border">
+                <td className="border p-2">{airport.airport_code}</td>
                 <td className="border p-2">
                   <input
                     type="text"
-                    defaultValue={airport.city}
+                    defaultValue={airport.city_name}
                     onBlur={(e) =>
-                      handleUpdateAirport(airport.code, e.target.value)
+                      handleUpdateAirport(airport.airport_code, e.target.value)
                     }
                     className="border p-1 rounded w-40"
                   />
                 </td>
                 <td className="border p-2">
                   <button
-                    onClick={() => handleDeleteAirport(airport.code)}
+                    onClick={() => handleDeleteAirport(airport.airport_code)}
                     className="bg-red-500 text-white px-4 py-1 rounded"
                   >
                     Delete

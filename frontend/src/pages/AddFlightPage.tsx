@@ -8,16 +8,19 @@ interface Airline {
 }
 
 interface Route {
-  id: number;
-  flight_number: number;
-  airline_code: string;
-  departure_airport: string;
-  destination_airport: string;
-  departure_time: string;
-  duration: number;
-  aircraft_id: number;
-  start_date: string;
-  end_date: string;
+  route_id: number;
+  origin_airport_code: string;
+  destination_airport_code: string;
+  origin_airport?: {
+    airport_code: string;
+    airport_name: string;
+    city_name: string;
+  };
+  destination_airport?: {
+    airport_code: string;
+    airport_name: string;
+    city_name: string;
+  };
 }
 
 interface Flight {
@@ -56,52 +59,82 @@ const AddFlightPage = () => {
       if (!routesRes.ok) {
         throw new Error("Failed to fetch routes");
       }
-      const routesData = await routesRes.json();
+      const responseData = await routesRes.json();
+      
+      // Handle the response structure from sendSuccess
+      const routesData = responseData.success && responseData.data 
+        ? responseData.data 
+        : Array.isArray(responseData) 
+          ? responseData 
+          : responseData.data || [];
+      
+      if (!Array.isArray(routesData)) {
+        console.error('Invalid response format. Expected array of routes:', routesData);
+        setRoutes([]);
+        return;
+      }
+      
       setRoutes(routesData);
     } catch (err) {
       console.error("Error fetching data:", err);
+      setRoutes([]);
     }
   };
 
   const handleAddFlight = async () => {
     setError(null);
 
-    if (!selectedRouteId  || !date || !availableTickets || !price) {
+    if (!selectedRouteId || !date || availableTickets === "" || price === "") {
       setError("Please fill in all fields.");
       return;
     }
 
     try {
-      const routeParts = selectedRouteId.split(" - ");
-      const flightNumber = parseInt(routeParts[0], 10);
-      const selectedRoute = routes.find((route) => route.flight_number === flightNumber);
+      const routeId = parseInt(selectedRouteId, 10);
+      const selectedRoute = routes.find((route) => route.route_id === routeId);
       if (!selectedRoute) {
         throw new Error("Selected route not found.");
       }
+
+      // Parse date and time - need to create departure_time and arrival_time
+      // For now, we'll use the date and add default times
+      const departureTime = new Date(`${date}T08:00:00Z`).toISOString();
+      const arrivalTime = new Date(`${date}T11:00:00Z`).toISOString(); // Default 3 hours later
 
       const response = await fetch(`${API_BASE_URL}/flight`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          flight_number: Number(selectedRoute.flight_number),
-          airline_code: selectedRoute.airline_code,
-          date,
-          available_tickets: Number(availableTickets),
-          price: Number(price),
+          route_id: selectedRoute.route_id,
+          origin_airport_code: selectedRoute.origin_airport_code,
+          destination_airport_code: selectedRoute.destination_airport_code,
+          airline_code: "FP", // Default airline, should be selectable
+          departure_time: departureTime,
+          arrival_time: arrivalTime,
+          base_price: Number(price),
+          seat_capacity: Number(availableTickets),
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Error adding flight.");
+        throw new Error(errorData.message || errorData.error || "Error adding flight.");
       }
 
+      const responseData = await response.json();
+      if (responseData.success === false) {
+        throw new Error(responseData.message || "Error adding flight.");
+      }
+
+      // Reset form
       setSelectedRouteId("");
       setDate("");
       setAvailableTickets("");
       setPrice("");
+      setError(null);
+      alert("Flight added successfully!");
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Error adding flight.");
     }
   };
 
@@ -121,8 +154,11 @@ const AddFlightPage = () => {
             >
               <option value="">Select Route</option>
               {routes.map((route) => (
-                <option key={route.id} value={route.id}>
-                  {route.flight_number} - {route.departure_airport} to {route.destination_airport}
+                <option key={route.route_id} value={route.route_id}>
+                  {route.origin_airport_code} → {route.destination_airport_code}
+                  {route.origin_airport?.city_name && route.destination_airport?.city_name 
+                    ? ` (${route.origin_airport.city_name} → ${route.destination_airport.city_name})`
+                    : ''}
                 </option>
               ))}
             </select>

@@ -21,20 +21,39 @@ const DashboardPage = () => {
     const fetchUserInfo = async (token: string) => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/auth/myinfo`, {
+        const response = await fetch(`${API_BASE_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to fetch user info');
+        // Check if response is JSON before parsing
+        const contentType = response.headers.get('content-type');
+        let data;
+        
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          console.error('Non-JSON response received:', text.substring(0, 200));
+          throw new Error('Server returned an invalid response. Please check if the backend is running and the API URL is correct.');
+        } else {
+          data = await response.json();
         }
 
-        const data = await response.json();
-        return data.user;
+        if (!response.ok) {
+          throw new Error(data.error || data.message || 'Failed to fetch user info');
+        }
+
+        // Handle the response structure from sendSuccess
+        // Profile endpoint returns: { success: true, data: { user_id, email, role, ... } }
+        if (data.success && data.data) {
+          return data.data;
+        } else if (data.user_id) {
+          // Fallback for direct user object
+          return data;
+        } else {
+          throw new Error('Invalid response format');
+        }
       } catch (err: any) {
         console.error("Error fetching user info:", err.message);
         setError(err.message || "Failed to load user information.");
@@ -126,7 +145,7 @@ const DashboardPage = () => {
             
             <div className="flex items-center gap-2 px-3 py-2 text-gray-600">
               <User className="h-5 w-5" />
-              <span>{user.username}</span>
+              <span>{user.email || 'User'}</span>
             </div>
           </div>
         </div>

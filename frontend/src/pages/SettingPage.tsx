@@ -10,6 +10,7 @@ const SettingsPage = () => {
   // Get user role
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const role = user?.role || "user";
+  const isAdmin = role?.toUpperCase() === "ADMIN";
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -37,19 +38,21 @@ const SettingsPage = () => {
             <h2 className="text-2xl font-bold mb-6">Settings</h2>
             
             <div className="space-y-6">
-              {/* My Passengers Section */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold mb-4">My Passengers</h3>
-                <p className="text-gray-600 mb-4">
-                  Manage your passenger profiles for easy booking
-                </p>
-                <button
-                  onClick={() => navigate('/profile', { state: { from: '/settings' } })}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                >
-                  Manage Passengers
-                </button>
-              </div>
+              {/* My Passengers Section - Hidden for admin users */}
+              {!isAdmin && (
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold mb-4">My Passengers</h3>
+                  <p className="text-gray-600 mb-4">
+                    Manage your passenger profiles for easy booking
+                  </p>
+                  <button
+                    onClick={() => navigate('/profile', { state: { from: '/settings' } })}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  >
+                    Manage Passengers
+                  </button>
+                </div>
+              )}
 
               {/* Account Actions */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
