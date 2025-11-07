@@ -11,9 +11,18 @@ const LoginPage = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const urlToken  = localStorage.getItem("token");
-    if (urlToken ) {
-      navigate("/dashboard");
+    const urlToken = localStorage.getItem("token");
+    if (urlToken) {
+      // Check if user is admin and redirect accordingly
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        const userRole = user?.role || 'user';
+        const redirectPath = userRole?.toUpperCase() === 'ADMIN' ? '/admin' : '/dashboard';
+        navigate(redirectPath);
+      } else {
+        navigate("/dashboard");
+      }
       return;
     }
 
@@ -23,6 +32,8 @@ const LoginPage = () => {
 
     if (token) {
       localStorage.setItem("token", token);
+      // User info will be fetched in GoogleAuthCallback, so just redirect to dashboard for now
+      // GoogleAuthCallback will handle the admin redirect
       navigate("/dashboard");
     }
 
@@ -67,8 +78,11 @@ const LoginPage = () => {
       if (data.success && data.data) {
         localStorage.setItem('token', data.data.token);
         localStorage.setItem('user', JSON.stringify(data.data.user));
-        console.log('Login successful, navigating to dashboard');
-        navigate('/dashboard');
+        console.log('Login successful');
+        // Redirect admin users to admin page, regular users to dashboard
+        const userRole = data.data.user?.role || 'user';
+        const redirectPath = userRole?.toUpperCase() === 'ADMIN' ? '/admin' : '/dashboard';
+        navigate(redirectPath);
       } else {
         throw new Error(data.error || data.message || 'Login Failed');
       }

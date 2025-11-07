@@ -1,52 +1,36 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
-
-interface Airline {
-  code: string;
-  name: string;
-}
+import { getAirports } from "../features/search/api/airportApi";
 
 interface Airport {
   code: string;
   city: string;
 }
 
-interface Aircraft {
-  id: number;
-  capacity: number;
-}
-
 interface Route {
-  id: number;
-  flight_number: number;
-  airline_code: string;
-  departure_airport: string;
-  destination_airport: string;
-  departure_time: string;
-  duration: number;
-  aircraft_id: number;
-  start_date: string;
-  end_date: string;
+  route_id: number;
+  origin_airport_code: string;
+  destination_airport_code: string;
+  origin_airport?: {
+    airport_code: string;
+    airport_name: string;
+    city_name: string;
+  };
+  destination_airport?: {
+    airport_code: string;
+    airport_name: string;
+    city_name: string;
+  };
 }
 
 const AddRoutePage = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
-  const [airlines, setAirlines] = useState<Airline[]>([]);
   const [airports, setAirports] = useState<Airport[]>([]);
-  const [aircrafts, setAircrafts] = useState<Aircraft[]>([]);
-
-  const [flightNumber, setFlightNumber] = useState<number | "">("");
-  const [airlineCode, setAirlineCode] = useState("");
-  const [departureAirport, setDepartureAirport] = useState("");
-  const [destinationAirport, setDestinationAirport] = useState("");
-  const [departureTime, setDepartureTime] = useState("");
-  const [duration, setDuration] = useState(0);
-  const [aircraftId, setAircraftId] = useState<number | "">("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-
+  const [originAirportCode, setOriginAirportCode] = useState("");
+  const [destinationAirportCode, setDestinationAirportCode] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -61,72 +45,80 @@ const AddRoutePage = () => {
 
   const fetchData = async () => {
     try {
-      const [routesRes, airlinesRes, airportsRes, aircraftsRes] = await Promise.all([
+      setIsLoading(true);
+      const [routesRes, airportsData] = await Promise.all([
         fetch(`${API_BASE_URL}/route`, { headers: getAuthHeaders() }),
-        fetch(`${API_BASE_URL}/airline`, { headers: getAuthHeaders() }),
-        fetch(`${API_BASE_URL}/airport`, { headers: getAuthHeaders() }),
-        fetch(`${API_BASE_URL}/aircraft`, { headers: getAuthHeaders() }),
+        getAirports(),
       ]);
 
-      if (!routesRes.ok || !airlinesRes.ok || !airportsRes.ok || !aircraftsRes.ok) {
-        throw new Error("Failed to fetch data");
+      if (!routesRes.ok) {
+        throw new Error("Failed to fetch routes");
       }
 
-      setRoutes(await routesRes.json());
-      setAirlines(await airlinesRes.json());
-      setAirports(await airportsRes.json());
-      setAircrafts(await aircraftsRes.json());
+      const routesResponseData = await routesRes.json();
+      const routesData = routesResponseData.success && routesResponseData.data 
+        ? routesResponseData.data 
+        : Array.isArray(routesResponseData) 
+          ? routesResponseData 
+          : routesResponseData.data || [];
+      
+      if (!Array.isArray(routesData)) {
+        console.error('Invalid response format. Expected array of routes:', routesData);
+        setRoutes([]);
+      } else {
+        setRoutes(routesData);
+      }
+      
+      setAirports(airportsData);
     } catch (err) {
       console.error("Error fetching data:", err);
+      setError("Failed to load data. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleAddRoute = async () => {
     setError(null);
 
-    if (!flightNumber || !airlineCode || !departureAirport || !destinationAirport || !departureTime || !duration || !aircraftId || !startDate || !endDate) {
-      setError("Please fill in all fields.");
+    if (!originAirportCode || !destinationAirportCode) {
+      setError("Please select both origin and destination airports.");
+      return;
+    }
+
+    if (originAirportCode === destinationAirportCode) {
+      setError("Origin and destination airports cannot be the same.");
       return;
     }
 
     try {
-      const payload = {
-        flight_number: Number(flightNumber),
-        airline_code: airlineCode,
-        departure_airport: departureAirport,
-        destination_airport: destinationAirport,
-        departure_time: departureTime.toString(),
-        duration: Number(duration),
-        aircraft_id: Number(aircraftId),
-        start_date: startDate,
-        end_date: endDate,
-      };
-
       const response = await fetch(`${API_BASE_URL}/route`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          origin_airport_code: originAirportCode.toUpperCase(),
+          destination_airport_code: destinationAirportCode.toUpperCase(),
+        }),
       });
-
-      console.log("Sending Payload:", JSON.stringify(payload));
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Error adding route.");
+        throw new Error(errorData.message || errorData.error || "Error adding route.");
       }
 
+      const responseData = await response.json();
+      if (responseData.success === false) {
+        throw new Error(responseData.message || "Error adding route.");
+      }
+
+      // Reset form and refresh data
+      setOriginAirportCode("");
+      setDestinationAirportCode("");
+      setError(null);
       fetchData();
-      setFlightNumber("");
-      setAirlineCode("");
-      setDepartureAirport("");
-      setDestinationAirport("");
-      setDepartureTime("");
-      setDuration(0);
-      setAircraftId("");
-      setStartDate("");
-      setEndDate("");
+      alert("Route added successfully!");
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Error adding route.");
     }
   };
 
@@ -134,149 +126,94 @@ const AddRoutePage = () => {
     <div className="container mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold mb-4">Manage Routes</h2>
 
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+          {error}
+        </div>
+      )}
+
       <div className="mb-6 p-4 border rounded shadow">
-        <h3 className="text-lg font-semibold mb-2">Add Route</h3>
+        <h3 className="text-lg font-semibold mb-4">Add Route</h3>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium">Flight Number</label>
-            <input
-              type="number"
-              value={flightNumber}
-              onChange={(e) => setFlightNumber(e.target.value)}
+            <label className="block text-sm font-medium mb-1">Origin Airport *</label>
+            <select
+              value={originAirportCode}
+              onChange={(e) => setOriginAirportCode(e.target.value)}
               className="border p-2 rounded w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">Airline</label>
-            <select value={airlineCode} onChange={(e) => setAirlineCode(e.target.value)} className="border p-2 rounded w-full">
-              <option value="">Select Airline</option>
-              {airlines.map((airline) => (
-                <option key={airline.code} value={airline.code}>
-                  {airline.name} ({airline.code})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">Departure Airport</label>
-            <select value={departureAirport} onChange={(e) => setDepartureAirport(e.target.value)} className="border p-2 rounded w-full">
-              <option value="">Select Departure Airport</option>
+              required
+            >
+              <option value="">Select Origin Airport</option>
               {airports.map((airport) => (
                 <option key={airport.code} value={airport.code}>
-                  {airport.city} ({airport.code})
+                  {airport.code} - {airport.city}
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Destination Airport</label>
-            <select value={destinationAirport} onChange={(e) => setDestinationAirport(e.target.value)} className="border p-2 rounded w-full">
+            <label className="block text-sm font-medium mb-1">Destination Airport *</label>
+            <select
+              value={destinationAirportCode}
+              onChange={(e) => setDestinationAirportCode(e.target.value)}
+              className="border p-2 rounded w-full"
+              required
+            >
               <option value="">Select Destination Airport</option>
               {airports.map((airport) => (
                 <option key={airport.code} value={airport.code}>
-                  {airport.city} ({airport.code})
+                  {airport.code} - {airport.city}
                 </option>
               ))}
             </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">Departure Time</label>
-            <input
-              type="time"
-              value={departureTime}
-              onChange={(e) => setDepartureTime(e.target.value)}
-              className="border p-2 rounded w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">Duration (minutes)</label>
-            <input
-              type="number"
-              value={duration}
-              onChange={(e) => setDuration(parseInt(e.target.value) || 0)}
-              className="border p-2 rounded w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">Aircraft</label>
-            <select value={aircraftId} onChange={(e) => setAircraftId(parseInt(e.target.value) || "")} className="border p-2 rounded w-full">
-              <option value="">Select Aircraft</option>
-              {aircrafts.map((aircraft) => (
-                <option key={aircraft.id} value={aircraft.id}>
-                  Aircraft ID: {aircraft.id} (Capacity: {aircraft.capacity})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">Start Date</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="border p-2 rounded w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">End Date</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="border p-2 rounded w-full"
-            />
           </div>
         </div>
-        <button onClick={handleAddRoute} className="bg-green-500 text-white px-4 py-2 mt-4 rounded">
-          Add Route
+
+        <button
+          onClick={handleAddRoute}
+          disabled={isLoading}
+          className={`mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ${
+            isLoading ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+        >
+          {isLoading ? 'Adding...' : 'Add Route'}
         </button>
-        {error && <p className="text-red-500 mt-2">{error}</p>}
       </div>
 
       <div className="mt-8 p-4 border rounded shadow">
-  <h3 className="text-lg font-semibold mb-2">Existing Routes</h3>
-  {routes.length === 0 ? (
-    <p>No routes available.</p>
-  ) : (
-    <table className="w-full border-collapse border border-gray-300">
-      <thead>
-        <tr className="bg-gray-200">
-          <th className="border p-2">Flight Number</th>
-          <th className="border p-2">Airline</th>
-          <th className="border p-2">Departure</th>
-          <th className="border p-2">Destination</th>
-          <th className="border p-2">Departure Time</th>
-          <th className="border p-2">Duration</th>
-          <th className="border p-2">Start Date</th>
-          <th className="border p-2">End Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        {routes.map((route) => (
-          <tr key={route.id} className="text-center">
-            <td className="border p-2">{route.flight_number}</td>
-            <td className="border p-2">{route.airline_code}</td>
-            <td className="border p-2">{route.departure_airport}</td>
-            <td className="border p-2">{route.destination_airport}</td>
-            <td className="border p-2">{route.departure_time}</td>
-            <td className="border p-2">{route.duration} min</td>
-            <td className="border p-2">{route.start_date.split("T")[0]}</td>
-            <td className="border p-2">{route.end_date.split("T")[0]}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  )}
-</div>
-
+        <h3 className="text-lg font-semibold mb-4">Existing Routes</h3>
+        {routes.length === 0 ? (
+          <p className="text-gray-600">No routes available.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse border border-gray-300">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border p-2 text-left">Route ID</th>
+                  <th className="border p-2 text-left">Origin</th>
+                  <th className="border p-2 text-left">Destination</th>
+                </tr>
+              </thead>
+              <tbody>
+                {routes.map((route) => (
+                  <tr key={route.route_id} className="border">
+                    <td className="border p-2">{route.route_id}</td>
+                    <td className="border p-2">
+                      {route.origin_airport_code}
+                      {route.origin_airport?.city_name && ` (${route.origin_airport.city_name})`}
+                    </td>
+                    <td className="border p-2">
+                      {route.destination_airport_code}
+                      {route.destination_airport?.city_name && ` (${route.destination_airport.city_name})`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       <div className="mt-6 text-center">
         <button
