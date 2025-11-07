@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 
 const RegisterPage = () => {
-    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [role, setRole] = useState("USER");
     const [error, setError] = useState("");
     const navigate = useNavigate();
   
@@ -13,18 +12,39 @@ const RegisterPage = () => {
         e.preventDefault();
         setError('');
         try {
+          const trimmedEmail = email.trim();
           const response = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, role })
+            body: JSON.stringify({ email: trimmedEmail, password })
           });
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.message || 'Register Failed');
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user));
-          navigate('/dashboard');
+          
+          // Check if response is JSON before parsing
+          const contentType = response.headers.get('content-type');
+          let data;
+          
+          if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('Non-JSON response received:', text.substring(0, 200));
+            throw new Error('Server returned an invalid response. Please check if the backend is running and the API URL is correct.');
+          } else {
+            data = await response.json();
+          }
+          
+          if (!response.ok) {
+            throw new Error(data.error || data.message || 'Register Failed');
+          }
+          
+          // Handle the response structure from sendSuccess
+          if (data.success && data.data) {
+            localStorage.setItem('token', data.data.token);
+            localStorage.setItem('user', JSON.stringify(data.data.user));
+            navigate('/dashboard');
+          } else {
+            throw new Error(data.error || data.message || 'Register Failed');
+          }
         } catch (err: any) {
-          setError(err.message);
+          setError(err.message || 'An error occurred during registration. Please try again.');
         }
       };
   
@@ -43,10 +63,10 @@ const RegisterPage = () => {
           {error && <p className="text-red-500 text-center mb-4">{error}</p>}
           <form onSubmit={handleRegister} className="space-y-4">
             <input 
-              type="text" 
-              placeholder="Username" 
-              value={username} 
-              onChange={(e) => setUsername(e.target.value)} 
+              type="email" 
+              placeholder="Email" 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
               className="w-full p-2 border rounded placeholder:text-gray-400" 
               required
             />
@@ -58,14 +78,6 @@ const RegisterPage = () => {
               className="w-full p-2 border rounded placeholder:text-gray-400" 
               required
             />
-            <select 
-              value={role} 
-              onChange={(e) => setRole(e.target.value)} 
-              className="w-full p-2 border rounded"
-            >
-              <option value="USER">User</option>
-              <option value="ADMIN">Admin</option>
-            </select>
             <button 
               type="submit" 
               className="w-full py-2 rounded text-white bg-green-500 hover:bg-green-600 cursor-pointer"

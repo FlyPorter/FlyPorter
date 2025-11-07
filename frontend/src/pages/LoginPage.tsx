@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { API_BASE_URL, GOOGLE_AUTH_URL } from "../config";
 
 const LoginPage = () => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,24 +37,44 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      const trimmedUsername = username.trim();
-      console.log('Attempting login with:', { username: trimmedUsername, password });
+      const trimmedEmail = email.trim();
+      console.log('Attempting login with:', { email: trimmedEmail });
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: trimmedUsername, password })
+        body: JSON.stringify({ email: trimmedEmail, password })
       });
       console.log('Login response status:', response.status);
-      const data = await response.json();
-      console.log('Login response data:', data);
-      if (!response.ok) throw new Error(data.message || 'Login Failed');
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      console.log('Login successful, navigating to dashboard');
-      navigate('/dashboard');
+      
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get('content-type');
+      let data;
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response received:', text.substring(0, 200));
+        throw new Error('Server returned an invalid response. Please check if the backend is running and the API URL is correct.');
+      } else {
+        data = await response.json();
+        console.log('Login response data:', data);
+      }
+      
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Login Failed');
+      }
+      
+      // Handle the response structure from sendSuccess
+      if (data.success && data.data) {
+        localStorage.setItem('token', data.data.token);
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+        console.log('Login successful, navigating to dashboard');
+        navigate('/dashboard');
+      } else {
+        throw new Error(data.error || data.message || 'Login Failed');
+      }
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message);
+      setError(err.message || 'An error occurred during login. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -79,10 +99,10 @@ const LoginPage = () => {
       {error && <p className="text-red-500 text-center mb-4">{error}</p>}
       <form onSubmit={handleLogin} className="space-y-4">
         <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="w-full p-2 border rounded placeholder:text-gray-400"
           required
         />

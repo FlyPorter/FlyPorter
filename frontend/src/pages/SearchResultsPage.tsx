@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate} from 'react-router-dom';
 import FlightSearchPanel from '../features/search/components/FlightSearchPanel';
 import FlightList from '../features/search/components/FlightList';
 import CheapFlightRecommendations from '../features/search/components/CheapFlightRecommendations';
 import { SearchData, FlightDisplay } from '../features/search/types';
-import { searchFlights, transformFlightToDisplay } from '../features/search/api/flightApi';
+import { searchFlights, getAllFlights, transformFlightToDisplay } from '../features/search/api/flightApi';
 import NavigationBar from '../components/NavigationBar';
 import Sidebar from '../features/dashboard/components/Sidebar';
 
@@ -21,6 +21,28 @@ const SearchResultsPage: React.FC = () => {
   // Get user role
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const role = user?.role || "user";
+  const isAdmin = role === "ADMIN" || role === "admin";
+
+  // For admin users, fetch all flights on mount
+  useEffect(() => {
+    if (isAdmin) {
+      const fetchAllFlights = async () => {
+        setIsLoading(true);
+        try {
+          const allFlights = await getAllFlights();
+          const displayFlights = allFlights.map(transformFlightToDisplay);
+          setFlights(displayFlights);
+          setHasSearched(true); // Mark as searched so it shows flights instead of recommendations
+        } catch (err) {
+          setError('Failed to load flights. Please try again.');
+          console.error('Error fetching all flights:', err);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchAllFlights();
+    }
+  }, [isAdmin]);
 
   const handleSearch = async (searchData: SearchData) => {
     setIsLoading(true);
@@ -39,17 +61,36 @@ const SearchResultsPage: React.FC = () => {
       });
       
       // Filter flights based on search parameters
-      const matchedFlights = response.filter(flight => {
+      const matchedFlights = response.filter((flight: any) => {
+        // Get airport codes from the flight route
+        const originCode = flight.route?.origin_airport_code || flight.route?.departure_airport;
+        const destCode = flight.route?.destination_airport_code || flight.route?.destination_airport;
+        
         // Check route match only if both origin and destination are provided
         const matchesRoute = !searchData.route.origin || !searchData.route.destination || 
-          (flight.route.departure_airport === searchData.route.origin &&
-           flight.route.destination_airport === searchData.route.destination);
+          (originCode === searchData.route.origin &&
+           destCode === searchData.route.destination);
         
         // Check airline match only if airline is selected and not "all"
+        const airlineCode = flight.airline?.code || flight.airline_code;
         const matchesAirline = !searchData.airline || searchData.airline === 'all' || 
-          flight.airline.code === searchData.airline;
+          airlineCode === searchData.airline;
         
-        return matchesRoute && matchesAirline;
+        // Check price range
+        const basePrice = parseFloat(flight.base_price || flight.price || '0');
+        const matchesPrice = basePrice >= searchData.priceRange[0] && 
+                            basePrice <= searchData.priceRange[1];
+        
+        // Check date if provided
+        let matchesDate = true;
+        if (searchData.route.departDate) {
+          const flightDate = (flight.departure_time || flight.route?.departure_time) 
+            ? new Date(flight.departure_time || flight.route.departure_time).toISOString().split('T')[0] 
+            : null;
+          matchesDate = flightDate === searchData.route.departDate;
+        }
+        
+        return matchesRoute && matchesAirline && matchesPrice && matchesDate;
       });
 
       // Transform flights for display
@@ -73,7 +114,16 @@ const SearchResultsPage: React.FC = () => {
   };
 
   const handleSelectFlight = async (flight: FlightDisplay) => {
-    if (!searchData) return;
+    // If no searchData, treat as one-way trip and navigate directly
+    if (!searchData) {
+      navigate('/seat-selection', {
+        state: {
+          outboundFlight: flight,
+          isRoundTrip: false
+        }
+      });
+      return;
+    }
 
     if (searchData.tripType === 'roundTrip' && !isSearchingReturn) {
       // Store the selected outbound flight

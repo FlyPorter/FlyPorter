@@ -12,15 +12,19 @@ const Sidebar = ({ role }: { role: string }) => {
     }`;
   };
 
+  const isAdmin = role?.toUpperCase() === "ADMIN";
+
   return (
     <div className="w-64 h-screen bg-gray-800 text-white flex flex-col p-4">
       <div className="mb-6">
         {/* Empty space where title used to be */}
       </div>
-      <Link to="/dashboard" className={getLinkClasses('/dashboard')}>
-        My Booking
-      </Link>
-      {role === "ADMIN" ? (
+      {!isAdmin && (
+        <Link to="/dashboard" className={getLinkClasses('/dashboard')}>
+          My Booking
+        </Link>
+      )}
+      {isAdmin ? (
         <Link to="/admin" className={getLinkClasses('/admin')}>Manage</Link>
       ) : (
         <Link to="/search" className={getLinkClasses('/search')}>Search</Link>

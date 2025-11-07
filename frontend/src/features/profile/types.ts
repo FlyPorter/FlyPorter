@@ -5,6 +5,7 @@ export interface Passenger {
   gender: string;
   address?: string;
   phone_number?: string;
+  passport_number?: string;
   account_id: number;
 }
 
@@ -14,6 +15,7 @@ export interface CreatePassengerPayload {
   gender: string;
   address?: string;
   phone_number?: string;
+  passport_number: string;
 }
 
 export interface UpdatePassengerPayload {
@@ -22,4 +24,5 @@ export interface UpdatePassengerPayload {
   gender: string;
   address?: string;
   phone_number?: string;
+  passport_number?: string;
 } 

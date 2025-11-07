@@ -13,8 +13,6 @@ const AdminPage = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [flights, setFlights] = useState<FlightDisplay[]>([]);
-  const [selectedOutboundFlight, setSelectedOutboundFlight] = useState<FlightDisplay | null>(null);
-  const [isSearchingReturn, setIsSearchingReturn] = useState(false);
   const [searchData, setSearchData] = useState<SearchData | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -110,7 +108,11 @@ const AdminPage = () => {
           searchParams.priceMax = searchData.priceRange[1];
         }
         
-        const response = await searchFlights(searchParams);
+        // If no search parameters provided, show all flights
+        const hasSearchParams = Object.keys(searchParams).length > 0;
+        const response = hasSearchParams 
+          ? await searchFlights(searchParams)
+          : await getAllFlights();
         
         // Transform flights for display
         const displayFlights = response.map(transformFlightToDisplay);
@@ -145,21 +147,12 @@ const AdminPage = () => {
               <div className="flex justify-between items-center mb-6">
                 <div>
                   <h2 className="text-2xl font-semibold">
-                    {isSearchingReturn ? 'Select Return Flight' : hasSearched ? 'Search Results' : 'All Flights'}
+                    {hasSearched ? 'Search Results' : 'All Flights'}
                   </h2>
-                  {isSearchingReturn && (
-                    <div className="text-sm text-gray-600 mt-2">
-                      Selected outbound flight: {selectedOutboundFlight?.airline.name} {selectedOutboundFlight?.flightNumber}
-                    </div>
-                  )}
                   <p className="text-gray-600 mt-1">
-                    {searchData?.tripType === 'roundTrip' 
-                      ? (isSearchingReturn 
-                          ? 'Please select your return flight'
-                          : 'Please select your outbound flight first')
-                      : hasSearched 
-                        ? `${flights.length} flights found`
-                        : `${flights.length} total flights`}
+                    {hasSearched 
+                      ? `${flights.length} flights found`
+                      : `${flights.length} total flights`}
                   </p>
                 </div>
   

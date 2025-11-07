@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
-import { Booking , BookingListProps, BookingDisplay  } from '../types';
+import { BookingDisplay  } from '../types';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { API_BASE_URL } from "../../../config";
@@ -11,17 +11,14 @@ const BookingList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const [selectedBooking, setSelectedBooking] = useState<BookingDisplay | null>(null);
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   
   useEffect(() => {
     const fetchBookings = async () => {
       setIsLoading(true);
       try {
-        let apiUrl = `${API_BASE_URL}/ticket/mytickets`;
-        if (user.role === "ADMIN") {
-          apiUrl = `${API_BASE_URL}/ticket`;
-        }
+        // Use the correct bookings endpoint
+        const apiUrl = `${API_BASE_URL}/bookings`;
 
         const response = await fetch(apiUrl, {
           method: 'GET',
@@ -30,92 +27,114 @@ const BookingList: React.FC = () => {
             'Authorization': `Bearer ${localStorage.getItem("token")}`
           }
         });
-        if (response.status === 404) {
-          return (
-            <div className="flex justify-center items-center h-64">
-              <div className="text-gray-500">No bookings found</div>
-            </div>
-          );
+
+        // Check if response is JSON before parsing
+        const contentType = response.headers.get('content-type');
+        let responseData;
+        
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          console.error('Non-JSON response received:', text.substring(0, 200));
+          throw new Error('Server returned an invalid response. Please check if the backend is running and the API URL is correct.');
+        } else {
+          responseData = await response.json();
         }
 
-        if (!response.ok) throw new Error("Failed to fetch bookings");
+        if (response.status === 404) {
+          setBookings([]);
+          setIsLoading(false);
+          return;
+        }
 
-        const bookingsData  = await response.json();
+        if (!response.ok) {
+          throw new Error(responseData.error || responseData.message || "Failed to fetch bookings");
+        }
+
+        // Handle the response structure from sendSuccess
+        const bookingsData = responseData.success && responseData.data ? responseData.data : responseData;
         console.log("Bookings Data:", bookingsData);
 
-        const enrichedBookings = await Promise.all(bookingsData.map(async (booking: BookingDisplay) => {
-          const flightResponse = await fetch(`${API_BASE_URL}/flight/${booking.flight_id}`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` }
-          });
-  
-          if (!flightResponse.ok) throw new Error("Failed to fetch flight data");
-  
-          const flight = await flightResponse.json();
-  
-          const airlineResponse = await fetch(`${API_BASE_URL}/airline/${flight.airline_code}`,{
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem("token")}`
-            }
-          });
-          const airline = airlineResponse.ok ? await airlineResponse.json() : { code: flight.airline_code, name: flight.airline_code };
-  
-          const departureResponse = await fetch(`${API_BASE_URL}/airport/${flight.route.departure_airport}`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem("token")}`
-            }
-          });
-          const arrivalResponse = await fetch(`${API_BASE_URL}/airport/${flight.route.destination_airport}`,{
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem("token")}`
-            }
-          });
-  
-        const departureAirport = departureResponse.ok ? await departureResponse.json() : { code: flight.departure_airport, city: flight.departure_airport };
-        const arrivalAirport = arrivalResponse.ok ? await arrivalResponse.json() : { code: flight.destination_airport, city: flight.destination_airport };
-  
-        const [departureHours, departureMins] = flight.route.departure_time.split(":").map(Number);
-        const departureTimeStr = `${departureHours.toString().padStart(2, '0')}:${departureMins.toString().padStart(2, '0')}`;
+        // Filter out cancelled bookings
+        const activeBookings = bookingsData.filter((booking: any) => booking.status !== 'CANCELLED' && booking.status !== 'cancelled');
+        console.log("Active Bookings (after filtering cancelled):", activeBookings);
 
-        const duration = flight.route.duration;
-        const totalDepartureMinutes = departureHours * 60 + departureMins;
-        const arrivalMinutes = totalDepartureMinutes + duration;
-        const arrivalHours = Math.floor(arrivalMinutes / 60) % 24;
-        const arrivalMins = arrivalMinutes % 60;
-        const arrivalTimeStr = `${arrivalHours.toString().padStart(2, '0')}:${arrivalMins.toString().padStart(2, '0')}`;
-
-        const response = await fetch(`${API_BASE_URL}/passenger/${booking.passenger_id}`, {
+        // Get user profile to get passenger name from customer_info
+        const profileResponse = await fetch(`${API_BASE_URL}/profile`, {
           headers: { 
             'Authorization': `Bearer ${localStorage.getItem("token")}` 
           }
         });
-        const passenger_Data  = await response.json();
+        let passengerName = "Passenger";
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          const profile = profileData.success && profileData.data ? profileData.data : profileData;
+          
+          // Use full_name from customer_info (this is the passenger name used for booking)
+          // The profile endpoint already includes customer_info
+          if (profile.customer_info && profile.customer_info.full_name) {
+            passengerName = profile.customer_info.full_name;
+          } else {
+            // Fallback to email if customer_info doesn't exist or doesn't have full_name
+            passengerName = profile.email || "Passenger";
+          }
+        }
+
+        const enrichedBookings = activeBookings.map((booking: any) => {
+          // Booking structure from backend
+          const flight = booking.flight;
+          const route = flight.route;
+          const airline = flight.airline;
+          const seat = booking.seat;
+
+          // Parse dates
+          const departureDate = new Date(flight.departure_time);
+          const arrivalDate = new Date(flight.arrival_time);
+          const dateStr = departureDate.toISOString().split("T")[0];
+          
+          // Format times
+          const departureTime = departureDate.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+          });
+          const arrivalTime = arrivalDate.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+          });
+
+          // Calculate duration
+          const durationMs = arrivalDate.getTime() - departureDate.getTime();
+          const durationMins = Math.floor(durationMs / 60000);
+          const hours = Math.floor(durationMins / 60);
+          const mins = durationMins % 60;
 
           return {
-            id: booking.id,
-            passenger_name: passenger_Data.name,
-            flight_id: flight.flight_number,
-            airlineCode: flight.airline_code,
-            date: flight.date.split("T")[0],
-            price: booking.price,
-            version: flight.version || 1,
+            id: booking.booking_id,
+            passenger_name: passengerName,
+            flight_id: flight.flight_id,
+            airlineCode: airline.airline_code,
+            date: dateStr,
+            price: booking.total_price ? Number(booking.total_price) : 0,
+            version: seat?.class === 'business' ? 1 : seat?.class === 'first' ? 2 : 0,
             seat_number: booking.seat_number,
             airline: {
-              code: airline.code,
-              name: airline.name
+              code: airline.airline_code,
+              name: airline.airline_name
             },
             departure: {
-              airport: departureAirport.code,
-              city: departureAirport.city,
-              time: departureTimeStr 
+              airport: route.origin_airport.airport_code,
+              city: route.origin_airport.city_name,
+              time: departureTime
             },
             arrival: {
-              airport: arrivalAirport.code,
-              city: arrivalAirport.city,
-              time: arrivalTimeStr 
+              airport: route.destination_airport.airport_code,
+              city: route.destination_airport.city_name,
+              time: arrivalTime
             },
-            duration: `${Math.floor(duration / 60)}h ${duration % 60}m`
+            duration: `${hours}h ${mins}m`
           };
-        }));
+        });
         console.log("Enriched Bookings:", enrichedBookings);
   
         setBookings(enrichedBookings);
@@ -148,19 +167,28 @@ const BookingList: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/ticket/${booking.id}`, {
+      const response = await fetch(`${API_BASE_URL}/bookings/${booking.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem("token")}`
         },
       });
 
-      if (!response.ok) throw new Error("Failed to cancel booking");
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || data.message || "Failed to cancel booking");
+        }
+      } else if (!response.ok) {
+        throw new Error("Failed to cancel booking");
+      }
 
       setBookings((prev) => prev.filter((b) => b.id !== booking.id));
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error canceling booking:", err);
-      alert("Failed to cancel booking.");
+      alert(err.message || "Failed to cancel booking.");
     } finally {
       setIsLoading(false);
     }

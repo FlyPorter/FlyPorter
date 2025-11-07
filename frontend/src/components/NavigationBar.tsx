@@ -14,14 +14,15 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward }) => {
   const location = useLocation();
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
-  const username = user?.username || 'User';
+  const userEmail = user?.email || 'User';
   const role = user?.role || 'user';
 
   // Pages that have sidebar (hide arrow buttons)
   const pagesWithSidebar = ['/search', '/admin', '/settings', '/dashboard'];
   const hasSidebar = pagesWithSidebar.includes(location.pathname);
 
-  const showBackButton = location.pathname !== '/dashboard' && !hasSidebar;
+  const homePath = role?.toUpperCase() === "ADMIN" ? '/admin' : '/dashboard';
+  const showBackButton = location.pathname !== homePath && !hasSidebar;
 
   const handleBack = () => {
     if (onBack) {
@@ -34,10 +35,10 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward }) => {
         if (locationState?.from) {
           navigate(locationState.from);
         } else {
-          navigate('/dashboard');
+          navigate(homePath);
         }
       } else {
-        navigate('/dashboard');
+        navigate(homePath);
       }
     }
   };
@@ -81,7 +82,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward }) => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(role?.toUpperCase() === "ADMIN" ? '/admin' : '/dashboard')}
             className="cursor-pointer"
           >
             <Home className="h-5 w-5" />
@@ -92,7 +93,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward }) => {
           
           <div className="flex items-center gap-2 px-3 py-2 text-gray-600">
             <User className="h-5 w-5" />
-            <span>{username}</span>
+            <span>{userEmail}</span>
           </div>
         </div>
       </div>

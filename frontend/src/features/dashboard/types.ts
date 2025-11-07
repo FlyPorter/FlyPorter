@@ -43,6 +43,7 @@ export interface Route {
     price: number;
     version: number;
     seat_number?: string;
+    passenger_name?: string;
     airline: {
       code: string;
       name: string;
