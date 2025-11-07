@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
+import { getAirlines } from "../features/search/api/airlineApi";
+import { getAirports } from "../features/search/api/airportApi";
 
 interface Airline {
   code: string;
   name: string;
+}
+
+interface Airport {
+  code: string;
+  city: string;
 }
 
 interface Route {
@@ -23,22 +30,30 @@ interface Route {
   };
 }
 
-interface Flight {
-  id: number;
-  flight_number: number;
-  airline_code: string;
-  date: string;
-  available_tickets: number;
-  price: number;
-}
-
 const AddFlightPage = () => {
+  const [creationMethod, setCreationMethod] = useState<'route' | 'airport'>('route');
   const [routes, setRoutes] = useState<Route[]>([]);
-  const [selectedRouteId, setSelectedRouteId] = useState<string | "">("");
-  const [date, setDate] = useState("");
-  const [availableTickets, setAvailableTickets] = useState<number | "">("");
-  const [price, setPrice] = useState<number | "">("");
+  const [airlines, setAirlines] = useState<Airline[]>([]);
+  const [airports, setAirports] = useState<Airport[]>([]);
+  
+  // Route-based fields
+  const [selectedRouteId, setSelectedRouteId] = useState<string>("");
+  
+  // Airport-based fields
+  const [originAirportCode, setOriginAirportCode] = useState<string>("");
+  const [destinationAirportCode, setDestinationAirportCode] = useState<string>("");
+  
+  // Common fields
+  const [airlineCode, setAirlineCode] = useState<string>("");
+  const [departureDate, setDepartureDate] = useState<string>("");
+  const [departureTime, setDepartureTime] = useState<string>("08:00");
+  const [arrivalDate, setArrivalDate] = useState<string>("");
+  const [arrivalTime, setArrivalTime] = useState<string>("11:00");
+  const [seatCapacity, setSeatCapacity] = useState<number | "">("");
+  const [basePrice, setBasePrice] = useState<number | "">("");
+  
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -53,67 +68,93 @@ const AddFlightPage = () => {
 
   const fetchData = async () => {
     try {
-      const routesRes = await fetch(`${API_BASE_URL}/route`, {
-        headers: getAuthHeaders(),
-      });
+      setIsLoading(true);
+      const [routesRes, airlinesData, airportsData] = await Promise.all([
+        fetch(`${API_BASE_URL}/route`, { headers: getAuthHeaders() }),
+        getAirlines(),
+        getAirports(),
+      ]);
+
       if (!routesRes.ok) {
         throw new Error("Failed to fetch routes");
       }
-      const responseData = await routesRes.json();
-      
-      // Handle the response structure from sendSuccess
-      const routesData = responseData.success && responseData.data 
-        ? responseData.data 
-        : Array.isArray(responseData) 
-          ? responseData 
-          : responseData.data || [];
+
+      const routesResponseData = await routesRes.json();
+      const routesData = routesResponseData.success && routesResponseData.data 
+        ? routesResponseData.data 
+        : Array.isArray(routesResponseData) 
+          ? routesResponseData 
+          : routesResponseData.data || [];
       
       if (!Array.isArray(routesData)) {
         console.error('Invalid response format. Expected array of routes:', routesData);
         setRoutes([]);
-        return;
+      } else {
+        setRoutes(routesData);
       }
       
-      setRoutes(routesData);
+      setAirlines(airlinesData);
+      setAirports(airportsData);
     } catch (err) {
       console.error("Error fetching data:", err);
-      setRoutes([]);
+      setError("Failed to load data. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleAddFlight = async () => {
     setError(null);
 
-    if (!selectedRouteId || !date || availableTickets === "" || price === "") {
-      setError("Please fill in all fields.");
+    // Validate common fields
+    if (!airlineCode || !departureDate || !departureTime || !arrivalDate || !arrivalTime || seatCapacity === "" || basePrice === "") {
+      setError("Please fill in all required fields.");
       return;
     }
 
-    try {
-      const routeId = parseInt(selectedRouteId, 10);
-      const selectedRoute = routes.find((route) => route.route_id === routeId);
-      if (!selectedRoute) {
-        throw new Error("Selected route not found.");
-      }
+    // Validate method-specific fields
+    if (creationMethod === 'route' && !selectedRouteId) {
+      setError("Please select a route.");
+      return;
+    }
 
-      // Parse date and time - need to create departure_time and arrival_time
-      // For now, we'll use the date and add default times
-      const departureTime = new Date(`${date}T08:00:00Z`).toISOString();
-      const arrivalTime = new Date(`${date}T11:00:00Z`).toISOString(); // Default 3 hours later
+    if (creationMethod === 'airport') {
+      if (!originAirportCode || !destinationAirportCode) {
+        setError("Please select both origin and destination airports.");
+        return;
+      }
+      if (originAirportCode === destinationAirportCode) {
+        setError("Origin and destination airports cannot be the same.");
+        return;
+      }
+    }
+
+    try {
+      // Build departure and arrival datetime strings
+      const departureDateTime = new Date(`${departureDate}T${departureTime}:00`).toISOString();
+      const arrivalDateTime = new Date(`${arrivalDate}T${arrivalTime}:00`).toISOString();
+
+      // Build request body based on creation method
+      const requestBody: any = {
+        airline_code: airlineCode,
+        departure_time: departureDateTime,
+        arrival_time: arrivalDateTime,
+        base_price: Number(basePrice),
+        seat_capacity: Number(seatCapacity),
+      };
+
+      if (creationMethod === 'route') {
+        const routeId = parseInt(selectedRouteId, 10);
+        requestBody.route_id = routeId;
+      } else {
+        requestBody.origin_airport_code = originAirportCode.toUpperCase();
+        requestBody.destination_airport_code = destinationAirportCode.toUpperCase();
+      }
 
       const response = await fetch(`${API_BASE_URL}/flight`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({
-          route_id: selectedRoute.route_id,
-          origin_airport_code: selectedRoute.origin_airport_code,
-          destination_airport_code: selectedRoute.destination_airport_code,
-          airline_code: "FP", // Default airline, should be selectable
-          departure_time: departureTime,
-          arrival_time: arrivalTime,
-          base_price: Number(price),
-          seat_capacity: Number(availableTickets),
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -128,9 +169,15 @@ const AddFlightPage = () => {
 
       // Reset form
       setSelectedRouteId("");
-      setDate("");
-      setAvailableTickets("");
-      setPrice("");
+      setOriginAirportCode("");
+      setDestinationAirportCode("");
+      setAirlineCode("");
+      setDepartureDate("");
+      setDepartureTime("08:00");
+      setArrivalDate("");
+      setArrivalTime("11:00");
+      setSeatCapacity("");
+      setBasePrice("");
       setError(null);
       alert("Flight added successfully!");
     } catch (err: any) {
@@ -139,69 +186,208 @@ const AddFlightPage = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
       <h2 className="text-2xl font-bold mb-4">Add Flight</h2>
 
-      <div className="mb-6 p-4 border rounded shadow">
-        <h3 className="text-lg font-semibold mb-2">Flight Details</h3>
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+          {error}
+        </div>
+      )}
+
+      <div className="mb-6 p-4 border rounded shadow bg-white">
+        <h3 className="text-lg font-semibold mb-4">Creation Method</h3>
+        <div className="flex gap-4 mb-6">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              value="route"
+              checked={creationMethod === 'route'}
+              onChange={(e) => setCreationMethod(e.target.value as 'route')}
+              className="mr-2"
+            />
+            Create by Route
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              value="airport"
+              checked={creationMethod === 'airport'}
+              onChange={(e) => setCreationMethod(e.target.value as 'airport')}
+              className="mr-2"
+            />
+            Create by Airports
+          </label>
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
+          {/* Route Selection (when method is 'route') */}
+          {creationMethod === 'route' && (
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1">Route *</label>
+              <select
+                value={selectedRouteId}
+                onChange={(e) => setSelectedRouteId(e.target.value)}
+                className="border p-2 rounded w-full"
+                required
+              >
+                <option value="">Select Route</option>
+                {routes.map((route) => (
+                  <option key={route.route_id} value={route.route_id}>
+                    {route.origin_airport_code} → {route.destination_airport_code}
+                    {route.origin_airport?.city_name && route.destination_airport?.city_name 
+                      ? ` (${route.origin_airport.city_name} → ${route.destination_airport.city_name})`
+                      : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Airport Selection (when method is 'airport') */}
+          {creationMethod === 'airport' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1">Origin Airport *</label>
+                <select
+                  value={originAirportCode}
+                  onChange={(e) => setOriginAirportCode(e.target.value)}
+                  className="border p-2 rounded w-full"
+                  required
+                >
+                  <option value="">Select Origin Airport</option>
+                  {airports.map((airport) => (
+                    <option key={airport.code} value={airport.code}>
+                      {airport.code} - {airport.city}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Destination Airport *</label>
+                <select
+                  value={destinationAirportCode}
+                  onChange={(e) => setDestinationAirportCode(e.target.value)}
+                  className="border p-2 rounded w-full"
+                  required
+                >
+                  <option value="">Select Destination Airport</option>
+                  {airports.map((airport) => (
+                    <option key={airport.code} value={airport.code}>
+                      {airport.code} - {airport.city}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+
+          {/* Common Fields */}
           <div>
-            <label className="block text-sm font-medium">Route</label>
+            <label className="block text-sm font-medium mb-1">Airline *</label>
             <select
-              value={selectedRouteId}
-              onChange={(e) => setSelectedRouteId(e.target.value || "")}
+              value={airlineCode}
+              onChange={(e) => setAirlineCode(e.target.value)}
               className="border p-2 rounded w-full"
+              required
             >
-              <option value="">Select Route</option>
-              {routes.map((route) => (
-                <option key={route.route_id} value={route.route_id}>
-                  {route.origin_airport_code} → {route.destination_airport_code}
-                  {route.origin_airport?.city_name && route.destination_airport?.city_name 
-                    ? ` (${route.origin_airport.city_name} → ${route.destination_airport.city_name})`
-                    : ''}
+              <option value="">Select Airline</option>
+              {airlines.map((airline) => (
+                <option key={airline.code} value={airline.code}>
+                  {airline.name} ({airline.code})
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Date</label>
+            <label className="block text-sm font-medium mb-1">Seat Capacity *</label>
             <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+              type="number"
+              value={seatCapacity}
+              onChange={(e) => setSeatCapacity(e.target.value ? parseInt(e.target.value) : "")}
               className="border p-2 rounded w-full"
+              min="1"
+              required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Available Tickets</label>
+            <label className="block text-sm font-medium mb-1">Base Price *</label>
             <input
               type="number"
-              value={availableTickets}
-              onChange={(e) => setAvailableTickets(e.target.value)}
+              value={basePrice}
+              onChange={(e) => setBasePrice(e.target.value ? parseFloat(e.target.value) : "")}
               className="border p-2 rounded w-full"
+              min="0"
+              step="0.01"
+              required
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium">Price</label>
-            <input
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="border p-2 rounded w-full"
-            />
+          <div className="col-span-2 border-t pt-4 mt-2">
+            <h4 className="text-md font-medium mb-3">Departure</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Departure Date *</label>
+                <input
+                  type="date"
+                  value={departureDate}
+                  onChange={(e) => setDepartureDate(e.target.value)}
+                  className="border p-2 rounded w-full"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Departure Time *</label>
+                <input
+                  type="time"
+                  value={departureTime}
+                  onChange={(e) => setDepartureTime(e.target.value)}
+                  className="border p-2 rounded w-full"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="col-span-2 border-t pt-4 mt-2">
+            <h4 className="text-md font-medium mb-3">Arrival</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Arrival Date *</label>
+                <input
+                  type="date"
+                  value={arrivalDate}
+                  onChange={(e) => setArrivalDate(e.target.value)}
+                  min={departureDate}
+                  className="border p-2 rounded w-full"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Arrival Time *</label>
+                <input
+                  type="time"
+                  value={arrivalTime}
+                  onChange={(e) => setArrivalTime(e.target.value)}
+                  className="border p-2 rounded w-full"
+                  required
+                />
+              </div>
+            </div>
           </div>
         </div>
 
         <button
           onClick={handleAddFlight}
-          className="bg-green-500 text-white px-4 py-2 mt-4 rounded"
+          disabled={isLoading}
+          className={`mt-6 bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 ${
+            isLoading ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
         >
-          Add Flight
+          {isLoading ? 'Adding...' : 'Add Flight'}
         </button>
-        {error && <p className="text-red-500 mt-2">{error}</p>}
       </div>
 
       <div className="mt-6 text-center">

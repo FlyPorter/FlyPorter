@@ -73,7 +73,10 @@ const DashboardPage = () => {
           const user = await fetchUserInfo(urlToken);
           if (user) {
             localStorage.setItem("user", JSON.stringify(user));
-            navigate("/dashboard", { replace: true });
+            // Redirect admin users to admin page, regular users to dashboard
+            const userRole = user?.role || 'user';
+            const redirectPath = userRole?.toUpperCase() === 'ADMIN' ? '/admin' : '/dashboard';
+            navigate(redirectPath, { replace: true });
           } else {
             navigate("/login");
           }
@@ -94,6 +97,12 @@ const DashboardPage = () => {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
             navigate("/login");
+          } else {
+            // If admin user somehow reached dashboard, redirect to admin page
+            const userRole = user?.role || 'user';
+            if (userRole?.toUpperCase() === 'ADMIN' && location.pathname === '/dashboard') {
+              navigate('/admin', { replace: true });
+            }
           }
         } catch (err) {
           console.error("Error with existing token:", err);

@@ -53,7 +53,10 @@ const GoogleAuthCallback = () => {
         try {
           const user = await fetchUserInfo(token);
           localStorage.setItem("user", JSON.stringify(user));
-          navigate("/dashboard");
+          // Redirect admin users to admin page, regular users to dashboard
+          const userRole = user?.role || 'user';
+          const redirectPath = userRole?.toUpperCase() === 'ADMIN' ? '/admin' : '/dashboard';
+          navigate(redirectPath);
         } catch (err) {
           console.error(err);
           navigate("/login");

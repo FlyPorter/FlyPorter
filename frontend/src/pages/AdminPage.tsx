@@ -171,9 +171,6 @@ const AdminPage = () => {
                         <li className="px-4 py-2 hover:bg-gray-200 cursor-pointer" onClick={() => handleNavigation("/admin/add-flight")}>
                           Add Flight
                         </li>
-                        <li className="px-4 py-2 hover:bg-gray-200 cursor-pointer" onClick={() => handleNavigation("/admin/add-aircraft")}>
-                          Add Aircraft
-                        </li>
                         <li className="px-4 py-2 hover:bg-gray-200 cursor-pointer" onClick={() => handleNavigation("/admin/add-airport")}>
                           Add Airport
                         </li>
