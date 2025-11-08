@@ -2,28 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Pencil, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Pencil } from "lucide-react";
 import NavigationBar from '../../../components/NavigationBar';
-import { getMyPassengers, createPassenger, updatePassenger } from '../api/profileApi';
-import { Passenger, CreatePassengerPayload, UpdatePassengerPayload } from '../types';
+import { getUserProfile, updateProfile } from '../api/profileApi';
+import { UpdatePassengerPayload } from '../types';
 
 const ProfilePage: React.FC = () => {
-  const [passengers, setPassengers] = useState<Passenger[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<UpdatePassengerPayload>({
     name: '',
     birth_date: '',
-    gender: '',
-    address: '',
-    phone_number: '',
-    passport_number: ''
-  });
-  const [createForm, setCreateForm] = useState<CreatePassengerPayload>({
-    name: '',
-    birth_date: '',
-    gender: '',
     address: '',
     phone_number: '',
     passport_number: ''
@@ -32,77 +21,95 @@ const ProfilePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchPassengers();
+    fetchProfile();
   }, []);
 
-  const fetchPassengers = async () => {
+  const fetchProfile = async () => {
     try {
-      const data = await getMyPassengers();
-      // Sort by ID in descending order to show newest first
-      const sortedData = [...data].sort((a, b) => b.id - a.id);
-      setPassengers(sortedData);
+      const data = await getUserProfile();
+      setProfile(data);
+      if (data.customer_info) {
+        setEditForm({
+          name: data.customer_info.full_name || '',
+          birth_date: data.customer_info.date_of_birth 
+            ? new Date(data.customer_info.date_of_birth).toISOString().split('T')[0]
+            : '',
+          address: '',
+          phone_number: data.customer_info.phone || '',
+          passport_number: data.customer_info.passport_number || ''
+        });
+      }
       setIsLoading(false);
     } catch (err) {
-      setError('Failed to load passengers');
+      setError('Failed to load profile');
       setIsLoading(false);
     }
   };
 
-  const handleEdit = (passenger: Passenger) => {
-    setEditingId(passenger.id);
-    setExpandedId(passenger.id); // Expand the profile when editing
-    setEditForm({
-      name: passenger.name,
-      birth_date: passenger.birth_date.split('T')[0],
-      gender: passenger.gender,
-      address: passenger.address || '',
-      phone_number: passenger.phone_number || '',
-      passport_number: passenger.passport_number || ''
-    });
-  };
-
-  const handleSave = async (passengerId: number) => {
-    try {
-      const updatedPassenger = await updatePassenger(passengerId, editForm);
-      setEditingId(null);
-      // Update the passenger in the list while maintaining position
-      setPassengers(prevPassengers => 
-        prevPassengers.map(p => p.id === passengerId ? updatedPassenger : p)
-      );
-    } catch (err) {
-      setError('Failed to update passenger information');
-    }
-  };
-
-  const handleCreate = async () => {
-    try {
-      const newPassenger = await createPassenger(createForm);
-      setIsCreating(false);
-      setCreateForm({
+  const handleEdit = () => {
+    if (profile?.customer_info) {
+      setEditForm({
+        name: profile.customer_info.full_name || '',
+        birth_date: profile.customer_info.date_of_birth 
+          ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
+          : '',
+        address: '',
+        phone_number: profile.customer_info.phone || '',
+        passport_number: profile.customer_info.passport_number || ''
+      });
+    } else {
+      // Initialize empty form for creating new profile
+      setEditForm({
         name: '',
         birth_date: '',
-        gender: '',
         address: '',
         phone_number: '',
         passport_number: ''
       });
-      // Add new passenger at the beginning of the list
-      setPassengers(prevPassengers => [newPassenger, ...prevPassengers]);
-    } catch (err) {
-      setError('Failed to create passenger');
+    }
+    setIsEditing(true);
+  };
+
+  const handleSave = async () => {
+    try {
+      // Validate required fields
+      if (!editForm.name || !editForm.birth_date || !editForm.passport_number) {
+        setError('Please fill in all required fields (Name, Birth Date, Passport Number)');
+        return;
+      }
+      const updatedProfile = await updateProfile(editForm);
+      setProfile(updatedProfile);
+      setIsEditing(false);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update profile information');
     }
   };
 
   const handleCancel = () => {
-    setEditingId(null);
-    setEditForm({
-      name: '',
-      birth_date: '',
-      gender: '',
-      address: '',
-      phone_number: '',
-      passport_number: ''
-    });
+    setIsEditing(false);
+    setError(null);
+    // Reset form to current profile data
+    if (profile?.customer_info) {
+      setEditForm({
+        name: profile.customer_info.full_name || '',
+        birth_date: profile.customer_info.date_of_birth 
+          ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
+          : '',
+        address: '',
+        phone_number: profile.customer_info.phone || '',
+        passport_number: profile.customer_info.passport_number || ''
+      });
+    } else {
+      // Reset to empty form if no profile exists
+      setEditForm({
+        name: '',
+        birth_date: '',
+        address: '',
+        phone_number: '',
+        passport_number: ''
+      });
+    }
   };
 
   if (isLoading) {
@@ -119,13 +126,15 @@ const ProfilePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <NavigationBar />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">My Passengers</h1>
-          <Button onClick={() => setIsCreating(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Passenger
-          </Button>
+          <h1 className="text-3xl font-bold">Profile</h1>
+          {!isEditing && profile?.customer_info && (
+            <Button onClick={handleEdit}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit Profile
+            </Button>
+          )}
         </div>
         
         {error && (
@@ -134,213 +143,111 @@ const ProfilePage: React.FC = () => {
           </div>
         )}
 
-        {isCreating && (
-          <Card className="mb-6">
-            <CardHeader>
-              <h2 className="text-xl font-semibold">Add New Passenger</h2>
-            </CardHeader>
-            <CardContent>
+        <Card>
+          <CardHeader>
+            <h2 className="text-xl font-semibold">Account Information</h2>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-500">Email</p>
+                <p className="text-lg">{profile?.email || 'Not available'}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Personal Information</h2>
+              {!isEditing && !profile?.customer_info && (
+                <Button onClick={handleEdit}>
+                  Create Profile
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!profile?.customer_info && !isEditing ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600 mb-4">No profile information found. Please create your profile.</p>
+              </div>
+            ) : isEditing ? (
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Name</p>
+                  <p className="text-sm text-gray-500 mb-1">Full Name *</p>
                   <Input
-                    value={createForm.name}
-                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                    placeholder="Enter name"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    placeholder="Enter full name"
+                    required
                   />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Birth Date</p>
+                  <p className="text-sm text-gray-500 mb-1">Birth Date *</p>
                   <Input
                     type="date"
-                    value={createForm.birth_date}
-                    onChange={(e) => setCreateForm({ ...createForm, birth_date: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Gender</p>
-                  <select
-                    value={createForm.gender}
-                    onChange={(e) => setCreateForm({ ...createForm, gender: e.target.value })}
-                    className="w-full p-2 border rounded"
-                  >
-                    <option value="">Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Address</p>
-                  <Input
-                    value={createForm.address}
-                    onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
-                    placeholder="Enter address"
+                    value={editForm.birth_date}
+                    onChange={(e) => setEditForm({ ...editForm, birth_date: e.target.value })}
+                    required
                   />
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Phone Number</p>
                   <Input
-                    value={createForm.phone_number}
-                    onChange={(e) => setCreateForm({ ...createForm, phone_number: e.target.value })}
+                    value={editForm.phone_number}
+                    onChange={(e) => setEditForm({ ...editForm, phone_number: e.target.value })}
                     placeholder="Enter phone number"
                   />
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Passport Number *</p>
                   <Input
-                    value={createForm.passport_number}
-                    onChange={(e) => setCreateForm({ ...createForm, passport_number: e.target.value })}
+                    value={editForm.passport_number}
+                    onChange={(e) => setEditForm({ ...editForm, passport_number: e.target.value })}
                     placeholder="Enter passport number"
                     required
                   />
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={handleCreate}>
-                    Create
+                  <Button onClick={handleSave}>
+                    {profile?.customer_info ? 'Save' : 'Create Profile'}
                   </Button>
-                  <Button variant="outline" onClick={() => setIsCreating(false)}>
+                  <Button variant="outline" onClick={handleCancel}>
                     Cancel
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="grid gap-6">
-          {passengers.map(passenger => (
-            <Card key={passenger.id}>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div 
-                    className="flex items-center gap-2 cursor-pointer"
-                    onClick={() => setExpandedId(expandedId === passenger.id ? null : passenger.id)}
-                  >
-                    <h2 className="text-xl font-semibold">{passenger.name}</h2>
-                    {expandedId === passenger.id ? (
-                      <ChevronUp className="h-5 w-5" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5" />
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    {editingId !== passenger.id && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(passenger);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-500">Full Name</p>
+                  <p className="text-lg">{profile.customer_info.full_name || 'Not provided'}</p>
                 </div>
-              </CardHeader>
-              {expandedId === passenger.id && (
-                <CardContent>
-                  <div className="space-y-4">
-                    {editingId === passenger.id ? (
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Name</p>
-                          <Input
-                            value={editForm.name}
-                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                            placeholder="Enter name"
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Birth Date</p>
-                          <Input
-                            type="date"
-                            value={editForm.birth_date}
-                            onChange={(e) => setEditForm({ ...editForm, birth_date: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Gender</p>
-                          <select
-                            value={editForm.gender}
-                            onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
-                            className="w-full p-2 border rounded"
-                          >
-                            <option value="">Select gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other</option>
-                          </select>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Address</p>
-                          <Input
-                            value={editForm.address}
-                            onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                            placeholder="Enter address"
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Phone Number</p>
-                          <Input
-                            value={editForm.phone_number}
-                            onChange={(e) => setEditForm({ ...editForm, phone_number: e.target.value })}
-                            placeholder="Enter phone number"
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Passport Number</p>
-                          <Input
-                            value={editForm.passport_number}
-                            onChange={(e) => setEditForm({ ...editForm, passport_number: e.target.value })}
-                            placeholder="Enter passport number"
-                          />
-                        </div>
-                        <div className="flex gap-2">
-                          <Button onClick={() => handleSave(passenger.id)}>
-                            Save
-                          </Button>
-                          <Button variant="outline" onClick={handleCancel}>
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div>
-                          <p className="text-sm text-gray-500">Birth Date</p>
-                          <p>{passenger.birth_date.split('T')[0]}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Gender</p>
-                          <p>{passenger.gender}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Address</p>
-                          <p>{passenger.address || 'Not provided'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Phone Number</p>
-                          <p>{passenger.phone_number || 'Not provided'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Passport Number</p>
-                          <p>{passenger.passport_number || 'Not provided'}</p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-          ))}
-        </div>
+                <div>
+                  <p className="text-sm text-gray-500">Birth Date</p>
+                  <p className="text-lg">
+                    {profile.customer_info.date_of_birth 
+                      ? new Date(profile.customer_info.date_of_birth).toLocaleDateString()
+                      : 'Not provided'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Phone Number</p>
+                  <p className="text-lg">{profile.customer_info.phone || 'Not provided'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Passport Number</p>
+                  <p className="text-lg">{profile.customer_info.passport_number || 'Not provided'}</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 };
 
-export default ProfilePage; 
+export default ProfilePage;

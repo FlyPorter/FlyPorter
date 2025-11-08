@@ -274,10 +274,21 @@ export const transformFlightToDisplay = (flight: any): FlightDisplay => {
   const airlineCode = flight.airline_code;
   const airline = flight.airline || { code: airlineCode, name: airlineCode };
   const route = flight.route || {};
-  const departureAirport = route.departure_airport || route.origin_airport_code;
-  const destinationAirport = route.destination_airport || route.destination_airport_code;
-  const departureCity = route.departure_airport_rel?.city || route.origin_airport?.city_name || '';
-  const destinationCity = route.destination_airport_rel?.city || route.destination_airport?.city_name || '';
+  const departureAirport = route.departure_airport || route.origin_airport_code || '';
+  const destinationAirport = route.destination_airport || route.destination_airport_code || '';
+  // Try multiple paths to get city name from backend response
+  // Backend returns: route.origin_airport.city_name and route.destination_airport.city_name
+  const departureCity = route.origin_airport?.city_name || 
+                       route.departure_airport_rel?.city || 
+                       route.departure_airport_rel?.city_name ||
+                       route.origin_airport_rel?.city ||
+                       route.origin_airport?.airport_name?.replace(/\s+(International|Intl)\.?\s*Airport.*$/i, '') ||
+                       '';
+  const destinationCity = route.destination_airport?.city_name || 
+                         route.destination_airport_rel?.city || 
+                         route.destination_airport_rel?.city_name ||
+                         route.destination_airport?.airport_name?.replace(/\s+(International|Intl)\.?\s*Airport.*$/i, '') ||
+                         '';
   const aircraft = route.aircraft || { id: flightId, capacity: flight.seat_capacity || 0, model: 'Unknown' };
 
   return {

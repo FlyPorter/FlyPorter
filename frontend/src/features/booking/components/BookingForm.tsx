@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { BookingFormProps, PassengerInfo, Flight } from '../types';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Passenger, getMyPassengers, getPassenger } from '../api/bookingApi';
+import { getUserProfile } from '../../profile/api/profileApi';
 
 const BookingForm: React.FC<BookingFormProps> = ({
   outboundFlight,
@@ -12,18 +12,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
   onSubmit,
   isLoading = false,
 }) => {
-  const [existingPassengers, setExistingPassengers] = useState<Passenger[]>([]);
-  const [selectedPassengerId, setSelectedPassengerId] = useState<number | 'new'>();
-  const [selectedPassenger, setSelectedPassenger] = useState<Passenger | null>(null);
-  const [formData, setFormData] = useState<PassengerInfo>({
-    name: '',
-    birth_date: '',
-    gender: 'male',
-    address: '',
-    phone_number: ''
-  });
-  const [phoneNumber, setPhoneNumber] = useState<string>('');
-  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
   
   // Payment form state
   const [paymentData, setPaymentData] = useState({
@@ -40,74 +31,22 @@ const BookingForm: React.FC<BookingFormProps> = ({
   });
 
   useEffect(() => {
-    const fetchPassengers = async () => {
+    const fetchUserProfile = async () => {
       try {
-        const passengers = await getMyPassengers();
-        setExistingPassengers(passengers);
-      } catch (error) {
-        console.error('Failed to fetch passengers:', error);
+        setProfileLoading(true);
+        const userProfile = await getUserProfile();
+        setProfile(userProfile);
+        setProfileError(null);
+      } catch (error: any) {
+        console.error('Failed to fetch user profile:', error);
+        setProfileError(error.message || 'Failed to load profile');
+      } finally {
+        setProfileLoading(false);
       }
     };
 
-    fetchPassengers();
+    fetchUserProfile();
   }, []);
-
-  useEffect(() => {
-    const fetchPassengerDetails = async () => {
-      if (selectedPassengerId && selectedPassengerId !== 'new') {
-        try {
-          const passenger = await getPassenger(selectedPassengerId);
-          setSelectedPassenger(passenger);
-          setFormData({
-            name: passenger.name,
-            birth_date: passenger.birth_date,
-            gender: passenger.gender,
-            address: passenger.address || '',
-            phone_number: passenger.phone_number || ''
-          });
-        } catch (error) {
-          console.error('Failed to fetch passenger details:', error);
-        }
-      } else {
-        setSelectedPassenger(null);
-      }
-    };
-
-    fetchPassengerDetails();
-  }, [selectedPassengerId]);
-
-  const handlePassengerSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = event.target.value;
-    setSelectedPassengerId(value === 'new' ? 'new' : Number(value));
-    
-    if (value === 'new') {
-      setFormData({
-        name: '',
-        birth_date: '',
-        gender: 'male',
-        address: '',
-        phone_number: ''
-      });
-      setSelectedPassenger(null);
-    }
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value === '') {
-      setPhoneNumber('');
-      setPhoneError(null);
-      return;
-    }
-
-    // Check if the input is a valid integer
-    if (/^\d+$/.test(value)) {
-      setPhoneNumber(value);
-      setPhoneError(null);
-    } else {
-      setPhoneError('Please enter numbers only');
-    }
-  };
 
   // Credit card validation functions
   const validateCardNumber = (cardNumber: string): boolean => {
@@ -210,27 +149,24 @@ const BookingForm: React.FC<BookingFormProps> = ({
       return;
     }
     
-    if (selectedPassengerId === 'new') {
-      // Format birth_date to match backend's expected format (YYYY-MM-DD)
-      const formattedData = {
-        ...formData,
-        birth_date: formData.birth_date.split('T')[0],
-        ...(formData.address ? { address: formData.address } : {}),
-        ...(formData.phone_number ? { phone_number: formData.phone_number } : {}),
-        ...(phoneNumber ? { phone_number: phoneNumber } : {})
-      };
-      await onSubmit(formattedData);
-    } else if (selectedPassenger) {
-      // If using existing passenger, submit their data with ID
-      await onSubmit({
-        id: selectedPassenger.id,
-        name: selectedPassenger.name,
-        birth_date: selectedPassenger.birth_date.split('T')[0],
-        gender: selectedPassenger.gender,
-        address: selectedPassenger.address,
-        phone_number: selectedPassenger.phone_number
-      });
+    // Check if profile exists
+    if (!profile?.customer_info) {
+      alert('Please complete your profile first before booking.');
+      return;
     }
+    
+    // Submit profile data
+    const passengerInfo: PassengerInfo = {
+      name: profile.customer_info.full_name,
+      birth_date: profile.customer_info.date_of_birth 
+        ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
+        : '',
+      gender: 'male', // Default since gender is removed from profile
+      address: '',
+      phone_number: profile.customer_info.phone || ''
+    };
+    
+    await onSubmit(passengerInfo);
   };
 
   const totalPrice = parseFloat(outboundFlight.price) + (returnFlight ? parseFloat(returnFlight.price) : 0);
@@ -253,7 +189,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
               {flight.airline.name} ({flight.airline.code})
             </div>
             <div className="text-sm">
-              {flight.departure.airport} ({flight.departure.city}) → {flight.arrival.airport} ({flight.arrival.city})
+              {flight.departure.airport}{flight.departure.city ? ` (${flight.departure.city})` : ''} → {flight.arrival.airport}{flight.arrival.city ? ` (${flight.arrival.city})` : ''}
             </div>
             <div className="text-sm text-muted-foreground">
               Date: {flight.departure.date}
@@ -290,113 +226,83 @@ const BookingForm: React.FC<BookingFormProps> = ({
         </Card>
       </div>
 
-      {/* Passenger Selection */}
+      {/* Passenger Information */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Passenger Information</h2>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Select Passenger
-          </label>
-          <select
-            className="w-full p-2 border rounded-md"
-            value={selectedPassengerId}
-            onChange={handlePassengerSelect}
-          >
-            <option value="">Select a passenger</option>
-            <option value="new">Create New Passenger</option>
-            {existingPassengers.map(passenger => (
-              <option key={passenger.id} value={passenger.id}>
-                {passenger.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Selected Passenger Details */}
-        {selectedPassenger && selectedPassengerId !== 'new' && (
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-medium mb-2">Selected Passenger Details</h3>
-            <div className="space-y-2">
-              <p><span className="font-medium">Birth Date:</span> {selectedPassenger.birth_date.split('T')[0]}</p>
-              <p><span className="font-medium">Gender:</span> {selectedPassenger.gender}</p>
-            </div>
+        {profileLoading ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600">Loading profile...</p>
           </div>
-        )}
-
-        {/* New Passenger Form */}
-        {selectedPassengerId === 'new' && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Name
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full p-2 border rounded-md"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Birth Date
-              </label>
-              <input
-                type="date"
-                required
-                value={formData.birth_date}
-                onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
-                className="w-full p-2 border rounded-md"
-                max={new Date().toISOString().split('T')[0]}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Gender
-              </label>
-              <select
-                required
-                value={formData.gender}
-                onChange={(e) => setFormData({ ...formData, gender: e.target.value as 'male' | 'female' })}
-                className="w-full p-2 border rounded-md"
-              >
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Address (Optional)
-              </label>
-              <input
-                type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full p-2 border rounded-md"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number (Optional)
-              </label>
-              <input
-                type="text"
-                value={phoneNumber}
-                onChange={handlePhoneChange}
-                placeholder="Enter phone number"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {phoneError && (
-                <p className="mt-1 text-sm text-red-600">{phoneError}</p>
-              )}
-            </div>
-          </div>
+        ) : profileError ? (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <p className="text-red-600 mb-4">{profileError}</p>
+                <p className="text-gray-600 mb-4">
+                  Please complete your profile before booking.
+                </p>
+                <Button
+                  onClick={() => window.location.href = '/profile'}
+                  variant="outline"
+                >
+                  Go to Profile
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : !profile?.customer_info ? (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <p className="text-gray-600 mb-4">
+                  No profile information found. Please complete your profile before booking.
+                </p>
+                <Button
+                  onClick={() => window.location.href = '/profile'}
+                  variant="outline"
+                >
+                  Go to Profile
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-gray-500">Full Name</p>
+                  <p className="text-lg font-medium">{profile.customer_info.full_name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Birth Date</p>
+                  <p className="text-lg">
+                    {profile.customer_info.date_of_birth 
+                      ? new Date(profile.customer_info.date_of_birth).toLocaleDateString()
+                      : 'Not provided'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Phone Number</p>
+                  <p className="text-lg">{profile.customer_info.phone || 'Not provided'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Passport Number</p>
+                  <p className="text-lg">{profile.customer_info.passport_number || 'Not provided'}</p>
+                </div>
+                <div className="pt-2">
+                  <Button
+                    onClick={() => window.location.href = '/profile'}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Update Profile
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
 
@@ -489,7 +395,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
       <Button
         onClick={handleSubmit}
-        disabled={isLoading || !selectedPassengerId || !isPaymentValid}
+        disabled={isLoading || !profile?.customer_info || profileLoading || !isPaymentValid}
         className="w-full mt-6"
       >
         {isLoading ? 'Processing...' : 'Confirm Booking'}

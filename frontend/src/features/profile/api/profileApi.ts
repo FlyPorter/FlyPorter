@@ -9,7 +9,6 @@ const mapCustomerInfoToPassenger = (customerInfo: any, userId: number): Passenge
     birth_date: customerInfo.date_of_birth 
       ? new Date(customerInfo.date_of_birth).toISOString().split('T')[0]
       : '',
-    gender: customerInfo.gender || '',
     address: customerInfo.address || undefined,
     phone_number: customerInfo.phone || undefined,
     passport_number: customerInfo.passport_number || undefined,
@@ -33,6 +32,47 @@ const getCurrentUserId = async (token: string): Promise<number> => {
   const data = await response.json();
   if (data.success && data.data && data.data.user_id) {
     return data.data.user_id;
+  }
+  throw new Error('Invalid profile response format');
+};
+
+export interface UserProfile {
+  user_id: number;
+  email: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
+  customer_info?: {
+    info_id: number;
+    full_name: string;
+    phone: string | null;
+    passport_number: string;
+    date_of_birth: string;
+    emergency_contact_name: string | null;
+    emergency_contact_phone: string | null;
+  } | null;
+}
+
+export const getUserProfile = async (): Promise<UserProfile> => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/profile`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch user profile');
+  }
+
+  const data = await response.json();
+  if (data.success && data.data) {
+    return data.data;
   }
   throw new Error('Invalid profile response format');
 };
@@ -97,12 +137,9 @@ export const createPassenger = async (passenger: Omit<Passenger, 'id' | 'account
     date_of_birth: new Date(passenger.birth_date).toISOString(),
   };
   
-  // Include gender and address - they exist in schema even if controller doesn't extract them
-  // Note: The backend controller doesn't extract these fields, so they may not be saved
+  // Include address if provided
+  // Note: The backend controller doesn't extract address field, so it may not be saved
   // This is a backend limitation that would require backend changes to fix
-  if (passenger.gender !== undefined && passenger.gender !== '') {
-    customerData.gender = passenger.gender;
-  }
   if (passenger.address !== undefined) {
     customerData.address = passenger.address || null;
   }
@@ -127,6 +164,48 @@ export const createPassenger = async (passenger: Omit<Passenger, 'id' | 'account
   return mapCustomerInfoToPassenger(customerInfo, userId);
 };
 
+export const updateProfile = async (
+  passenger: UpdatePassengerPayload
+): Promise<UserProfile> => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  // Use /profile endpoint which creates or updates customer info
+  // Map frontend Passenger to backend format
+  const profileData: any = {};
+  if (passenger.name) profileData.full_name = passenger.name;
+  if (passenger.phone_number !== undefined) profileData.phone = passenger.phone_number || null;
+  if (passenger.passport_number !== undefined) profileData.passport_number = passenger.passport_number;
+  if (passenger.birth_date) profileData.date_of_birth = new Date(passenger.birth_date).toISOString();
+  
+  // Include address if provided
+  // Even though the controller doesn't extract it, it might be passed through to Prisma
+  if (passenger.address !== undefined) profileData.address = passenger.address || null;
+
+  const response = await fetch(`${API_BASE_URL}/profile`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(profileData)
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || 'Failed to update profile');
+  }
+
+  const data = await response.json();
+  // Backend returns { success: true, data: { user_id, email, role, customer_info: {...} } }
+  if (data.success && data.data) {
+    return data.data;
+  }
+  throw new Error('Invalid response format');
+};
+
 export const updatePassenger = async (
   passengerId: number,
   passenger: UpdatePassengerPayload
@@ -147,9 +226,8 @@ export const updatePassenger = async (
   if (passenger.passport_number !== undefined) profileData.passport_number = passenger.passport_number;
   if (passenger.birth_date) profileData.date_of_birth = new Date(passenger.birth_date).toISOString();
   
-  // Include gender and address - send them in the request body
-  // Even though the controller doesn't extract them, they might be passed through to Prisma
-  if (passenger.gender !== undefined) profileData.gender = passenger.gender || null;
+  // Include address if provided
+  // Even though the controller doesn't extract it, it might be passed through to Prisma
   if (passenger.address !== undefined) profileData.address = passenger.address || null;
 
   const response = await fetch(`${API_BASE_URL}/profile`, {

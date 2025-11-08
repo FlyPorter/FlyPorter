@@ -19,6 +19,128 @@
 
 Backend stack: Express.js + TypeScript + Prisma + PostgreSQL
 
+## User Guide
+
+> Note: GIF animations will be added for each feature section below.
+
+### Registration & Login
+
+FlyPorter supports both email/password registration and Google OAuth 2.0 authentication. Users can register as either a normal user or an admin (admin accounts require special permissions). After registration or login, you are automatically authenticated and redirected to the appropriate dashboard based on your role.
+
+#### Test Credentials
+
+| Role   | Email           | Password |
+| ------ | --------------- | -------- |
+| Admin  | admin@123.com   | admin123 |
+| User   | customer.one@example.com  | password123 |
+| User   | customer.two@example.com  | password123 |
+
+![Image](https://github.com/user-attachments/assets/c70d5eb0-288f-40c4-9943-12d70f36fd63)
+
+---
+
+### Admin Features (Admin Users Only)
+
+Admin users have access to a comprehensive flight management system to create, update, and manage all aspects of the flight booking system.
+
+#### Flight Management
+
+Admins can view, search, update, and delete flights from the admin dashboard. Use the search panel on the left to filter flights by origin, destination, date, airline, or price range. All flights are displayed in a list format with options to update or delete each flight.
+
+![Image](https://github.com/user-attachments/assets/e025c197-1082-4424-a4ca-dc8ac6129dbf)
+
+#### Add Flight
+
+Create new flights by selecting an existing route or by airports and specifying the departure date and available ticket count.
+
+![Image](https://github.com/user-attachments/assets/8e136512-4da1-4265-8583-0123704f30c7)
+
+#### Add Airport
+
+Add new airports to the system by entering the airport code (e.g., YYZ, YVR) and the corresponding airport name and city name. Airports are used when creating routes and flights.
+
+![Image](https://github.com/user-attachments/assets/17b67c2b-d70b-4b84-8bbf-a0c6ef2ef38a)
+
+#### Add Airline
+
+Add new airlines by entering the airline code and airline name. Airlines are associated with routes and flights in the system.
+
+![Image](https://github.com/user-attachments/assets/ef59ee5e-a927-4745-9edc-4384c3f62745)
+
+#### Add Route
+
+Create flight routes by selecting the origin airport and destination airport. Routes define the path that flights will follow.
+
+![Image](https://github.com/user-attachments/assets/f1fcde7f-6798-4218-b6a0-c31817678b3c)
+
+---
+
+### Normal User Features
+
+Normal users can search for flights, select seats, make bookings, and manage their reservations through an intuitive interface.
+
+#### Flight Search
+
+Search for flights using the search panel. Features include:
+- Choose between one-way or round trip
+- Enter origin and destination (with autocomplete suggestions)
+- Select departure date (and return date for round trips)
+- Filter by airline and price range
+- View flight recommendations when no search is performed
+
+![Image](https://github.com/user-attachments/assets/7fd8a03b-72cb-4eff-89f7-5d430e8772db)
+
+#### Seat Selection
+
+After selecting a flight, choose your preferred seat from an interactive seat map. The seat map displays:
+- **AVAILABLE**: Seats ready to be selected
+- **BOOKED**: Seats already taken by other passengers
+- **UNAVAILABLE**: Seats that cannot be selected
+
+![Image](https://github.com/user-attachments/assets/b994940d-0c6a-473e-8f06-dd7d52e1c430)
+
+#### Booking
+
+Complete your booking by filling in passenger information. You can:
+- Select an existing passenger from your profile
+- Create a new passenger profile
+- Enter passenger details (name, birth date, gender, address, phone number, passport number)
+- Review flight and seat details
+- Enter payment info
+- Confirm booking to lock in your seat
+
+![Image](https://github.com/user-attachments/assets/413649e7-f499-49cd-b846-a7202fb96c54)
+
+#### Booking Confirmation
+
+After completing a booking, you'll be redirected to the booking confirmation page where you can:
+- View booking details for outbound and return flights (if applicable)
+- Download PDF invoice/receipt
+- See confirmation notifications
+
+<!-- GIF placeholder for Booking Confirmation -->
+
+#### View Bookings (Dashboard)
+
+Access your bookings dashboard from the sidebar to:
+- View all your current and past bookings
+- See flight details, seat numbers, and booking status
+- Cancel bookings
+- Modify seat selections
+
+![Image](https://github.com/user-attachments/assets/d62d1b15-60af-470e-9ad0-210f79a377fe)
+
+#### Profile Management
+
+Manage your profile from the profile page:
+- Edit existing information (name, birth date, gender, address, phone number, passport number)
+- Use profile for quick booking
+
+![Image](https://github.com/user-attachments/assets/7c832faa-d4ba-4f46-8b2d-ebcccb801dc5)
+
+
+---
+
 ## Development Guide
 
 backend:
