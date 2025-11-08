@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Starting seed...");
+  console.log("Starting seed...");
 
   // ============================================
   // 1. Create Admin + Customer Users
@@ -17,7 +17,7 @@ async function main() {
   });
 
   if (existingAdmin) {
-    console.log("✅ Admin user already exists");
+    console.log("Admin user already exists");
   } else {
     const passwordHash = await bcrypt.hash(adminPassword, 10);
     const admin = await prisma.user.create({
@@ -27,13 +27,13 @@ async function main() {
         role: "admin",
       },
     });
-    console.log("✅ Created admin user:", {
+    console.log("Created admin user:", {
       email: admin.email,
       role: admin.role,
     });
   }
 
-  console.log("\n🧑‍💼 Creating demo customers...");
+  console.log("\nCreating demo customers...");
 
   const customers = [
     {
@@ -72,7 +72,7 @@ async function main() {
 
     if (existingUser) {
       userId = existingUser.user_id;
-      console.log(`✅ Customer user already exists: ${customer.email}`);
+      console.log(`Customer user already exists: ${customer.email}`);
     } else {
       const passwordHash = await bcrypt.hash(customer.password, 10);
       const user = await prisma.user.create({
@@ -83,7 +83,7 @@ async function main() {
         },
       });
       userId = user.user_id;
-      console.log(`✅ Created customer user: ${customer.email}`);
+      console.log(`Created customer user: ${customer.email}`);
     }
 
     if (!existingUser?.customer_info) {
@@ -97,16 +97,16 @@ async function main() {
           ...customer.info,
         },
       });
-      console.log(`   ↳ Added passenger profile for ${customer.email}`);
+      console.log(`   Added passenger profile for ${customer.email}`);
     } else {
-      console.log(`   ↳ Passenger profile already exists for ${customer.email}`);
+      console.log(`   Passenger profile already exists for ${customer.email}`);
     }
   }
 
   // ============================================
   // 2. Create Cities
   // ============================================
-  console.log("\n📍 Creating cities...");
+  console.log("\nCreating cities...");
   
   const cities = [
     { city_name: "Toronto", country: "Canada", timezone: "America/Toronto" },
@@ -122,12 +122,12 @@ async function main() {
       create: city,
     });
   }
-  console.log(`✅ Created ${cities.length} cities`);
+  console.log(`Created ${cities.length} cities`);
 
   // ============================================
   // 3. Create Airports
   // ============================================
-  console.log("\n✈️  Creating airports...");
+  console.log("\nCreating airports...");
   
   const airports = [
     { airport_code: "YYZ", city_name: "Toronto", airport_name: "Toronto Pearson International Airport" },
@@ -143,12 +143,12 @@ async function main() {
       create: airport,
     });
   }
-  console.log(`✅ Created ${airports.length} airports`);
+  console.log(`Created ${airports.length} airports`);
 
   // ============================================
   // 4. Create Airlines
   // ============================================
-  console.log("\n🛫 Creating airlines...");
+  console.log("\nCreating airlines...");
   
   const airlines = [
     { airline_code: "FP", airline_name: "FlyPorter Airlines" },
@@ -162,12 +162,12 @@ async function main() {
       create: airline,
     });
   }
-  console.log(`✅ Created ${airlines.length} airlines`);
+  console.log(`Created ${airlines.length} airlines`);
 
   // ============================================
   // 5. Create Routes
   // ============================================
-  console.log("\n🗺️  Creating routes...");
+  console.log("\nCreating routes...");
   
   const routes = [
     { origin_airport_code: "YYZ", destination_airport_code: "YVR" }, // Toronto → Vancouver
@@ -193,12 +193,12 @@ async function main() {
       createdRoutes.push(existing);
     }
   }
-  console.log(`✅ Created ${routes.length} routes`);
+  console.log(`Created ${routes.length} routes`);
 
   // ============================================
   // 6. Create Flights with Seats
   // ============================================
-  console.log("\n🛩️  Creating flights...");
+  console.log("\nCreating flights...");
   
   // Helper to generate seat data
   const generateSeats = (flightId: number, capacity: number) => {
@@ -240,6 +240,22 @@ async function main() {
   nextWeek.setDate(nextWeek.getDate() + 7);
   nextWeek.setHours(14, 0, 0, 0);
 
+  const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+  const farFutureOutboundYYZToYVR = new Date();
+  farFutureOutboundYYZToYVR.setFullYear(farFutureOutboundYYZToYVR.getFullYear() + 50, 5, 10);
+  farFutureOutboundYYZToYVR.setHours(9, 30, 0, 0);
+
+  const farFutureReturnYVRToYYZ = new Date(farFutureOutboundYYZToYVR.getTime() + 7 * DAY_IN_MS);
+  farFutureReturnYVRToYYZ.setHours(18, 15, 0, 0);
+
+  const farFutureOutboundYYZToYUL = new Date();
+  farFutureOutboundYYZToYUL.setFullYear(farFutureOutboundYYZToYUL.getFullYear() + 50, 8, 4);
+  farFutureOutboundYYZToYUL.setHours(8, 45, 0, 0);
+
+  const farFutureReturnYULToYYZ = new Date(farFutureOutboundYYZToYUL.getTime() + 5 * DAY_IN_MS);
+  farFutureReturnYULToYYZ.setHours(20, 30, 0, 0);
+
   const flights = [
     {
       route_id: createdRoutes[0]!.route_id, // YYZ → YVR
@@ -265,6 +281,39 @@ async function main() {
       base_price: 149.99,
       seat_capacity: 18,
     },
+    // Super-future round trip flights to keep availability far out
+    {
+      route_id: createdRoutes[0]!.route_id, // YYZ → YVR (far future)
+      airline_code: "FP",
+      departure_time: farFutureOutboundYYZToYVR,
+      arrival_time: new Date(farFutureOutboundYYZToYVR.getTime() + 5 * 60 * 60 * 1000),
+      base_price: 375.99,
+      seat_capacity: 40,
+    },
+    {
+      route_id: createdRoutes[1]!.route_id, // YVR → YYZ (return, far future)
+      airline_code: "FP",
+      departure_time: farFutureReturnYVRToYYZ,
+      arrival_time: new Date(farFutureReturnYVRToYYZ.getTime() + 5 * 60 * 60 * 1000),
+      base_price: 385.99,
+      seat_capacity: 40,
+    },
+    {
+      route_id: createdRoutes[2]!.route_id, // YYZ → YUL (far future)
+      airline_code: "AC",
+      departure_time: farFutureOutboundYYZToYUL,
+      arrival_time: new Date(farFutureOutboundYYZToYUL.getTime() + 90 * 60 * 1000),
+      base_price: 189.99,
+      seat_capacity: 28,
+    },
+    {
+      route_id: createdRoutes[3]!.route_id, // YUL → YYZ (return, far future)
+      airline_code: "AC",
+      departure_time: farFutureReturnYULToYYZ,
+      arrival_time: new Date(farFutureReturnYULToYYZ.getTime() + 90 * 60 * 1000),
+      base_price: 199.99,
+      seat_capacity: 28,
+    },
   ];
 
   let flightCount = 0;
@@ -289,20 +338,20 @@ async function main() {
       });
 
       flightCount++;
-      console.log(`✅ Created flight ${flight.flight_id} with ${seats.length} seats`);
+      console.log(`Created flight ${flight.flight_id} with ${seats.length} seats`);
     }
   }
 
   if (flightCount > 0) {
-    console.log(`✅ Created ${flightCount} flights with seats`);
+    console.log(`Created ${flightCount} flights with seats`);
   } else {
-    console.log("✅ Flights already exist");
+    console.log("Flights already exist");
   }
 
   // ============================================
   // Summary
   // ============================================
-  console.log("\n📊 Seed Summary:");
+  console.log("\nSeed Summary:");
   console.log("================");
   console.log(`Admin: ${adminEmail} / ${adminPassword}`);
   console.log("Customers:");
@@ -314,13 +363,13 @@ async function main() {
   console.log(`Airlines: ${airlines.length}`);
   console.log(`Routes: ${routes.length}`);
   console.log(`Flights: ${flights.length} (with auto-generated seats)`);
-  console.log("\n🎉 Ready to test! Just login as customer and book a flight!");
-  console.log("🌱 Seed finished!");
+  console.log("\nReady to test! Just login as customer and book a flight!");
+  console.log("Seed finished!");
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Seed error:", e);
+    console.error("Seed error:", e);
     process.exit(1);
   })
   .finally(async () => {

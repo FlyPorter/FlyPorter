@@ -50,9 +50,17 @@ You are now ready to follow the customer booking journey end-to-end.
 Follow these steps in order to simulate the user story:
 
 ### 1. Search Flights (Public)
-- Request: `GET /flight`
-- Folder: `Flights` → **Search Flights**
-- Result: lists the seeded flights and automatically stores the first `flightId` and its `departure_time` as `bookingDate`
+- Request: `GET /flight/search`
+- Folder: `Flights` → **Search Flights by Filters**
+- Optional query params:
+  - `departure_airport` / `destination_airport` (3-letter IATA codes)
+  - `date` (`YYYY-MM-DD`)
+  - `min_price` / `max_price` (non-negative numbers)
+  - `min_duration` / `max_duration` (minutes)
+  - `min_departure_time` / `max_departure_time` (`HH:mm`, 24-hour)
+- Result: returns flights matching the filters and stores the first `flightId` and `departure_time` as `bookingDate`
+
+> Need a quick, unfiltered list? The legacy `GET /flight` request is still in the folder as **List All Flights**.
 
 ### 2. View Seats (Public)
 - Request: `GET /seat/{{flightId}}`
