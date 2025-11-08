@@ -1,6 +1,27 @@
+# FlyPorter
+
+## Table of Contents
+
+- [Team Information](#team-information)
+- [Video Demo](#video-demo)
+- [Motivation](#motivation)
+- [Objectives](#objectives)
+- [Technical Stack](#technical-stack)
+- [Features](#features)
+- [User Guide](#user-guide)
+- [Development Guide](#development-guide)
+- [Contribution Guidelines](#contribution-guidelines)
+- [Deployment Information](#deployment-information)
+- [Individual Contributions](#individual-contributions)
+- [Lessons Learned and Concluding Remarks](#lessons-learned-and-concluding-remarks)
+
+---
+
 Backend stack: Express.js + TypeScript + Prisma + PostgreSQL
 
-- [Development Guide](#development-guide)
+## Development Guide
+
+backend:
 
 admin account:
 
@@ -68,7 +89,6 @@ cd backend
 
    > Note: You need to chenge `username` to your psql username, `password` to your psql password.
 
-
 3. Run the migration:
 
    ```
@@ -99,16 +119,15 @@ cd backend
 Under `backend` folder:
 
 1. Seed initial data (run once per fresh setup)
+
    ```
    cd backend
    npx prisma db seed
    ```
 
    This creates:
+
    - Admin user: `admin@123.com` / `admin123`
-   - Demo customer user with passenger profiles: 
-      - `customer.one@example.com` / `password123`
-      - `customer.two@example.com` / `password123`
    - 4 Cities: Toronto, Vancouver, Montreal, Ottawa
    - 4 Airports: YYZ, YVR, YUL, YOW
    - 2 Airlines: FlyPorter, Air Canada
@@ -116,6 +135,7 @@ Under `backend` folder:
    - 3 future-dated flights with generated seats (ready to book)
 
 2. Re-seed (optional)
+
    - You can run `npx prisma db seed` again to add the same baseline data if you cleared the tables.
    - For a clean reset, run:
      ```
@@ -148,12 +168,30 @@ Under `backend` folder:
    ```
    Import FlyPorterAPI_openapi.yaml
    ```
-Or import FlyPorterAPI.postman_collection.json to your postman
+   Or import FlyPorterAPI.postman_collection.json to your postman
 
 Transfer postman collection to openapi
 postman-to-openapi FlyPorterAPI.postman_collection.json FlyPorterAPI_openapi.yaml
 
+### Postman Collection Demo
 
+#### 1. Create a Workspace
 
+Start by creating a new workspace in Postman.
 
+#### 2. Import API Collection
 
+Import the `FlyPorter.postman_collection.json` file into your workspace.
+
+#### 3. Create an Environment
+
+In the top-left corner, create a new environment.  
+The environment is used to store the authentication token after login (the token is automatically saved via the Postman script in the login API's response).
+
+> Note:  
+> You must run the `Login API` first to authenticate and get the token before accessing other APIs. Check out environment variables.
+
+#### API Usage Made Easy
+
+All sample inputs (parameters, request bodies) are pre-configured.  
+As a developer, you do not need to manually input anything — just select the API you want to test and click Send.
