@@ -88,7 +88,7 @@ Search for flights using the search panel. Features include:
 - Filter by airline and price range
 - View flight recommendations when no search is performed
 
-<!-- GIF placeholder for Flight Search -->
+![Image](https://github.com/user-attachments/assets/7fd8a03b-72cb-4eff-89f7-5d430e8772db)
 
 #### Seat Selection
 
@@ -97,9 +97,7 @@ After selecting a flight, choose your preferred seat from an interactive seat ma
 - **BOOKED**: Seats already taken by other passengers
 - **UNAVAILABLE**: Seats that cannot be selected
 
-For round trips, select seats for both outbound and return flights sequentially. Seat prices vary based on class (Economy, Business, First).
-
-<!-- GIF placeholder for Seat Selection -->
+![Image](https://github.com/user-attachments/assets/b994940d-0c6a-473e-8f06-dd7d52e1c430)
 
 #### Booking
 
@@ -108,9 +106,10 @@ Complete your booking by filling in passenger information. You can:
 - Create a new passenger profile
 - Enter passenger details (name, birth date, gender, address, phone number, passport number)
 - Review flight and seat details
+- Enter payment info
 - Confirm booking to lock in your seat
 
-<!-- GIF placeholder for Booking -->
+![Image](https://github.com/user-attachments/assets/413649e7-f499-49cd-b846-a7202fb96c54)
 
 #### Booking Confirmation
 
@@ -129,23 +128,15 @@ Access your bookings dashboard from the sidebar to:
 - Cancel bookings
 - Modify seat selections
 
-<!-- GIF placeholder for View Bookings -->
+![Image](https://github.com/user-attachments/assets/d62d1b15-60af-470e-9ad0-210f79a377fe)
 
-#### Modify Seat
+#### Profile Management
 
-Change your seat selection for an existing booking. Select a new available seat from the seat map, and the system will update your booking accordingly.
+Manage your profile from the profile page:
+- Edit existing information (name, birth date, gender, address, phone number, passport number)
+- Use profile for quick booking
 
-<!-- GIF placeholder for Modify Seat -->
-
-#### Passenger Profile Management
-
-Manage your passenger profiles from the profile page:
-- View all passengers associated with your account
-- Add new passenger profiles
-- Edit existing passenger information (name, birth date, gender, address, phone number, passport number)
-- Use passenger profiles for quick booking
-
-<!-- GIF placeholder for Passenger Profile Management -->
+![Image](https://github.com/user-attachments/assets/7c832faa-d4ba-4f46-8b2d-ebcccb801dc5)
 
 
 ---
