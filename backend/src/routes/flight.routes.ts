@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireAdmin } from "../middlewares/role.middleware.js";
-import { createFlightHandler, listFlightsHandler, getFlightHandler, deleteFlightHandler, updateFlightHandler } from "../controllers/flight.controller.js";
+import { createFlightHandler, listFlightsHandler, getFlightHandler, deleteFlightHandler, updateFlightHandler, searchFlightsHandler } from "../controllers/flight.controller.js";
 
 const router = Router();
 
 // Public reads
+router.get("/search", searchFlightsHandler);
 router.get("/", listFlightsHandler);
 router.get("/:id", getFlightHandler);
 

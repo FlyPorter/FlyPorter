@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 
 export interface CreateFlightByRouteIdInput {
@@ -18,6 +19,21 @@ const PRICE_MODIFIER = {
   economy: 1.0,
 } as const;
 
+export interface FlightSearchFilters {
+  departureAirport?: string;
+  destinationAirport?: string;
+  departureDateRange?: {
+    start: Date;
+    end: Date;
+  };
+  minPrice?: number;
+  maxPrice?: number;
+  minDurationMinutes?: number;
+  maxDurationMinutes?: number;
+  minDepartureMinutes?: number;
+  maxDepartureMinutes?: number;
+}
+
 function formatDuration(departure: Date, arrival: Date): string {
   const diffMs = arrival.getTime() - departure.getTime();
   const totalMinutes = Math.floor(diffMs / (1000 * 60));
@@ -27,6 +43,14 @@ function formatDuration(departure: Date, arrival: Date): string {
   if (hours > 0) parts.push(`${hours}h`);
   if (minutes > 0) parts.push(`${minutes}m`);
   return parts.length > 0 ? parts.join(" ") : "0m";
+}
+
+function getMinutesSinceMidnight(date: Date): number {
+  return date.getUTCHours() * 60 + date.getUTCMinutes();
+}
+
+function getDurationMinutes(departure: Date, arrival: Date): number {
+  return Math.max(0, Math.round((arrival.getTime() - departure.getTime()) / (1000 * 60)));
 }
 
 async function findOrCreateRoute(params: { origin_airport_code: string; destination_airport_code: string; }) {
@@ -160,6 +184,7 @@ export async function listFlights() {
           origin_airport_code: true,
           destination_airport_code: true,
         },
+
       },
       airline: { select: { airline_code: true, airline_name: true } },
     },
@@ -266,3 +291,121 @@ export async function deleteFlightById(flight_id: number) {
     select: { flight_id: true, airline_code: true },
   });
 }
+
+export async function searchFlights(filters: FlightSearchFilters) {
+  const where: Prisma.FlightWhereInput = {};
+
+  if (filters.departureDateRange) {
+    where.departure_time = {
+      gte: filters.departureDateRange.start,
+      lt: filters.departureDateRange.end,
+    };
+  }
+
+  if (filters.minPrice != null || filters.maxPrice != null) {
+    where.base_price = {};
+    if (filters.minPrice != null) where.base_price.gte = filters.minPrice;
+    if (filters.maxPrice != null) where.base_price.lte = filters.maxPrice;
+  }
+
+  if (filters.departureAirport || filters.destinationAirport) {
+    const routeWhere: Prisma.RouteWhereInput = {};
+    if (filters.departureAirport) routeWhere.origin_airport_code = filters.departureAirport;
+    if (filters.destinationAirport) routeWhere.destination_airport_code = filters.destinationAirport;
+    where.route = { is: routeWhere };
+  }
+
+  const flights = await prisma.flight.findMany({
+    where,
+    include: {
+      route: {
+        select: {
+          route_id: true,
+          origin_airport_code: true,
+          destination_airport_code: true,
+          origin_airport: {
+            select: {
+              airport_code: true,
+              airport_name: true,
+              city_name: true,
+            },
+          },
+          destination_airport: {
+            select: {
+              airport_code: true,
+              airport_name: true,
+              city_name: true,
+            },
+          },
+        },
+      },
+      airline: {
+        select: {
+          airline_code: true,
+          airline_name: true,
+        },
+      },
+    },
+    orderBy: [
+      { departure_time: "asc" },
+      { flight_id: "asc" },
+    ],
+  });
+
+  if (flights.length === 0) return [];
+
+  const flightIds = flights.map((flight) => flight.flight_id);
+  const availabilityResults = await prisma.seat.groupBy({
+    by: ["flight_id"],
+    where: {
+      flight_id: { in: flightIds },
+      is_available: true,
+    },
+    _count: {
+      flight_id: true,
+    },
+  });
+
+  const availabilityMap = new Map<number, number>();
+  availabilityResults.forEach((entry) => {
+    availabilityMap.set(entry.flight_id, entry._count.flight_id);
+  });
+
+  return flights
+    .filter((flight) => {
+      const duration = getDurationMinutes(flight.departure_time, flight.arrival_time);
+      if (filters.minDurationMinutes != null && duration < filters.minDurationMinutes) return false;
+      if (filters.maxDurationMinutes != null && duration > filters.maxDurationMinutes) return false;
+
+      const departureMinutes = getMinutesSinceMidnight(flight.departure_time);
+      if (filters.minDepartureMinutes != null && departureMinutes < filters.minDepartureMinutes) return false;
+      if (filters.maxDepartureMinutes != null && departureMinutes > filters.maxDepartureMinutes) return false;
+
+      return true;
+    })
+    .map((flight) => {
+      const durationMinutes = getDurationMinutes(flight.departure_time, flight.arrival_time);
+      return {
+        flight_id: flight.flight_id,
+        airline_code: flight.airline_code,
+        departure_time: flight.departure_time,
+        arrival_time: flight.arrival_time,
+        base_price: flight.base_price,
+        seat_capacity: flight.seat_capacity,
+        available_seats: availabilityMap.get(flight.flight_id) ?? 0,
+        airline: flight.airline,
+        route: flight.route
+          ? {
+              route_id: flight.route.route_id,
+              origin_airport_code: flight.route.origin_airport_code,
+              destination_airport_code: flight.route.destination_airport_code,
+              origin_airport: flight.route.origin_airport,
+              destination_airport: flight.route.destination_airport,
+            }
+          : undefined,
+        duration: formatDuration(flight.departure_time, flight.arrival_time),
+        duration_minutes: durationMinutes,
+      };
+    });
+}
+

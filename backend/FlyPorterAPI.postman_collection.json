@@ -62,7 +62,7 @@
       "name": "Flights",
       "item": [
         {
-          "name": "Search Flights",
+          "name": "List All Flights",
           "request": {
             "auth": {
               "type": "noauth"
@@ -103,7 +103,7 @@
               }
             }
           ],
-          "description": "List available flights (seed data ready to use). Selects the first result for quick testing."
+          "description": "List available flights without filters (seed data ready to use). Selects the first result for quick testing."
         },
         {
           "name": "Get Flight by ID",
@@ -147,7 +147,7 @@
           ]
         },
         {
-          "name": "Search Flights (Filters Optional)",
+          "name": "Search Flights by Filters",
           "request": {
             "auth": {
               "type": "noauth"
@@ -155,18 +155,55 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/flight",
+              "raw": "{{baseUrl}}/flight/search?departure_airport=YYZ&destination_airport=YVR&date=2025-12-15",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "flight"
+                "flight",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "departure_airport",
+                  "value": "YYZ"
+                },
+                {
+                  "key": "destination_airport",
+                  "value": "YVR"
+                },
+                {
+                  "key": "date",
+                  "value": "2025-12-15"
+                }
               ]
             },
-            "description": "Example of querying flights with optional filters (public)."
+            "description": "Search flights with optional filters (public). Adjust query params as needed."
           },
           "response": [],
-          "description": "Optional filtered search example. Adjust query params as needed."
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    const flights = Array.isArray(response.data) ? response.data : [];",
+                  "    const firstFlight = flights[0];",
+                  "    if (firstFlight && firstFlight.flight_id) {",
+                  "        pm.collectionVariables.set('flightId', firstFlight.flight_id);",
+                  "        console.log('✈️ Selected filtered flight:', firstFlight.flight_id);",
+                  "    }",
+                  "    if (firstFlight && firstFlight.departure_time) {",
+                  "        pm.collectionVariables.set('bookingDate', firstFlight.departure_time);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "description": "Run a filtered flight search. Selects the first matching result (if any) for downstream requests."
         }
       ],
       "description": "Flight search and details (public endpoints)"
