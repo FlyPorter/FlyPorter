@@ -19,6 +19,138 @@
 
 Backend stack: Express.js + TypeScript + Prisma + PostgreSQL
 
+## User Guide
+
+> Note: GIF animations will be added for each feature section below.
+
+### Registration & Login
+
+FlyPorter supports both email/password registration and Google OAuth 2.0 authentication. Users can register as either a normal user or an admin (admin accounts require special permissions). After registration or login, you are automatically authenticated and redirected to the appropriate dashboard based on your role.
+
+#### Test Credentials
+
+| Role   | Email           | Password |
+| ------ | --------------- | -------- |
+| Admin  | admin@123.com   | admin123 |
+| User   | customer.one@example.com  | password123 |
+| User   | customer.two@example.com  | password123 |
+
+<!-- GIF placeholder for Registration & Login -->
+
+---
+
+### Admin Features (Admin Users Only)
+
+Admin users have access to a comprehensive flight management system to create, update, and manage all aspects of the flight booking system.
+
+#### Flight Management
+
+Admins can view, search, update, and delete flights from the admin dashboard. Use the search panel on the left to filter flights by origin, destination, date, airline, or price range. All flights are displayed in a list format with options to update or delete each flight.
+
+<!-- GIF placeholder for Flight Management -->
+
+#### Add Flight
+
+Create new flights by selecting an existing route and specifying the departure date and available ticket count. The seat capacity must match the aircraft's capacity for the selected route.
+
+<!-- GIF placeholder for Add Flight -->
+
+#### Add Airport
+
+Add new airports to the system by entering the airport code (e.g., YYZ, YVR) and the corresponding city name. Airports are used when creating routes.
+
+<!-- GIF placeholder for Add Airport -->
+
+#### Add Airline
+
+Add new airlines by entering the airline code and airline name. Airlines are associated with routes and flights in the system.
+
+<!-- GIF placeholder for Add Airline -->
+
+#### Add Route
+
+Create flight routes by selecting an airline, aircraft, origin airport, destination airport, and setting the operation period (start and end dates). Routes define the path that flights will follow, and flights are generated within the specified time window.
+
+
+<!-- GIF placeholder for Add Route -->
+
+---
+
+### Normal User Features
+
+Normal users can search for flights, select seats, make bookings, and manage their reservations through an intuitive interface.
+
+#### Flight Search
+
+Search for flights using the search panel. Features include:
+- Choose between one-way or round trip
+- Enter origin and destination (with autocomplete suggestions)
+- Select departure date (and return date for round trips)
+- Filter by airline and price range
+- View flight recommendations when no search is performed
+
+<!-- GIF placeholder for Flight Search -->
+
+#### Seat Selection
+
+After selecting a flight, choose your preferred seat from an interactive seat map. The seat map displays:
+- **AVAILABLE**: Seats ready to be selected
+- **BOOKED**: Seats already taken by other passengers
+- **UNAVAILABLE**: Seats that cannot be selected
+
+For round trips, select seats for both outbound and return flights sequentially. Seat prices vary based on class (Economy, Business, First).
+
+<!-- GIF placeholder for Seat Selection -->
+
+#### Booking
+
+Complete your booking by filling in passenger information. You can:
+- Select an existing passenger from your profile
+- Create a new passenger profile
+- Enter passenger details (name, birth date, gender, address, phone number, passport number)
+- Review flight and seat details
+- Confirm booking to lock in your seat
+
+<!-- GIF placeholder for Booking -->
+
+#### Booking Confirmation
+
+After completing a booking, you'll be redirected to the booking confirmation page where you can:
+- View booking details for outbound and return flights (if applicable)
+- Download PDF invoice/receipt
+- See confirmation notifications
+
+<!-- GIF placeholder for Booking Confirmation -->
+
+#### View Bookings (Dashboard)
+
+Access your bookings dashboard from the sidebar to:
+- View all your current and past bookings
+- See flight details, seat numbers, and booking status
+- Cancel bookings
+- Modify seat selections
+
+<!-- GIF placeholder for View Bookings -->
+
+#### Modify Seat
+
+Change your seat selection for an existing booking. Select a new available seat from the seat map, and the system will update your booking accordingly.
+
+<!-- GIF placeholder for Modify Seat -->
+
+#### Passenger Profile Management
+
+Manage your passenger profiles from the profile page:
+- View all passengers associated with your account
+- Add new passenger profiles
+- Edit existing passenger information (name, birth date, gender, address, phone number, passport number)
+- Use passenger profiles for quick booking
+
+<!-- GIF placeholder for Passenger Profile Management -->
+
+
+---
+
 ## Development Guide
 
 backend:
