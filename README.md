@@ -35,7 +35,7 @@ FlyPorter supports both email/password registration and Google OAuth 2.0 authent
 | User   | customer.one@example.com  | password123 |
 | User   | customer.two@example.com  | password123 |
 
-<!-- GIF placeholder for Registration & Login -->
+![Image](https://github.com/user-attachments/assets/c70d5eb0-288f-40c4-9943-12d70f36fd63)
 
 ---
 
@@ -47,32 +47,31 @@ Admin users have access to a comprehensive flight management system to create, u
 
 Admins can view, search, update, and delete flights from the admin dashboard. Use the search panel on the left to filter flights by origin, destination, date, airline, or price range. All flights are displayed in a list format with options to update or delete each flight.
 
-<!-- GIF placeholder for Flight Management -->
+![Image](https://github.com/user-attachments/assets/e025c197-1082-4424-a4ca-dc8ac6129dbf)
 
 #### Add Flight
 
-Create new flights by selecting an existing route and specifying the departure date and available ticket count. The seat capacity must match the aircraft's capacity for the selected route.
+Create new flights by selecting an existing route or by airports and specifying the departure date and available ticket count.
 
-<!-- GIF placeholder for Add Flight -->
+![Image](https://github.com/user-attachments/assets/8e136512-4da1-4265-8583-0123704f30c7)
 
 #### Add Airport
 
-Add new airports to the system by entering the airport code (e.g., YYZ, YVR) and the corresponding city name. Airports are used when creating routes.
+Add new airports to the system by entering the airport code (e.g., YYZ, YVR) and the corresponding airport name and city name. Airports are used when creating routes and flights.
 
-<!-- GIF placeholder for Add Airport -->
+![Image](https://github.com/user-attachments/assets/17b67c2b-d70b-4b84-8bbf-a0c6ef2ef38a)
 
 #### Add Airline
 
 Add new airlines by entering the airline code and airline name. Airlines are associated with routes and flights in the system.
 
-<!-- GIF placeholder for Add Airline -->
+![Image](https://github.com/user-attachments/assets/ef59ee5e-a927-4745-9edc-4384c3f62745)
 
 #### Add Route
 
-Create flight routes by selecting an airline, aircraft, origin airport, destination airport, and setting the operation period (start and end dates). Routes define the path that flights will follow, and flights are generated within the specified time window.
+Create flight routes by selecting the origin airport and destination airport. Routes define the path that flights will follow.
 
-
-<!-- GIF placeholder for Add Route -->
+![Image](https://github.com/user-attachments/assets/f1fcde7f-6798-4218-b6a0-c31817678b3c)
 
 ---
 
@@ -89,7 +88,7 @@ Search for flights using the search panel. Features include:
 - Filter by airline and price range
 - View flight recommendations when no search is performed
 
-<!-- GIF placeholder for Flight Search -->
+![Image](https://github.com/user-attachments/assets/7fd8a03b-72cb-4eff-89f7-5d430e8772db)
 
 #### Seat Selection
 
@@ -98,9 +97,7 @@ After selecting a flight, choose your preferred seat from an interactive seat ma
 - **BOOKED**: Seats already taken by other passengers
 - **UNAVAILABLE**: Seats that cannot be selected
 
-For round trips, select seats for both outbound and return flights sequentially. Seat prices vary based on class (Economy, Business, First).
-
-<!-- GIF placeholder for Seat Selection -->
+![Image](https://github.com/user-attachments/assets/b994940d-0c6a-473e-8f06-dd7d52e1c430)
 
 #### Booking
 
@@ -109,9 +106,10 @@ Complete your booking by filling in passenger information. You can:
 - Create a new passenger profile
 - Enter passenger details (name, birth date, gender, address, phone number, passport number)
 - Review flight and seat details
+- Enter payment info
 - Confirm booking to lock in your seat
 
-<!-- GIF placeholder for Booking -->
+![Image](https://github.com/user-attachments/assets/413649e7-f499-49cd-b846-a7202fb96c54)
 
 #### Booking Confirmation
 
@@ -130,23 +128,15 @@ Access your bookings dashboard from the sidebar to:
 - Cancel bookings
 - Modify seat selections
 
-<!-- GIF placeholder for View Bookings -->
+![Image](https://github.com/user-attachments/assets/d62d1b15-60af-470e-9ad0-210f79a377fe)
 
-#### Modify Seat
+#### Profile Management
 
-Change your seat selection for an existing booking. Select a new available seat from the seat map, and the system will update your booking accordingly.
+Manage your profile from the profile page:
+- Edit existing information (name, birth date, gender, address, phone number, passport number)
+- Use profile for quick booking
 
-<!-- GIF placeholder for Modify Seat -->
-
-#### Passenger Profile Management
-
-Manage your passenger profiles from the profile page:
-- View all passengers associated with your account
-- Add new passenger profiles
-- Edit existing passenger information (name, birth date, gender, address, phone number, passport number)
-- Use passenger profiles for quick booking
-
-<!-- GIF placeholder for Passenger Profile Management -->
+![Image](https://github.com/user-attachments/assets/7c832faa-d4ba-4f46-8b2d-ebcccb801dc5)
 
 
 ---
