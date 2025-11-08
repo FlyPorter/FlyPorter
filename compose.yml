@@ -1,0 +1,39 @@
+services:
+  db:
+    build:
+      context: .
+      dockerfile: db/Dockerfile
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: flyporter
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/flyporter?schema=public
+      PORT: "3000"
+      API_PREFIX: /api
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    command: >
+      sh -c "npx prisma migrate deploy && npx prisma db seed && npx tsx src/server.ts"
+
+volumes:
+  db-data:

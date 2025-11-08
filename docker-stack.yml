@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: flyporter
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == manager
+
+  backend:
+    image: registry.example.com/flyporter/backend:latest
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/flyporter?schema=public
+      PORT: "3000"
+      API_PREFIX: /api
+      NODE_ENV: production
+    ports:
+      - target: 3000
+        published: 3000
+        protocol: tcp
+        mode: host
+    depends_on:
+      - db
+    command: >
+      sh -c "npx prisma migrate deploy && npx prisma db seed && npx tsx src/server.ts"
+    networks:
+      - app-net
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+      placement:
+        constraints:
+          - node.role == worker
+
+volumes:
+  db-data:
+    driver: local
+
+networks:
+  app-net:
+    driver: overlay
+
