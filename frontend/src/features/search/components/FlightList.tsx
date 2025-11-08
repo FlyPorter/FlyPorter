@@ -89,9 +89,6 @@ const FlightList: React.FC<FlightListProps> = ({
               <div className="text-lg sm:text-xl font-bold text-blue-600">
                 ${flight.price}
               </div>
-              <div className="text-xs sm:text-sm text-gray-600">
-                {flight.availableTickets} tickets available
-              </div>
             </div>
           </div>
         </Card>
