@@ -116,7 +116,7 @@ const BookingPage: React.FC = () => {
           id: userId,
           name: passengerInfo.name,
           birth_date: passengerInfo.birth_date,
-          gender: passengerInfo.gender,
+          gender: passengerInfo.gender || 'male', // Default to male if not provided
           address: passengerInfo.address,
           phone_number: passengerInfo.phone_number
         }
@@ -183,7 +183,7 @@ const BookingPage: React.FC = () => {
             id: userId,
             name: passengerInfo.name,
             birth_date: passengerInfo.birth_date,
-            gender: passengerInfo.gender,
+            gender: passengerInfo.gender || 'male', // Default to male if not provided
             address: passengerInfo.address,
             phone_number: passengerInfo.phone_number
           }

@@ -38,18 +38,18 @@ const SettingsPage = () => {
             <h2 className="text-2xl font-bold mb-6">Settings</h2>
             
             <div className="space-y-6">
-              {/* My Passengers Section - Hidden for admin users */}
+              {/* Profile Section - Hidden for admin users */}
               {!isAdmin && (
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold mb-4">My Passengers</h3>
+                  <h3 className="text-lg font-semibold mb-4">Profile</h3>
                   <p className="text-gray-600 mb-4">
-                    Manage your passenger profiles for easy booking
+                    Manage your profile for easy booking
                   </p>
                   <button
                     onClick={() => navigate('/profile', { state: { from: '/settings' } })}
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                   >
-                    Manage Passengers
+                    Edit Profile
                   </button>
                 </div>
               )}
