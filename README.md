@@ -196,6 +196,50 @@ The environment is used to store the authentication token after login (the token
 All sample inputs (parameters, request bodies) are pre-configured.  
 As a developer, you do not need to manually input anything — just select the API you want to test and click Send.
 
+### Docker Instruction
+
+### 1. Start Docker
+
+Open **Docker Desktop** and verify it’s running:
+
+```sh
+docker --version
+docker info
+```
+
+---
+
+### 2. Build and Run with Docker Compose
+
+```sh
+docker compose build
+```
+
+Run in foreground:
+
+```sh
+docker compose up
+```
+
+Or run in background:
+
+```sh
+docker compose up -d
+```
+
+---
+
+### Optional Commands
+
+```sh
+docker ps                 # list running containers
+docker compose down       # stop and remove containers
+```
+
+```
+
+```
+
 ### Frontend Setup
 
 Under `frontend` folder:
@@ -218,7 +262,7 @@ Create a `.env` file in the frontend directory with the following variables:
 # API Base URL
 # For development: http://localhost:3000/api
 VITE_API_URL=http://localhost:3000/api
-VITE_GOOGLE_AUTH_URL=http://localhost:3000/api/auth/google 
+VITE_GOOGLE_AUTH_URL=http://localhost:3000/api/auth/google
 VITE_AUTH_URL=http://localhost:3000/api/auth
 ```
 
