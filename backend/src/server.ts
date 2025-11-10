@@ -12,6 +12,7 @@ import profileRoutes from "./routes/profile.routes.js";
 import bookingRoutes from "./routes/booking.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import customerRoutes from "./routes/customer.routes.js";
+import pdfRoutes from "./routes/pdf.routes.js";
 import { env } from "./config/env.js";
 
 const app = express();
@@ -32,6 +33,7 @@ app.use(`${env.API_PREFIX}/profile`, profileRoutes);
 app.use(`${env.API_PREFIX}/bookings`, bookingRoutes);
 app.use(`${env.API_PREFIX}/notifications`, notificationRoutes);
 app.use(`${env.API_PREFIX}/customers`, customerRoutes);
+app.use(`${env.API_PREFIX}/pdf`, pdfRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

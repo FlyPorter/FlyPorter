@@ -16,9 +16,11 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.18.0",
+    "@aws-sdk/client-s3": "^3.670.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "pdfkit": "^0.15.0",
     "jsonwebtoken": "^9.0.2",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0"
@@ -31,6 +33,7 @@
     "@types/node": "^24.9.2",
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.17",
+    "@types/pdfkit": "^0.17.3",
     "nodemon": "^3.1.10",
     "prisma": "^6.18.0",
     "ts-node": "^10.9.2",
