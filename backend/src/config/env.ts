@@ -13,5 +13,12 @@ export const env = {
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
   GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000",
+  SPACES_ENDPOINT: process.env.SPACES_ENDPOINT || "",
+  SPACES_REGION: process.env.SPACES_REGION || "us-east-1",
+  SPACES_ACCESS_KEY: process.env.SPACES_ACCESS_KEY || "",
+  SPACES_SECRET_KEY: process.env.SPACES_SECRET_KEY || "",
+  SPACES_BUCKET: process.env.SPACES_BUCKET || "",
+  SPACES_CDN_BASE_URL: process.env.SPACES_CDN_BASE_URL || "",
+  SPACES_INVOICE_PREFIX: process.env.SPACES_INVOICE_PREFIX || "invoices",
 } as const;
 
