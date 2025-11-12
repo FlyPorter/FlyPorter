@@ -12,8 +12,10 @@ interface NavigationBarProps {
 const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const token = localStorage.getItem('token');
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
+  const isLoggedIn = !!token && !!user;
   const userEmail = user?.email || 'User';
   const role = user?.role || 'user';
 
@@ -79,22 +81,33 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward }) => {
         </div>
         
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(role?.toUpperCase() === "ADMIN" ? '/admin' : '/dashboard')}
-            className="cursor-pointer"
-          >
-            <Home className="h-5 w-5" />
-          </Button>
-          
-          {/* Notification Center */}
-          <NotificationCenter />
-          
-          <div className="flex items-center gap-2 px-3 py-2 text-gray-600">
-            <User className="h-5 w-5" />
-            <span>{userEmail}</span>
-          </div>
+          {isLoggedIn ? (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate(role?.toUpperCase() === "ADMIN" ? '/admin' : '/dashboard')}
+                className="cursor-pointer"
+              >
+                <Home className="h-5 w-5" />
+              </Button>
+              
+              {/* Notification Center */}
+              <NotificationCenter />
+              
+              <div className="flex items-center gap-2 px-3 py-2 text-gray-600">
+                <User className="h-5 w-5" />
+                <span>{userEmail}</span>
+              </div>
+            </>
+          ) : (
+            <Button
+              onClick={() => navigate('/login')}
+              className="cursor-pointer"
+            >
+              Login
+            </Button>
+          )}
         </div>
       </div>
     </nav>

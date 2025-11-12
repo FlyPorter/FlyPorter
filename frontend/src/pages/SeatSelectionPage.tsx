@@ -19,6 +19,16 @@ const SeatSelectionPage: React.FC = () => {
   });
   const [currentSelection, setCurrentSelection] = useState<'outbound' | 'return'>('outbound');
 
+  // Check authentication
+  React.useEffect(() => {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    if (!token || !user) {
+      // Redirect to login, then back to seat selection after login
+      navigate('/login', { state: { from: location.pathname, state: location.state } });
+    }
+  }, [navigate, location]);
+
   const handleSeatSelect = (seat: Seat) => {
     setSelectedSeats(prev => ({
       ...prev,

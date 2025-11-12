@@ -78,25 +78,25 @@ const DashboardPage = () => {
             const redirectPath = userRole?.toUpperCase() === 'ADMIN' ? '/admin' : '/dashboard';
             navigate(redirectPath, { replace: true });
           } else {
-            navigate("/login");
+            navigate("/");
           }
         } catch (err) {
           console.error("Error during URL token processing:", err);
-          navigate("/login");
+          navigate("/");
         } finally {
           setLoading(false);
         }
       } else if (!currentToken) {
         setError("Unauthorized: No token found.");
         setLoading(false);
-        navigate("/login");
+        navigate("/");
       } else {
         try {
           const user = await fetchUserInfo(currentToken);
           if (!user) {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
-            navigate("/login");
+            navigate("/");
           } else {
             // If admin user somehow reached dashboard, redirect to admin page
             const userRole = user?.role || 'user';
@@ -108,7 +108,7 @@ const DashboardPage = () => {
           console.error("Error with existing token:", err);
           localStorage.removeItem("token");
           localStorage.removeItem("user");
-          navigate("/login");
+          navigate("/");
         } finally {
           setLoading(false);
         }

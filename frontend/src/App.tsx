@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import SearchPage from "./pages/SearchPage";
 import SearchResultsPage from "./pages/SearchResultsPage"
 import SeatSelectionPage from "./pages/SeatSelectionPage";
 import BookingPage from "./pages/BookingPage";
@@ -23,7 +24,7 @@ function App() {
     <Router>
       <div className="min-h-screen bg-gray-50">
         <Routes>
-          <Route path="/" element={<LoginPage />} />
+          <Route path="/" element={<SearchPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />  
@@ -38,6 +39,7 @@ function App() {
           <Route path="/admin/add-route" element={<AddRoutePage />} />
           <Route path="/admin/update-flight/:id" element={<UpdateFlightPage />} />
           <Route path="/search" element={<SearchResultsPage />} />
+          <Route path="/search-results" element={<SearchResultsPage />} />
           <Route path="/seat-selection" element={<SeatSelectionPage />} />
           <Route path="/booking" element={<BookingPage />} />
           <Route path="/booking-confirmation" element={<BookingNotificationPage />} />

@@ -55,11 +55,20 @@ const BookingPage: React.FC = () => {
   } | null;
 
   useEffect(() => {
+    // Check authentication first
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    if (!token || !user) {
+      // Redirect to login, then back to booking after login
+      navigate('/login', { state: { from: location.pathname, state: location.state } });
+      return;
+    }
+
     // If no booking data, redirect to search
     if (!bookingData || !bookingData.outboundFlight) {
-      navigate('/search');
+      navigate('/');
     }
-  }, [bookingData, navigate]);
+  }, [bookingData, navigate, location]);
 
   const handleBookingSubmit = async (passengerInfo: PassengerInfo) => {
     setIsLoading(true);

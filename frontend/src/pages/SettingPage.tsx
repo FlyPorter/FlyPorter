@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import NavigationBar from '../components/NavigationBar';
 import Sidebar from '../features/dashboard/components/Sidebar';
@@ -6,6 +6,15 @@ import Sidebar from '../features/dashboard/components/Sidebar';
 const SettingsPage = () => {
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // Check authentication
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    if (!token || !user) {
+      navigate('/');
+    }
+  }, [navigate]);
 
   // Get user role
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -15,7 +24,7 @@ const SettingsPage = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    navigate("/login");
+    navigate("/");
   };
 
   const handleLogoutClick = () => {

@@ -79,10 +79,18 @@ const LoginPage = () => {
         localStorage.setItem('token', data.data.token);
         localStorage.setItem('user', JSON.stringify(data.data.user));
         console.log('Login successful');
-        // Redirect admin users to admin page, regular users to dashboard
-        const userRole = data.data.user?.role || 'user';
-        const redirectPath = userRole?.toUpperCase() === 'ADMIN' ? '/admin' : '/dashboard';
-        navigate(redirectPath);
+        
+        // Check if there's a redirect path from location state
+        const locationState = location.state as { from?: string; state?: any } | null;
+        if (locationState?.from) {
+          // Redirect back to the page user was trying to access
+          navigate(locationState.from, { state: locationState.state });
+        } else {
+          // Default redirect: admin users to admin page, regular users to dashboard
+          const userRole = data.data.user?.role || 'user';
+          const redirectPath = userRole?.toUpperCase() === 'ADMIN' ? '/admin' : '/dashboard';
+          navigate(redirectPath);
+        }
       } else {
         throw new Error(data.error || data.message || 'Login Failed');
       }
