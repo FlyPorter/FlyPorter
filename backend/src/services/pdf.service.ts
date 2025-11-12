@@ -309,6 +309,11 @@ export async function generateSignedUrl(
   return getSignedUrl(client, command, { expiresIn });
 }
 
+/**
+ * Upload booking invoice to Digital Ocean Spaces
+ * Uses a consistent key format for each booking (no timestamp)
+ * This allows us to regenerate signed URLs without re-uploading
+ */
 export async function uploadBookingInvoiceToSpaces(
   options: InvoiceGenerationOptions
 ): Promise<InvoiceUploadResult> {
@@ -319,7 +324,8 @@ export async function uploadBookingInvoiceToSpaces(
   const client = getSpacesClient();
 
   const prefix = env.SPACES_INVOICE_PREFIX.replace(/\/+$/, "");
-  const key = `${prefix}/booking-${options.bookingId}-${Date.now()}.pdf`;
+  // Use consistent key (no timestamp) so we can regenerate URLs
+  const key = `${prefix}/booking-${options.bookingId}.pdf`;
 
   const command = new PutObjectCommand({
     Bucket: env.SPACES_BUCKET,
@@ -339,5 +345,37 @@ export async function uploadBookingInvoiceToSpaces(
     bucket: env.SPACES_BUCKET,
     url: signedUrl,
   };
+}
+
+/**
+ * Get signed URL for an invoice
+ * If the PDF doesn't exist in Spaces, it will be uploaded first
+ * Returns a fresh signed URL (valid for 1 hour)
+ */
+export async function getInvoiceSignedUrl(
+  options: InvoiceGenerationOptions
+): Promise<{ url: string; filename: string }> {
+  ensureSpacesConfig();
+
+  const prefix = env.SPACES_INVOICE_PREFIX.replace(/\/+$/, "");
+  const key = `${prefix}/booking-${options.bookingId}.pdf`;
+  const filename = `invoice-booking-${options.bookingId}.pdf`;
+
+  try {
+    // Try to generate signed URL for existing file
+    const signedUrl = await generateSignedUrl(key, 3600);
+    return { url: signedUrl, filename };
+  } catch (error: any) {
+    // If file doesn't exist (404), upload it first
+    if (error?.name === "NoSuchKey" || error?.$metadata?.httpStatusCode === 404) {
+      console.log(`Invoice not found in Spaces, uploading for booking ${options.bookingId}`);
+      const uploadResult = await uploadBookingInvoiceToSpaces(options);
+      return { url: uploadResult.url, filename };
+    }
+    // For other errors, try uploading anyway
+    console.log(`Error checking invoice, re-uploading for booking ${options.bookingId}`);
+    const uploadResult = await uploadBookingInvoiceToSpaces(options);
+    return { url: uploadResult.url, filename };
+  }
 }
 

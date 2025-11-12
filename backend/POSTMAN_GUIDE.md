@@ -106,14 +106,16 @@ Follow these steps in order to simulate the user story:
   ```
 - Result: saves `bookingId`, reaffirms `seatNumber`, and logs the confirmation code
 
-### 7. Download Invoice (Optional)
-- Request: `GET /pdf/invoice/{{bookingId}}` or `POST /pdf/invoice/{{bookingId}}/upload`
-- Folder: `PDF Invoices`
-- Two options:
-  - **Download Direct**: `GET /pdf/invoice/{{bookingId}}` - PDF generated and downloaded immediately
-  - **Upload to Spaces**: `POST /pdf/invoice/{{bookingId}}/upload` - Uploads to Digital Ocean Spaces and returns a signed URL
-- Result: Get a professional PDF invoice for your booking
-- Note: Digital Ocean Spaces upload requires configuration (see below)
+### 7. Get Invoice URL (Optional - Auto-generated!)
+- Request: `GET /pdf/invoice/{{bookingId}}`
+- Folder: `PDF Invoices` → **Get Invoice URL from Digital Ocean Spaces**
+- **How it works:**
+  - When you create a booking (step 6), the PDF invoice is **automatically uploaded** to Digital Ocean Spaces
+  - Call this endpoint to get a fresh signed URL (valid for 1 hour)
+  - URL is regenerated each time (one-time use concept)
+- **Alternative:** `GET /pdf/invoice/{{bookingId}}/download` - Direct download bypassing Spaces (for testing)
+- Result: Get a secure URL to download your professional PDF invoice
+- Note: Digital Ocean Spaces configuration required (see below)
 
 ### 8. Manage Booking & Notifications
 - View bookings: `GET /bookings` (or `filter=upcoming|past`)
@@ -210,11 +212,10 @@ For detailed setup instructions, see:
 - [ ] Register/Login
 - [ ] `PATCH /profile` – add passenger info
 - [ ] `POST /payment/validate` – mock payment check
-- [ ] `POST /bookings` – confirm booking
+- [ ] `POST /bookings` – confirm booking (PDF auto-uploaded to Spaces!)
 - [ ] `GET /bookings` – verify it appears
 - [ ] `GET /notifications` – see confirmation message
-- [ ] (Optional) `GET /pdf/invoice/{{bookingId}}` – download invoice
-- [ ] (Optional) `POST /pdf/invoice/{{bookingId}}/upload` – upload to DO Spaces
+- [ ] (Optional) `GET /pdf/invoice/{{bookingId}}` – get invoice URL from Spaces
 - [ ] (Optional) `DELETE /bookings/{{bookingId}}` – cancel booking
 
 ### Optional Admin Flow
