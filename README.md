@@ -118,7 +118,7 @@ After completing a booking, you'll be redirected to the booking confirmation pag
 - Download PDF invoice/receipt
 - See confirmation notifications
 
-<!-- GIF placeholder for Booking Confirmation -->
+![Image](https://github.com/user-attachments/assets/d2ce75bb-bd70-402c-9c0f-968f677bd1ad)
 
 #### View Bookings (Dashboard)
 
