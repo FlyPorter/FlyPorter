@@ -165,7 +165,7 @@ const SearchResultsPage: React.FC = () => {
   };
 
   return (
-    <div className="h-screen overflow-hidden">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-teal-50/50 via-cyan-50/50 to-teal-100/20">
       <NavigationBar />
       <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
         <div className="sticky top-0 left-0 z-10">
@@ -191,15 +191,15 @@ const SearchResultsPage: React.FC = () => {
                 {hasSearched ? (
                   <>
                     <div className="mb-6">
-                      <h2 className="text-2xl font-semibold">
+                      <h2 className="text-2xl font-semibold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">
                         {isSearchingReturn ? 'Select Return Flight' : 'Available Flights'}
                       </h2>
                       {isSearchingReturn && (
-                        <div className="text-sm text-gray-600 mt-2">
+                        <div className="text-sm text-teal-700 mt-2">
                           Selected outbound flight: {selectedOutboundFlight?.airline.name} {selectedOutboundFlight?.flightNumber}
                         </div>
                       )}
-                      <p className="text-gray-600 mt-1">
+                      <p className="text-teal-700 mt-1">
                         {searchData?.tripType === 'roundTrip' 
                           ? (isSearchingReturn 
                               ? 'Please select your return flight'

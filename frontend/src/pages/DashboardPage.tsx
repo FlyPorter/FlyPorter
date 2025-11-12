@@ -130,12 +130,12 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="h-screen overflow-hidden">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-teal-50/50 via-cyan-50/50 to-teal-100/20">
       {/* Top Navigation Bar */}
-      <nav className="sticky top-0 z-50 bg-white border-b shadow-sm">
+      <nav className="sticky top-0 z-50 bg-gradient-to-r from-teal-50 to-cyan-50 border-b border-teal-200/50 shadow-md backdrop-blur-sm">
         <div className="w-full px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-gray-800">
+            <h1 className="text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
               {role === "ADMIN" ? "FlyPorter Admin" : "FlyPorter"}
             </h1>
           </div>
@@ -152,9 +152,9 @@ const DashboardPage = () => {
             {/* Notification Center */}
             <NotificationCenter />
             
-            <div className="flex items-center gap-2 px-3 py-2 text-gray-600">
+            <div className="flex items-center gap-2 px-3 py-2 text-teal-700 bg-teal-50 rounded-lg border border-teal-200/50">
               <User className="h-5 w-5" />
-              <span>{user.email || 'User'}</span>
+              <span className="font-medium">{user.email || 'User'}</span>
             </div>
           </div>
         </div>
@@ -168,7 +168,7 @@ const DashboardPage = () => {
         <div className="flex-1 overflow-y-auto">
           <div className="p-6">
             <div className="flex justify-start items-center mb-4">
-              <h2 className="text-2xl font-bold">Your Bookings</h2>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Your Bookings</h2>
             </div>
             <BookingList />
           </div>

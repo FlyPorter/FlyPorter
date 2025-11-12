@@ -126,7 +126,7 @@ const AdminPage = () => {
     };
 
     return (
-      <div className="h-screen overflow-hidden">
+      <div className="h-screen overflow-hidden bg-gradient-to-br from-teal-50/50 via-cyan-50/50 to-teal-100/20">
         <NavigationBar />
         <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
           <div className="sticky top-0 left-0 z-10">
@@ -146,10 +146,10 @@ const AdminPage = () => {
                 <div className="lg:col-span-3">
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h2 className="text-2xl font-semibold">
+                  <h2 className="text-2xl font-semibold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">
                     {hasSearched ? 'Search Results' : 'All Flights'}
                   </h2>
-                  <p className="text-gray-600 mt-1">
+                  <p className="text-teal-700 mt-1">
                     {hasSearched 
                       ? `${flights.length} flights found`
                       : `${flights.length} total flights`}
@@ -160,24 +160,24 @@ const AdminPage = () => {
                 <div className="relative">
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 cursor-pointer"
+                    className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white px-4 py-2 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all cursor-pointer"
                   >
                     Add
                   </button>
   
                   {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 shadow-lg rounded-md">
+                    <div className="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-sm border border-teal-200/50 shadow-xl rounded-lg overflow-hidden">
                       <ul>
-                        <li className="px-4 py-2 hover:bg-gray-200 cursor-pointer" onClick={() => handleNavigation("/admin/add-flight")}>
+                        <li className="px-4 py-2 hover:bg-teal-50 cursor-pointer text-teal-800 transition-colors" onClick={() => handleNavigation("/admin/add-flight")}>
                           Add Flight
                         </li>
-                        <li className="px-4 py-2 hover:bg-gray-200 cursor-pointer" onClick={() => handleNavigation("/admin/add-airport")}>
+                        <li className="px-4 py-2 hover:bg-teal-50 cursor-pointer text-teal-800 transition-colors" onClick={() => handleNavigation("/admin/add-airport")}>
                           Add Airport
                         </li>
-                        <li className="px-4 py-2 hover:bg-gray-200 cursor-pointer" onClick={() => handleNavigation("/admin/add-airline")}>
+                        <li className="px-4 py-2 hover:bg-teal-50 cursor-pointer text-teal-800 transition-colors" onClick={() => handleNavigation("/admin/add-airline")}>
                           Add Airline
                         </li>
-                        <li className="px-4 py-2 hover:bg-gray-200 cursor-pointer" onClick={() => handleNavigation("/admin/add-route")}>
+                        <li className="px-4 py-2 hover:bg-teal-50 cursor-pointer text-teal-800 transition-colors" onClick={() => handleNavigation("/admin/add-route")}>
                           Add Route
                         </li>
                       </ul>

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/button';
 import { Bell } from 'lucide-react';
 import NotificationDropdown from './NotificationDropdown';
@@ -28,9 +27,9 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ className = '' 
   const getMockNotifications = (): Notification[] => [
     {
       id: 1,
-      message: "Your flight to New York has been confirmed",
+      message: "Your flight to Toronto has been cancelled",
       time: "2 hours ago",
-      type: "success",
+      type: "error",
       read: false,
       createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
     },
@@ -126,11 +125,11 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ className = '' 
         variant="ghost"
         size="icon"
         onClick={() => setShowNotifications(!showNotifications)}
-        className="relative cursor-pointer"
+        className="relative cursor-pointer hover:bg-teal-50 text-teal-700 hover:text-teal-900"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 bg-gradient-to-r from-teal-600 to-cyan-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold shadow-md">
             {unreadCount}
           </span>
         )}

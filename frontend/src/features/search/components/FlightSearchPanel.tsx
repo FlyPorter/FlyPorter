@@ -258,8 +258,16 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
     : airlines;
 
   return (
-    <div className="border border-gray-200 rounded-xl p-6 md:p-8 bg-white shadow-xl">
-      <h2 className="text-2xl font-bold mb-6 text-gray-900">Search Flights</h2>
+    <div className="border border-teal-200/50 rounded-xl p-6 md:p-8 bg-white/90 backdrop-blur-sm shadow-2xl">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Search Flights</h2>
+        <button
+          onClick={handleClearFilters}
+          className="text-sm text-teal-600 hover:text-teal-800 underline cursor-pointer font-medium transition-colors"
+        >
+          Clear Filters
+        </button>
+      </div>
 
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
@@ -275,15 +283,15 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
 
       {/* Trip Type Toggle */}
       <div className="mb-6">
-        <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
+        <div className="flex gap-2 p-1 bg-teal-50 rounded-lg border border-teal-200/50">
           <button
             type="button"
             onClick={() => handleTripTypeChange('oneWay')}
             disabled={disabled}
             className={`flex-1 px-4 py-2 rounded-md font-medium transition-all ${
               tripType === 'oneWay'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg'
+                : 'text-teal-700 hover:text-teal-900 hover:bg-teal-100'
             }`}
           >
             One Way
@@ -294,8 +302,8 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
             disabled={disabled}
             className={`flex-1 px-4 py-2 rounded-md font-medium transition-all ${
               tripType === 'roundTrip'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg'
+                : 'text-teal-700 hover:text-teal-900 hover:bg-teal-100'
             }`}
           >
             Round Trip
@@ -306,11 +314,11 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
       {/* Route Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div className="relative" ref={originRef}>
-          <label className="block mb-2 text-sm font-medium text-gray-700">From</label>
+          <label className="block mb-2 text-sm font-medium text-teal-700">From</label>
           <Input
             type="text"
             value={route.origin}
-            placeholder="City or airport code"
+            placeholder="City or airport"
             onChange={(e) => handleOriginInput(e.target.value)}
             disabled={disabled}
             className="w-full"
@@ -320,7 +328,7 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
               {originSuggestions.map(airport => (
                 <div
                   key={airport.code}
-                  className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                  className="px-4 py-3 hover:bg-teal-50 cursor-pointer border-b last:border-b-0 transition-colors"
                   onClick={() => handleSuggestionClick('origin', airport)}
                 >
                   <div className="font-medium text-gray-900">{airport.city}</div>
@@ -332,11 +340,11 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
         </div>
 
         <div className="relative" ref={destinationRef}>
-          <label className="block mb-2 text-sm font-medium text-gray-700">To</label>
+          <label className="block mb-2 text-sm font-medium text-teal-700">To</label>
           <Input
             type="text"
             value={route.destination}
-            placeholder="City or airport code"
+            placeholder="City or airport"
             onChange={(e) => handleDestinationInput(e.target.value)}
             disabled={disabled}
             className="w-full"
@@ -346,7 +354,7 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
               {destinationSuggestions.map(airport => (
                 <div
                   key={airport.code}
-                  className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                  className="px-4 py-3 hover:bg-teal-50 cursor-pointer border-b last:border-b-0 transition-colors"
                   onClick={() => handleSuggestionClick('destination', airport)}
                 >
                   <div className="font-medium text-gray-900">{airport.city}</div>
@@ -361,7 +369,7 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
       {/* Date Selection */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
-          <label className="block mb-2 text-sm font-medium text-gray-700">Departure Date</label>
+          <label className="block mb-2 text-sm font-medium text-teal-700">Departure Date</label>
           <Input
             type="date"
             value={route.departDate}
@@ -373,7 +381,7 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
 
         {tripType === 'roundTrip' && (
           <div>
-            <label className="block mb-2 text-sm font-medium text-gray-700">Return Date</label>
+            <label className="block mb-2 text-sm font-medium text-teal-700">Return Date</label>
             <Input
               type="date"
               value={returnDate}
@@ -388,13 +396,13 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
 
       {/* Airlines and Price Range - Collapsible Advanced Options */}
       <details className="mb-6">
-        <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900 mb-4">
+        <summary className="cursor-pointer text-sm font-medium text-teal-700 hover:text-teal-900 mb-4 p-2 rounded-lg hover:bg-teal-50 transition-colors">
           Advanced Options
         </summary>
         <div className="space-y-4 pt-4">
           {/* Airlines Dropdown Selection */}
           <div>
-            <label className="block mb-2 text-sm font-medium text-gray-700">Preferred Airline</label>
+            <label className="block mb-2 text-sm font-medium text-teal-700">Preferred Airline</label>
             <Select 
               onValueChange={setAirline} 
               value={airline}
@@ -416,7 +424,7 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
 
           {/* Price Range */}
           <div>
-            <label className="block mb-2 text-sm font-medium text-gray-700">Price Range</label>
+            <label className="block mb-2 text-sm font-medium text-teal-700">Price Range</label>
             <div className="flex items-center gap-3">
               <Input
                 type="number"
@@ -445,21 +453,14 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
         </div>
       </details>
 
-      {/* Search and Clear Buttons */}
-      <div className="flex gap-3 mt-6">
+      {/* Search Button */}
+      <div className="mt-6">
         <Button 
           onClick={handleSearch}
           variant="default"
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-6 text-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer rounded-lg"
+          className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer rounded-lg"
         >
           Search Flights
-        </Button>
-        <Button 
-          onClick={handleClearFilters}
-          variant="outline"
-          className="px-8 border-2 border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 font-medium py-6 transition-all duration-200 cursor-pointer rounded-lg"
-        >
-          Clear Filters
         </Button>
       </div>
     </div>

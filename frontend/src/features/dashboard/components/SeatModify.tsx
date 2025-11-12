@@ -15,13 +15,13 @@ const getSeatStyle = (seat: Seat, selectedSeat: Seat | null, currentSeat: Seat |
   
   // Check if this is the current seat
   if (currentSeat?.id === seat.id) {
-    return 'bg-green-500 text-white hover:bg-green-600 border-green-300';
+    return 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 border-emerald-400 shadow-lg';
   }
   
   // If the seat is available, check if it's selected
   return selectedSeat?.id === seat.id
-    ? 'bg-blue-500 text-white hover:bg-blue-600 border-blue-300'
-    : 'bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-300';
+    ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700 border-teal-400 shadow-lg'
+    : 'bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-300 hover:border-teal-400';
 };
 
 const SeatModify: React.FC<SeatSelectionProps> = ({
@@ -34,11 +34,41 @@ const SeatModify: React.FC<SeatSelectionProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Sort seats by row number first, then by seat letter
+  const sortSeats = (seats: Seat[]): Seat[] => {
+    return [...seats].sort((a, b) => {
+      // Extract row number and seat letter from seat IDs like "1A", "12B", etc.
+      const parseSeat = (seatId: string) => {
+        const match = seatId.match(/^(\d+)([A-Z]+)$/);
+        if (match) {
+          return {
+            row: parseInt(match[1], 10),
+            letter: match[2]
+          };
+        }
+        // Fallback if format doesn't match
+        return { row: 0, letter: seatId };
+      };
+
+      const seatA = parseSeat(a.id);
+      const seatB = parseSeat(b.id);
+
+      // First sort by row number
+      if (seatA.row !== seatB.row) {
+        return seatA.row - seatB.row;
+      }
+
+      // If same row, sort by letter
+      return seatA.letter.localeCompare(seatB.letter);
+    });
+  };
+
   useEffect(() => {
     const fetchSeats = async () => {
       try {
         const seatsData = await getFlightSeats(flightId);
-        setSeats(seatsData);
+        const sortedSeats = sortSeats(seatsData);
+        setSeats(sortedSeats);
       } catch (err) {
         setError('Failed to load seats. Please try again.');
         console.error('Error loading seats:', err);
@@ -65,7 +95,7 @@ const SeatModify: React.FC<SeatSelectionProps> = ({
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-lg">Loading seats...</div>
+        <div className="text-lg text-teal-700 font-medium">Loading seats...</div>
       </div>
     );
   }
@@ -73,26 +103,26 @@ const SeatModify: React.FC<SeatSelectionProps> = ({
   if (error) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-red-500">{error}</div>
+        <div className="text-red-500 font-medium bg-red-50 px-4 py-2 rounded-lg border border-red-200">{error}</div>
       </div>
     );
   }
 
   return (
     <div className="max-w-full sm:max-w-2xl md:max-w-4xl mx-auto p-3 sm:p-4 md:p-6">
-      <Card>
+      <Card className="border-teal-200/50 shadow-2xl bg-white/90 backdrop-blur-sm">
         <CardHeader>
-          <h2 className="text-xl sm:text-2xl font-semibold">Select Your Seat</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Select Your Seat</h2>
         </CardHeader>
         
         <CardContent>
           {/* Flight Information */}
-          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-muted rounded-md">
-            <h3 className="text-lg sm:text-xl font-medium mb-2">Flight Details</h3>
-            <p className="text-sm sm:text-base text-muted-foreground">Flight ID: {flightId}</p>
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg border border-teal-200/50">
+            <h3 className="text-lg sm:text-xl font-medium mb-2 text-teal-800">Flight Details</h3>
+            <p className="text-sm sm:text-base text-teal-700">Flight ID: <span className="font-semibold text-teal-900">{flightId}</span></p>
             {currentSeat && (
-              <div className="mt-3 p-2 bg-blue-50 rounded border border-blue-200">
-                <p className="text-sm font-medium text-blue-800">Current Seat: {currentSeat.id}</p>
+              <div className="mt-3 p-2 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
+                <p className="text-sm font-medium text-emerald-800">Current Seat: <span className="text-emerald-900 font-semibold">{currentSeat.id}</span></p>
               </div>
             )}
           </div>
@@ -120,25 +150,31 @@ const SeatModify: React.FC<SeatSelectionProps> = ({
           {/* Legend */}
           <div className="flex flex-wrap gap-3 sm:gap-4 items-center justify-center text-sm sm:text-base">
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="w-4 h-4 sm:w-6 sm:h-6 bg-blue-100"></Badge>
-              <span>Available</span>
+              <Badge variant="outline" className="w-4 h-4 sm:w-6 sm:h-6 bg-teal-50 border-teal-300"></Badge>
+              <span className="text-teal-700">Available</span>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="w-4 h-4 sm:w-6 sm:h-6 bg-gray-200 border-2 border-gray-300"></Badge>
-              <span>Booked</span>
+              <span className="text-gray-600">Booked</span>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="w-4 h-4 sm:w-6 sm:h-6 bg-gray-50 relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-gray-300 before:to-transparent before:opacity-50"></Badge>
-              <span>Unavailable</span>
+              <Badge variant="outline" className="w-4 h-4 sm:w-6 sm:h-6 bg-gray-50 relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-gray-300 before:to-transparent before:opacity-50 border-gray-200"></Badge>
+              <span className="text-gray-600">Unavailable</span>
             </div>
+            {currentSeat && (
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="w-4 h-4 sm:w-6 sm:h-6 bg-gradient-to-r from-emerald-500 to-teal-500 border-emerald-400"></Badge>
+                <span className="text-emerald-700">Current Seat</span>
+              </div>
+            )}
           </div>
 
           {/* Selected Seat Information */}
           {selectedSeat && (
-            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-primary/10 rounded-md">
-              <h3 className="text-lg sm:text-xl font-medium mb-2">Selected Seat</h3>
-              <p className="text-sm sm:text-base">
-                Seat Number: {selectedSeat.id}
+            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg border border-teal-200/50">
+              <h3 className="text-lg sm:text-xl font-medium mb-2 text-teal-800">Selected Seat</h3>
+              <p className="text-sm sm:text-base text-teal-700 font-semibold">
+                Seat Number: <span className="text-teal-900">{selectedSeat.id}</span>
               </p>
             </div>
           )}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { API_BASE_URL, GOOGLE_AUTH_URL } from "../config";
+import NavigationBar from "../components/NavigationBar";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -107,16 +108,14 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-sky-50 to-blue-100">
-      {/* FlyPorter Title - Outside Panel */}
-      <div className="text-center mb-8">
-        <h1 className="text-5xl font-bold text-blue-600 mb-2">FlyPorter</h1>
-      </div>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-100/30">
+      <NavigationBar minimal={true} />
+      <div className="flex-1 flex flex-col items-center justify-center">
       
       {/* Login Panel */}
-      <div className="max-w-md w-full p-6 shadow-lg rounded-lg bg-white">
+      <div className="max-w-md w-full p-6 shadow-2xl rounded-xl bg-white/90 backdrop-blur-sm border border-teal-200/50">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-2">Login</h2>
+          <h2 className="text-2xl font-semibold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent mb-2">Login</h2>
         </div>
       {error && <p className="text-red-500 text-center mb-4">{error}</p>}
       <form onSubmit={handleLogin} className="space-y-4">
@@ -138,10 +137,10 @@ const LoginPage = () => {
         />
         <button
           type="submit"
-          className={`w-full py-2 rounded text-white ${
+          className={`w-full py-2 rounded-lg text-white font-semibold shadow-lg transition-all ${
             loading
               ? "bg-gray-400 cursor-not-allowed"
-              : "bg-blue-500 hover:bg-blue-600 cursor-pointer"
+              : "bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 hover:shadow-xl cursor-pointer"
           }`}
           disabled={loading}
         >
@@ -170,10 +169,17 @@ const LoginPage = () => {
         <p className="text-gray-600">Don't have an account?</p>
         <button
           onClick={() => navigate("/register")}
-          className="w-full py-2 mt-2 rounded text-white bg-green-500 hover:bg-green-600 cursor-pointer"
+          className="w-full py-2 mt-2 rounded-lg text-white font-semibold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-xl transition-all cursor-pointer"
         >
           Register
         </button>
+      </div>
+      <button
+        onClick={() => navigate("/")}
+        className="w-full py-2 mt-3 rounded-lg border border-teal-300 text-teal-700 font-semibold hover:bg-teal-50 hover:border-teal-400 transition-colors cursor-pointer"
+      >
+        Back to Home
+      </button>
       </div>
       </div>
     </div>

@@ -43,12 +43,12 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
   if (isLoading) {
     return (
-      <div className="absolute right-0 mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-50 h-[28rem]">
-        <div className="p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+      <div className="absolute right-0 mt-2 w-96 bg-white/90 backdrop-blur-sm border border-teal-200/50 rounded-lg shadow-2xl z-50 h-[28rem]">
+        <div className="p-4 border-b border-teal-200/50 bg-gradient-to-r from-teal-50 to-cyan-50">
+          <h3 className="text-lg font-semibold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Notifications</h3>
         </div>
-        <div className="p-4 text-center text-gray-500 h-full flex items-center justify-center">
-          <p>Loading notifications...</p>
+        <div className="p-4 text-center text-teal-700 h-full flex items-center justify-center">
+          <p className="font-medium">Loading notifications...</p>
         </div>
       </div>
     );
@@ -56,27 +56,27 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
   if (error) {
     return (
-      <div className="absolute right-0 mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-50 h-[28rem]">
-        <div className="p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+      <div className="absolute right-0 mt-2 w-96 bg-white/90 backdrop-blur-sm border border-teal-200/50 rounded-lg shadow-2xl z-50 h-[28rem]">
+        <div className="p-4 border-b border-teal-200/50 bg-gradient-to-r from-teal-50 to-cyan-50">
+          <h3 className="text-lg font-semibold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Notifications</h3>
         </div>
         <div className="p-4 text-center text-red-500 h-full flex items-center justify-center">
-          <p>{error}</p>
+          <p className="font-medium">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="absolute right-0 mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-50 h-[28rem] flex flex-col">
-      <div className="p-4 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
-        <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
+    <div className="absolute right-0 mt-2 w-96 bg-white/90 backdrop-blur-sm border border-teal-200/50 rounded-lg shadow-2xl z-50 h-[28rem] flex flex-col">
+      <div className="p-4 border-b border-teal-200/50 bg-gradient-to-r from-teal-50 to-cyan-50 flex justify-between items-center flex-shrink-0">
+        <h3 className="text-lg font-semibold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Notifications</h3>
         {unreadCount > 0 && (
           <Button
             variant="ghost"
             size="sm"
             onClick={handleMarkAllAsRead}
-            className="text-blue-600 hover:text-blue-700"
+            className="text-teal-600 hover:text-teal-800 hover:bg-teal-100 font-medium"
           >
             Mark all as read
           </Button>
@@ -88,27 +88,27 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
           notifications.map((notification) => (
             <div
               key={notification.id}
-              className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                !notification.read ? 'bg-blue-50' : ''
+              className={`p-4 border-b border-teal-100/50 hover:bg-teal-50/50 cursor-pointer transition-colors ${
+                !notification.read ? 'bg-gradient-to-r from-teal-50/50 to-cyan-50/50' : ''
               }`}
               onClick={() => handleNotificationClick(notification.id)}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="text-sm text-gray-800">{notification.message}</p>
-                  <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+                  <p className={`text-sm ${!notification.read ? 'text-teal-900 font-medium' : 'text-teal-700'}`}>{notification.message}</p>
+                  <p className="text-xs text-teal-600 mt-1">{notification.time}</p>
                 </div>
                 <div className="flex items-center gap-2 ml-2">
                   {!notification.read && (
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-gradient-to-r from-teal-600 to-cyan-600 rounded-full shadow-sm"></div>
                   )}
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <div className="p-4 text-center text-gray-500 h-full flex items-center justify-center">
-            <p>No notifications</p>
+          <div className="p-4 text-center text-teal-600 h-full flex items-center justify-center">
+            <p className="font-medium">No notifications</p>
           </div>
         )}
       </div>

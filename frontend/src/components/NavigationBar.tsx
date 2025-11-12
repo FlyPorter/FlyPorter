@@ -7,9 +7,10 @@ import { NotificationCenter } from '../features/notificationCenter';
 interface NavigationBarProps {
   onBack?: () => void;
   onForward?: () => void;
+  minimal?: boolean; // When true, only show FlyPorter title
 }
 
-const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward }) => {
+const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward, minimal = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const token = localStorage.getItem('token');
@@ -54,13 +55,13 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward }) => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b shadow-sm">
+    <nav className="sticky top-0 z-50 bg-gradient-to-r from-teal-50 to-cyan-50 border-b border-teal-200/50 shadow-md backdrop-blur-sm">
       <div className="w-full px-4 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold text-gray-800">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
             {role === "ADMIN" ? "FlyPorter Admin" : "FlyPorter"}
           </h1>
-          {!hasSidebar && showBackButton && (
+          {!minimal && isLoggedIn && !hasSidebar && showBackButton && (
             <Button
               variant="ghost"
               onClick={handleBack}
@@ -69,7 +70,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward }) => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
-          {!hasSidebar && (
+          {!minimal && isLoggedIn && !hasSidebar && (
             <Button
               variant="ghost"
               onClick={handleForward}
@@ -80,35 +81,37 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward }) => {
           )}
         </div>
         
-        <div className="flex items-center gap-4">
-          {isLoggedIn ? (
-            <>
+        {!minimal && (
+          <div className="flex items-center gap-4">
+            {isLoggedIn ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate(role?.toUpperCase() === "ADMIN" ? '/admin' : '/dashboard')}
+                  className="cursor-pointer"
+                >
+                  <Home className="h-5 w-5" />
+                </Button>
+                
+                {/* Notification Center */}
+                <NotificationCenter />
+                
+                <div className="flex items-center gap-2 px-3 py-2 text-teal-700 bg-teal-50 rounded-lg border border-teal-200/50">
+                  <User className="h-5 w-5" />
+                  <span className="font-medium">{userEmail}</span>
+                </div>
+              </>
+            ) : (
               <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate(role?.toUpperCase() === "ADMIN" ? '/admin' : '/dashboard')}
-                className="cursor-pointer"
+                onClick={() => navigate('/login')}
+                className="cursor-pointer bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl transition-all"
               >
-                <Home className="h-5 w-5" />
+                Login
               </Button>
-              
-              {/* Notification Center */}
-              <NotificationCenter />
-              
-              <div className="flex items-center gap-2 px-3 py-2 text-gray-600">
-                <User className="h-5 w-5" />
-                <span>{userEmail}</span>
-              </div>
-            </>
-          ) : (
-            <Button
-              onClick={() => navigate('/login')}
-              className="cursor-pointer"
-            >
-              Login
-            </Button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </nav>
   );

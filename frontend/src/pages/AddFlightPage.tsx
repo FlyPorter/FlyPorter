@@ -186,49 +186,50 @@ const AddFlightPage = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h2 className="text-2xl font-bold mb-4">Add Flight</h2>
+    <div className="min-h-screen bg-gradient-to-br from-teal-50/50 via-cyan-50/50 to-teal-100/20">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Add Flight</h2>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
-          {error}
-        </div>
-      )}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg border border-red-200 font-medium">
+            {error}
+          </div>
+        )}
 
-      <div className="mb-6 p-4 border rounded shadow bg-white">
-        <h3 className="text-lg font-semibold mb-4">Creation Method</h3>
-        <div className="flex gap-4 mb-6">
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="route"
-              checked={creationMethod === 'route'}
-              onChange={(e) => setCreationMethod(e.target.value as 'route')}
-              className="mr-2"
-            />
-            Create by Route
-          </label>
-          <label className="flex items-center">
-            <input
-              type="radio"
-              value="airport"
-              checked={creationMethod === 'airport'}
-              onChange={(e) => setCreationMethod(e.target.value as 'airport')}
-              className="mr-2"
-            />
-            Create by Airports
-          </label>
-        </div>
+        <div className="mb-6 p-6 border border-teal-200/50 rounded-lg shadow-2xl bg-white/90 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold mb-4 text-teal-800">Creation Method</h3>
+          <div className="flex gap-4 mb-6">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                value="route"
+                checked={creationMethod === 'route'}
+                onChange={(e) => setCreationMethod(e.target.value as 'route')}
+                className="mr-2 accent-teal-600"
+              />
+              <span className="text-teal-700 font-medium">Create by Route</span>
+            </label>
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                value="airport"
+                checked={creationMethod === 'airport'}
+                onChange={(e) => setCreationMethod(e.target.value as 'airport')}
+                className="mr-2 accent-teal-600"
+              />
+              <span className="text-teal-700 font-medium">Create by Airports</span>
+            </label>
+          </div>
 
         <div className="grid grid-cols-2 gap-4">
           {/* Route Selection (when method is 'route') */}
           {creationMethod === 'route' && (
             <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1">Route *</label>
+              <label className="block text-sm font-medium mb-1 text-teal-700">Route *</label>
               <select
                 value={selectedRouteId}
                 onChange={(e) => setSelectedRouteId(e.target.value)}
-                className="border p-2 rounded w-full"
+                className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
                 required
               >
                 <option value="">Select Route</option>
@@ -248,11 +249,11 @@ const AddFlightPage = () => {
           {creationMethod === 'airport' && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">Origin Airport *</label>
+                <label className="block text-sm font-medium mb-1 text-teal-700">Origin Airport *</label>
                 <select
                   value={originAirportCode}
                   onChange={(e) => setOriginAirportCode(e.target.value)}
-                  className="border p-2 rounded w-full"
+                  className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
                   required
                 >
                   <option value="">Select Origin Airport</option>
@@ -264,11 +265,11 @@ const AddFlightPage = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Destination Airport *</label>
+                <label className="block text-sm font-medium mb-1 text-teal-700">Destination Airport *</label>
                 <select
                   value={destinationAirportCode}
                   onChange={(e) => setDestinationAirportCode(e.target.value)}
-                  className="border p-2 rounded w-full"
+                  className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
                   required
                 >
                   <option value="">Select Destination Airport</option>
@@ -284,11 +285,11 @@ const AddFlightPage = () => {
 
           {/* Common Fields */}
           <div>
-            <label className="block text-sm font-medium mb-1">Airline *</label>
+            <label className="block text-sm font-medium mb-1 text-teal-700">Airline *</label>
             <select
               value={airlineCode}
               onChange={(e) => setAirlineCode(e.target.value)}
-              className="border p-2 rounded w-full"
+              className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
               required
             >
               <option value="">Select Airline</option>
@@ -301,77 +302,77 @@ const AddFlightPage = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Seat Capacity *</label>
+            <label className="block text-sm font-medium mb-1 text-teal-700">Seat Capacity *</label>
             <input
               type="number"
               value={seatCapacity}
               onChange={(e) => setSeatCapacity(e.target.value ? parseInt(e.target.value) : "")}
-              className="border p-2 rounded w-full"
+              className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
               min="1"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Base Price *</label>
+            <label className="block text-sm font-medium mb-1 text-teal-700">Base Price *</label>
             <input
               type="number"
               value={basePrice}
               onChange={(e) => setBasePrice(e.target.value ? parseFloat(e.target.value) : "")}
-              className="border p-2 rounded w-full"
+              className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
               min="0"
               step="0.01"
               required
             />
           </div>
 
-          <div className="col-span-2 border-t pt-4 mt-2">
-            <h4 className="text-md font-medium mb-3">Departure</h4>
+          <div className="col-span-2 border-t border-teal-200 pt-4 mt-2">
+            <h4 className="text-md font-medium mb-3 text-teal-800">Departure</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Departure Date *</label>
+                <label className="block text-sm font-medium mb-1 text-teal-700">Departure Date *</label>
                 <input
                   type="date"
                   value={departureDate}
                   onChange={(e) => setDepartureDate(e.target.value)}
-                  className="border p-2 rounded w-full"
+                  className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Departure Time *</label>
+                <label className="block text-sm font-medium mb-1 text-teal-700">Departure Time *</label>
                 <input
                   type="time"
                   value={departureTime}
                   onChange={(e) => setDepartureTime(e.target.value)}
-                  className="border p-2 rounded w-full"
+                  className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
                   required
                 />
               </div>
             </div>
           </div>
 
-          <div className="col-span-2 border-t pt-4 mt-2">
-            <h4 className="text-md font-medium mb-3">Arrival</h4>
+          <div className="col-span-2 border-t border-teal-200 pt-4 mt-2">
+            <h4 className="text-md font-medium mb-3 text-teal-800">Arrival</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Arrival Date *</label>
+                <label className="block text-sm font-medium mb-1 text-teal-700">Arrival Date *</label>
                 <input
                   type="date"
                   value={arrivalDate}
                   onChange={(e) => setArrivalDate(e.target.value)}
                   min={departureDate}
-                  className="border p-2 rounded w-full"
+                  className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Arrival Time *</label>
+                <label className="block text-sm font-medium mb-1 text-teal-700">Arrival Time *</label>
                 <input
                   type="time"
                   value={arrivalTime}
                   onChange={(e) => setArrivalTime(e.target.value)}
-                  className="border p-2 rounded w-full"
+                  className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
                   required
                 />
               </div>
@@ -379,24 +380,25 @@ const AddFlightPage = () => {
           </div>
         </div>
 
-        <button
-          onClick={handleAddFlight}
-          disabled={isLoading}
-          className={`mt-6 bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 ${
-            isLoading ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
-        >
-          {isLoading ? 'Adding...' : 'Add Flight'}
-        </button>
-      </div>
+          <button
+            onClick={handleAddFlight}
+            disabled={isLoading}
+            className={`mt-6 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+            }`}
+          >
+            {isLoading ? 'Adding...' : 'Add Flight'}
+          </button>
+        </div>
 
-      <div className="mt-6 text-center">
-        <button
-          onClick={() => navigate("/admin")}
-          className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
-        >
-          Back to Admin
-        </button>
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => navigate("/admin")}
+            className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all cursor-pointer"
+          >
+            Back to Admin
+          </button>
+        </div>
       </div>
     </div>
   );

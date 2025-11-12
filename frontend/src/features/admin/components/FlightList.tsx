@@ -53,7 +53,7 @@ const FlightList: React.FC<FlightListProps> = ({
     <div className="space-y-4">
       {flights.map((flight) => (
         <Card key={flight.id} className="p-4 hover:shadow-md transition-shadow">
-          <div className="flex flex-col lg:flex-row justify-between items-start space-y-4 lg:space-y-0">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-4 lg:space-y-0">
             <div className="flex-1 w-full">
               <div className="flex items-center space-x-4">
                 <div className="text-base sm:text-lg font-semibold">{flight.airline.name} ({flight.airline.code})</div>
@@ -80,18 +80,24 @@ const FlightList: React.FC<FlightListProps> = ({
                   <div className="text-xs sm:text-sm text-gray-600">
                     {flight.arrival.city} ({flight.arrival.airport})
                   </div>
-                  <div className="text-lg sm:text-xl font-bold text-blue-600 mt-2">
+                  <div className="text-lg sm:text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent mt-2">
                     ${flight.price}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex space-x-2 lg:items-center lg:ml-4">
-              <Button onClick={() => onUpdateFlight(flight)} className="bg-yellow-500 text-white hover:bg-yellow-600 cursor-pointer">
+            <div className="flex flex-col space-y-2 justify-center lg:ml-4">
+              <Button 
+                onClick={() => onUpdateFlight(flight)} 
+                className="w-24 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all cursor-pointer"
+              >
                 Update
               </Button>
-              <Button onClick={() => onDeleteFlight(flight.id)} className="bg-red-500 text-white hover:bg-red-600 cursor-pointer">
+              <Button 
+                onClick={() => onDeleteFlight(flight.id)} 
+                className="w-24 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all cursor-pointer"
+              >
                 Delete
               </Button>
             </div>

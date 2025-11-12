@@ -19,7 +19,7 @@ const BookingNotificationPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50/50 via-cyan-50/50 to-teal-100/20">
       <NavigationBar />
       <div className="container mx-auto px-4 py-8">
         <BookingNotification 

@@ -123,105 +123,107 @@ const AddRoutePage = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold mb-4">Manage Routes</h2>
+    <div className="min-h-screen bg-gradient-to-br from-teal-50/50 via-cyan-50/50 to-teal-100/20">
+      <div className="container mx-auto px-4 py-8">
+        <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Manage Routes</h2>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
-          {error}
-        </div>
-      )}
-
-      <div className="mb-6 p-4 border rounded shadow">
-        <h3 className="text-lg font-semibold mb-4">Add Route</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Origin Airport *</label>
-            <select
-              value={originAirportCode}
-              onChange={(e) => setOriginAirportCode(e.target.value)}
-              className="border p-2 rounded w-full"
-              required
-            >
-              <option value="">Select Origin Airport</option>
-              {airports.map((airport) => (
-                <option key={airport.code} value={airport.code}>
-                  {airport.code} - {airport.city}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Destination Airport *</label>
-            <select
-              value={destinationAirportCode}
-              onChange={(e) => setDestinationAirportCode(e.target.value)}
-              className="border p-2 rounded w-full"
-              required
-            >
-              <option value="">Select Destination Airport</option>
-              {airports.map((airport) => (
-                <option key={airport.code} value={airport.code}>
-                  {airport.code} - {airport.city}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <button
-          onClick={handleAddRoute}
-          disabled={isLoading}
-          className={`mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ${
-            isLoading ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
-        >
-          {isLoading ? 'Adding...' : 'Add Route'}
-        </button>
-      </div>
-
-      <div className="mt-8 p-4 border rounded shadow">
-        <h3 className="text-lg font-semibold mb-4">Existing Routes</h3>
-        {routes.length === 0 ? (
-          <p className="text-gray-600">No routes available.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="border p-2 text-left">Route ID</th>
-                  <th className="border p-2 text-left">Origin</th>
-                  <th className="border p-2 text-left">Destination</th>
-                </tr>
-              </thead>
-              <tbody>
-                {routes.map((route) => (
-                  <tr key={route.route_id} className="border">
-                    <td className="border p-2">{route.route_id}</td>
-                    <td className="border p-2">
-                      {route.origin_airport_code}
-                      {route.origin_airport?.city_name && ` (${route.origin_airport.city_name})`}
-                    </td>
-                    <td className="border p-2">
-                      {route.destination_airport_code}
-                      {route.destination_airport?.city_name && ` (${route.destination_airport.city_name})`}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg border border-red-200 font-medium">
+            {error}
           </div>
         )}
-      </div>
 
-      <div className="mt-6 text-center">
-        <button
-          onClick={() => navigate("/admin")}
-          className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
-        >
-          Back to Admin
-        </button>
+        <div className="mb-6 p-6 border border-teal-200/50 rounded-lg shadow-2xl bg-white/90 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold mb-4 text-teal-800">Add Route</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1 text-teal-700">Origin Airport *</label>
+              <select
+                value={originAirportCode}
+                onChange={(e) => setOriginAirportCode(e.target.value)}
+                className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
+                required
+              >
+                <option value="">Select Origin Airport</option>
+                {airports.map((airport) => (
+                  <option key={airport.code} value={airport.code}>
+                    {airport.code} - {airport.city}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1 text-teal-700">Destination Airport *</label>
+              <select
+                value={destinationAirportCode}
+                onChange={(e) => setDestinationAirportCode(e.target.value)}
+                className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
+                required
+              >
+                <option value="">Select Destination Airport</option>
+                {airports.map((airport) => (
+                  <option key={airport.code} value={airport.code}>
+                    {airport.code} - {airport.city}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <button
+            onClick={handleAddRoute}
+            disabled={isLoading}
+            className={`mt-4 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white px-4 py-2 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+            }`}
+          >
+            {isLoading ? 'Adding...' : 'Add Route'}
+          </button>
+        </div>
+
+        <div className="mt-8 p-6 border border-teal-200/50 rounded-lg shadow-2xl bg-white/90 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold mb-4 text-teal-800">Existing Routes</h3>
+          {routes.length === 0 ? (
+            <p className="text-teal-700 font-medium">No routes available.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gradient-to-r from-teal-50 to-cyan-50">
+                    <th className="border border-teal-200 p-3 text-left text-teal-800 font-semibold">Route ID</th>
+                    <th className="border border-teal-200 p-3 text-left text-teal-800 font-semibold">Origin</th>
+                    <th className="border border-teal-200 p-3 text-left text-teal-800 font-semibold">Destination</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {routes.map((route) => (
+                    <tr key={route.route_id} className="border-b border-teal-100 hover:bg-teal-50/50 transition-colors">
+                      <td className="border border-teal-200 p-3 text-teal-900 font-medium">{route.route_id}</td>
+                      <td className="border border-teal-200 p-3 text-teal-900">
+                        {route.origin_airport_code}
+                        {route.origin_airport?.city_name && ` (${route.origin_airport.city_name})`}
+                      </td>
+                      <td className="border border-teal-200 p-3 text-teal-900">
+                        {route.destination_airport_code}
+                        {route.destination_airport?.city_name && ` (${route.destination_airport.city_name})`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => navigate("/admin")}
+            className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all cursor-pointer"
+          >
+            Back to Admin
+          </button>
+        </div>
       </div>
     </div>
   );
