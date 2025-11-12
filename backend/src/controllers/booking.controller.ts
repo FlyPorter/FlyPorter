@@ -8,6 +8,8 @@ import {
     cancelBooking,
     getUpcomingBookings,
     getPastBookings,
+    getAllBookings,
+    cancelAnyBooking,
     type CreateBookingInput,
 } from "../services/booking.service.js";
 
@@ -210,3 +212,51 @@ export async function cancelBookingHandler(req: Request, res: Response) {
     }
 }
 
+/**
+ * GET /bookings/admin/all
+ * Get all bookings (admin only)
+ */
+export async function getAllBookingsHandler(req: Request, res: Response) {
+    try {
+        const bookings = await getAllBookings();
+        return sendSuccess(res, bookings);
+    } catch (e) {
+        const { status, msg } = mapPrismaError(e);
+        return sendError(res, msg, status);
+    }
+}
+
+/**
+ * DELETE /bookings/admin/:id
+ * Cancel any booking (admin only)
+ */
+export async function cancelAnyBookingHandler(req: Request, res: Response) {
+    const bookingId = parseId(req.params.id);
+    if (!bookingId) {
+        return sendError(res, "Valid booking ID is required", 422);
+    }
+
+    try {
+        const cancelledBooking = await cancelAnyBooking(bookingId);
+
+        return sendSuccess(
+            res,
+            cancelledBooking,
+            "Booking cancelled successfully"
+        );
+    } catch (e: any) {
+        // Handle specific error messages from service
+        if (e.message?.includes("not found")) {
+            return sendError(res, e.message, 404);
+        }
+        if (e.message?.includes("already cancelled")) {
+            return sendError(res, e.message, 400);
+        }
+        if (e.message?.includes("already departed")) {
+            return sendError(res, e.message, 400);
+        }
+
+        const { status, msg } = mapPrismaError(e);
+        return sendError(res, msg, status);
+    }
+}

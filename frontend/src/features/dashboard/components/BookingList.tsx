@@ -389,49 +389,134 @@ const BookingList: React.FC = () => {
 
       {/* Modal for Booking Details */}
       {selectedBooking && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold mb-4">Booking Details</h2>
-            <div className="space-y-2">
-              <p>
-                <span className="font-semibold">Airline:</span> {selectedBooking.airline.name}
-              </p>
-              <p>
-                <span className="font-semibold">Flight Number:</span> {selectedBooking.flight_id}
-              </p>
-              <p>
-                <span className="font-semibold">Date:</span> {selectedBooking.date}
-              </p>
-              <p>
-                <span className="font-semibold">Passenger Name:</span> {selectedBooking.passenger_name}
-              </p>
-              {selectedBooking.seat_number && (
-                <p>
-                  <span className="font-semibold">Seat Number:</span> {selectedBooking.seat_number}
-                </p>
-              )}
-              <p>
-                <span className="font-semibold">Price:</span> ${selectedBooking.price}
-              </p>
-              <p>
-                <span className="font-semibold">Departure:</span> {selectedBooking.departure.city} (
-                {selectedBooking.departure.airport}) at {selectedBooking.departure.time}
-              </p>
-              <p>
-                <span className="font-semibold">Arrival:</span> {selectedBooking.arrival.city} (
-                {selectedBooking.arrival.airport}) at {selectedBooking.arrival.time}
-              </p>
-              <p>
-                <span className="font-semibold">Duration:</span> {selectedBooking.duration}
-              </p>
-              <p>
-                <span className="font-semibold">All times are shown in origin city time</span>
-              </p>
+        <div 
+          className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              closeModal();
+            }
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-teal-600 to-cyan-600 px-6 py-4 text-white">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Booking Details</h2>
+                <button
+                  onClick={closeModal}
+                  className="text-white/80 hover:text-white transition-colors text-2xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
             </div>
-            <div className="mt-4 flex justify-end">
+
+            {/* Content */}
+            <div className="overflow-y-auto p-6 space-y-6">
+              {/* Price Badge */}
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+                  ${selectedBooking.price.toFixed(2)}
+                </span>
+              </div>
+
+              {/* Flight Information */}
+              <div className="border border-gray-200 rounded-lg p-4 bg-gradient-to-br from-teal-50/50 to-cyan-50/50">
+                <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Flight Information</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Airline</span>
+                    <span className="font-medium">{selectedBooking.airline.name} ({selectedBooking.airline.code})</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Flight Number</span>
+                    <span className="font-medium">{selectedBooking.flight_id}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Date</span>
+                    <span className="font-medium">{formatDate(selectedBooking.date)}</span>
+                  </div>
+                  {selectedBooking.seat_number && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Seat</span>
+                      <span className="font-medium">{selectedBooking.seat_number}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Duration</span>
+                    <span className="font-medium">{selectedBooking.duration}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Route Information */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Route</h3>
+                <div className="space-y-4">
+                  {/* Departure */}
+                  <div className="flex items-start gap-4">
+                    <div className="flex-1">
+                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Departure</div>
+                      <div className="text-lg font-semibold text-gray-900">
+                        {selectedBooking.departure.city}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {selectedBooking.departure.airport}
+                      </div>
+                      <div className="text-sm font-medium text-gray-700 mt-1">
+                        {selectedBooking.departure.time}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {formatDate(selectedBooking.date)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Arrival */}
+                  <div className="flex items-start gap-4">
+                    <div className="flex-1">
+                      <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Arrival</div>
+                      <div className="text-lg font-semibold text-gray-900">
+                        {selectedBooking.arrival.city}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {selectedBooking.arrival.airport}
+                      </div>
+                      <div className="text-sm font-medium text-gray-700 mt-1">
+                        {selectedBooking.arrival.time}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {formatDate(selectedBooking.date)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 italic">
+                    All times are shown in origin city time
+                  </p>
+                </div>
+              </div>
+
+              {/* Passenger Information */}
+              {selectedBooking.passenger_name && (
+                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Passenger Information</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Passenger Name</span>
+                      <span className="font-medium">{selectedBooking.passenger_name}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end gap-3">
               <button
                 onClick={closeModal}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 border border-gray-400 hover:border-gray-500 cursor-pointer"
+                className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors cursor-pointer"
               >
                 Close
               </button>

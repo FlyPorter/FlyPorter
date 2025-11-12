@@ -21,7 +21,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward, minima
   const role = user?.role || 'user';
 
   // Pages that have sidebar (hide arrow buttons)
-  const pagesWithSidebar = ['/search', '/admin', '/settings', '/dashboard'];
+  const pagesWithSidebar = ['/search', '/admin', '/admin/all-bookings', '/settings', '/dashboard'];
   const hasSidebar = pagesWithSidebar.includes(location.pathname);
 
   const homePath = role?.toUpperCase() === "ADMIN" ? '/admin' : '/dashboard';
@@ -58,7 +58,16 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward, minima
     <nav className="sticky top-0 z-50 bg-gradient-to-r from-teal-50 to-cyan-50 border-b border-teal-200/50 shadow-md backdrop-blur-sm">
       <div className="w-full px-4 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+          <h1 
+            className="text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => {
+              if (isLoggedIn) {
+                navigate(role?.toUpperCase() === "ADMIN" ? '/admin' : '/dashboard');
+              } else {
+                navigate('/');
+              }
+            }}
+          >
             {role === "ADMIN" ? "FlyPorter Admin" : "FlyPorter"}
           </h1>
           {!minimal && isLoggedIn && !hasSidebar && showBackButton && (

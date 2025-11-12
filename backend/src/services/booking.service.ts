@@ -33,6 +33,12 @@ export interface BookingWithDetails {
     total_price: Decimal | null;
     confirmation_code: string | null;
     updated_at: Date;
+    user?: {
+        email: string;
+        customer_info: {
+            full_name: string;
+        } | null;
+    };
     flight: {
         flight_id: number;
         departure_time: Date;
@@ -583,6 +589,164 @@ export async function getPastBookings(userId: number): Promise<BookingWithDetail
                 },
             },
         },
+    });
+}
+
+/**
+ * Get all bookings (admin only)
+ */
+export async function getAllBookings(): Promise<BookingWithDetails[]> {
+    return prisma.booking.findMany({
+        orderBy: { booking_time: "desc" },
+        select: {
+            booking_id: true,
+            user_id: true,
+            flight_id: true,
+            seat_number: true,
+            booking_time: true,
+            status: true,
+            total_price: true,
+            confirmation_code: true,
+            updated_at: true,
+            user: {
+                select: {
+                    email: true,
+                    customer_info: {
+                        select: {
+                            full_name: true,
+                        },
+                    },
+                },
+            },
+            flight: {
+                select: {
+                    flight_id: true,
+                    departure_time: true,
+                    arrival_time: true,
+                    base_price: true,
+                    route: {
+                        select: {
+                            route_id: true,
+                            origin_airport: {
+                                select: {
+                                    airport_code: true,
+                                    airport_name: true,
+                                    city_name: true,
+                                },
+                            },
+                            destination_airport: {
+                                select: {
+                                    airport_code: true,
+                                    airport_name: true,
+                                    city_name: true,
+                                },
+                            },
+                        },
+                    },
+                    airline: {
+                        select: {
+                            airline_code: true,
+                            airline_name: true,
+                        },
+                    },
+                },
+            },
+            seat: {
+                select: {
+                    seat_number: true,
+                    class: true,
+                    price_modifier: true,
+                },
+            },
+        },
+    });
+}
+
+/**
+ * Cancel any booking (admin only)
+ * This allows admins to cancel any booking without user_id restriction
+ */
+export async function cancelAnyBooking(bookingId: number) {
+    return prisma.$transaction(async (tx) => {
+        // 1. Get the booking (no user_id check for admin)
+        const booking = await tx.booking.findUnique({
+            where: {
+                booking_id: bookingId,
+            },
+            select: {
+                booking_id: true,
+                user_id: true,
+                status: true,
+                flight_id: true,
+                seat_number: true,
+                confirmation_code: true,
+                flight: {
+                    select: {
+                        departure_time: true,
+                    },
+                },
+            },
+        });
+
+        if (!booking) {
+            throw new Error("Booking not found");
+        }
+
+        if (booking.status === "cancelled") {
+            throw new Error("Booking is already cancelled");
+        }
+
+        // Check if flight is in the past
+        if (new Date(booking.flight.departure_time) < new Date()) {
+            throw new Error("Cannot cancel a booking for a flight that has already departed");
+        }
+
+        // 2. Update booking status
+        const updatedBooking = await tx.booking.update({
+            where: { booking_id: bookingId },
+            data: {
+                status: "cancelled",
+                updated_at: new Date(),
+            },
+            select: {
+                booking_id: true,
+                user_id: true,
+                flight_id: true,
+                seat_number: true,
+                booking_time: true,
+                status: true,
+                total_price: true,
+                confirmation_code: true,
+                updated_at: true,
+            },
+        });
+
+        // 3. Make seat available again
+        await tx.seat.update({
+            where: {
+                flight_id_seat_number: {
+                    flight_id: booking.flight_id,
+                    seat_number: booking.seat_number,
+                },
+            },
+            data: {
+                is_available: true,
+            },
+        });
+
+        // 4. Create notification for booking cancellation
+        await tx.notification.create({
+            data: {
+                user_id: booking.user_id,
+                booking_id: bookingId,
+                flight_id: booking.flight_id,
+                type: "booking_cancelled",
+                title: "Booking Cancelled",
+                message: `Your booking ${booking.confirmation_code} has been cancelled by an administrator.`,
+            },
+        });
+
+        return updatedBooking;
     });
 }
 

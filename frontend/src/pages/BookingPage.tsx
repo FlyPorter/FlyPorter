@@ -241,13 +241,13 @@ const BookingPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <NavigationBar />
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">No Flight Selected</h2>
-            <p className="text-gray-600 mb-6">Please select a flight to continue with booking.</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">No Flight Selected</h2>
+            <p className="text-sm sm:text-base text-gray-600 mb-6">Please select a flight to continue with booking.</p>
             <button
               onClick={() => navigate('/search')}
-              className="px-6 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+              className="px-4 sm:px-6 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all text-sm sm:text-base"
             >
               Search Flights
             </button>
@@ -261,11 +261,11 @@ const BookingPage: React.FC = () => {
   const returnFlight = bookingData.returnFlight ? convertFlightDisplayToFlight(bookingData.returnFlight) : undefined;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50/50 via-cyan-50/50 to-teal-100/20">
+    <div className="w-full bg-gradient-to-br from-teal-50/50 via-cyan-50/50 to-teal-100/20">
       <NavigationBar />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 pb-20">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent mb-8 text-center">Complete Your Booking</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent mb-6 sm:mb-8 text-center">Complete Your Booking</h1>
           
           <BookingForm 
             outboundFlight={outboundFlight}
