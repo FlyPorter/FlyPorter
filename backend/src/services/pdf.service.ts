@@ -1,5 +1,6 @@
 import PDFDocument from "pdfkit";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { prisma } from "../config/prisma.js";
 import { env } from "../config/env.js";
 
@@ -269,7 +270,7 @@ function getSpacesClient(): S3Client {
     spacesClient = new S3Client({
       region: env.SPACES_REGION,
       endpoint: env.SPACES_ENDPOINT,
-      forcePathStyle: false,
+      forcePathStyle: true, // Use path-style URLs for Digital Ocean Spaces
       credentials: {
         accessKeyId: env.SPACES_ACCESS_KEY,
         secretAccessKey: env.SPACES_SECRET_KEY,
@@ -286,15 +287,26 @@ function buildPublicUrl(key: string) {
     return `${base}/${key}`;
   }
 
-  const endpointHost = (() => {
-    try {
-      return new URL(env.SPACES_ENDPOINT).host;
-    } catch (error) {
-      return env.SPACES_ENDPOINT.replace(/^https?:\/\//, "");
-    }
-  })();
+  // Use path-style URL format for Digital Ocean Spaces
+  // Format: https://tor1.digitaloceanspaces.com/bucket-name/key
+  const endpointBase = env.SPACES_ENDPOINT.replace(/\/+$/, "");
+  return `${endpointBase}/${env.SPACES_BUCKET}/${key}`;
+}
 
-  return `https://${env.SPACES_BUCKET}.${endpointHost}/${key}`;
+export async function generateSignedUrl(
+  key: string,
+  expiresIn: number = 3600
+): Promise<string> {
+  ensureSpacesConfig();
+
+  const client = getSpacesClient();
+
+  const command = new GetObjectCommand({
+    Bucket: env.SPACES_BUCKET,
+    Key: key,
+  });
+
+  return getSignedUrl(client, command, { expiresIn });
 }
 
 export async function uploadBookingInvoiceToSpaces(
@@ -319,10 +331,13 @@ export async function uploadBookingInvoiceToSpaces(
 
   await client.send(command);
 
+  // Generate a signed URL (valid for 1 hour by default)
+  const signedUrl = await generateSignedUrl(key, 3600);
+
   return {
     key,
     bucket: env.SPACES_BUCKET,
-    url: buildPublicUrl(key),
+    url: signedUrl,
   };
 }
 

@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "flyporter-api-collection",
     "name": "FlyPorter API",
-    "description": "Complete API collection for the FlyPorter Mobile booking journey.\n\nSuggested flow using seed data:\n1. GET /flight → selects a seed flight and stores flightId/bookingDate\n2. GET /seat/{{flightId}} → stores seatNumber\n3. POST /auth/register or /auth/login → stores authToken/userId\n4. PATCH /profile → add passenger info (required)\n5. POST /payment/validate → mock card check\n6. POST /bookings → confirm booking and store bookingId\n\nSeed script also provisions admin helpers for creating custom flights when needed.",
+    "description": "Complete API collection for the FlyPorter Mobile booking journey.\n\nSuggested flow using seed data:\n1. GET /flight → selects a seed flight and stores flightId/bookingDate\n2. GET /seat/{{flightId}} → stores seatNumber\n3. POST /auth/register or /auth/login → stores authToken/userId\n4. PATCH /profile → add passenger info (required)\n5. POST /payment/validate → mock card check\n6. POST /bookings → confirm booking and store bookingId\n7. POST /pdf/invoice/{{bookingId}}/upload → upload invoice to Digital Ocean Spaces (optional)\n\nSeed script also provisions admin helpers for creating custom flights when needed.\n\nDigital Ocean Spaces integration allows secure PDF invoice storage with time-limited signed URLs.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -53,6 +53,11 @@
     },
     {
       "key": "bookingDate",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "invoiceUrl",
       "value": "",
       "type": "string"
     }
@@ -749,6 +754,104 @@
         }
       ],
       "description": "Notification management. Booking confirmations and cancellations appear here."
+    },
+    {
+      "name": "PDF Invoices",
+      "item": [
+        {
+          "name": "Download Invoice (Direct)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pdf/invoice/{{bookingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pdf",
+                "invoice",
+                "{{bookingId}}"
+              ]
+            },
+            "description": "Download PDF invoice directly from the backend (no upload to Digital Ocean Spaces). The PDF is generated on-the-fly and returned as a binary stream. Opens inline in browser by default."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    console.log('📄 Invoice PDF downloaded successfully');",
+                  "    console.log('Content-Type:', pm.response.headers.get('Content-Type'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload Invoice to Digital Ocean Spaces",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data) {",
+                  "        const { key, bucket, url, expiresIn } = response.data;",
+                  "        console.log('✅ Invoice uploaded to Digital Ocean Spaces');",
+                  "        console.log('📦 Bucket:', bucket);",
+                  "        console.log('🔑 Key:', key);",
+                  "        console.log('⏱️  Expires in:', expiresIn, 'seconds (', Math.floor(expiresIn / 60), 'minutes)');",
+                  "        console.log('🔗 Signed URL:', url);",
+                  "        ",
+                  "        // Save the URL for potential reuse",
+                  "        pm.collectionVariables.set('invoiceUrl', url);",
+                  "    }",
+                  "}",
+                  "",
+                  "if (pm.response.code === 500) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.message && response.message.includes('not configured')) {",
+                  "        console.warn('⚠️  Digital Ocean Spaces is not configured!');",
+                  "        console.log('Please set these environment variables in your .env file:');",
+                  "        console.log('  SPACES_ENDPOINT=https://nyc3.digitaloceanspaces.com');",
+                  "        console.log('  SPACES_REGION=nyc3');",
+                  "        console.log('  SPACES_ACCESS_KEY=your-access-key');",
+                  "        console.log('  SPACES_SECRET_KEY=your-secret-key');",
+                  "        console.log('  SPACES_BUCKET=your-bucket-name');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pdf/invoice/{{bookingId}}/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pdf",
+                "invoice",
+                "{{bookingId}}",
+                "upload"
+              ]
+            },
+            "description": "⭐ RECOMMENDED: Upload booking invoice to Digital Ocean Spaces and get a secure signed URL.\n\n✅ Features:\n- PDF stored in Digital Ocean Spaces (cloud storage)\n- Returns a time-limited signed URL (valid for 1 hour)\n- Files are private by default (not publicly accessible)\n- Signed URL allows temporary secure access\n\n📋 Requirements:\n- User must be logged in\n- User must own the booking (or be admin)\n- Digital Ocean Spaces must be configured (see .env setup)\n\n🔧 Setup Required:\nAdd these to your backend .env file:\n  SPACES_ENDPOINT=https://nyc3.digitaloceanspaces.com\n  SPACES_REGION=nyc3\n  SPACES_ACCESS_KEY=your-access-key\n  SPACES_SECRET_KEY=your-secret-key\n  SPACES_BUCKET=your-bucket-name\n\nSee DIGITAL_OCEAN_SPACES_SETUP.md for complete setup instructions."
+          },
+          "response": []
+        }
+      ],
+      "description": "PDF invoice generation and Digital Ocean Spaces integration. Use 'Upload to Spaces' for cloud storage with secure signed URLs, or 'Download Direct' for instant PDF download."
     },
     {
       "name": "Customers",
