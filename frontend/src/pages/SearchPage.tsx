@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FlightSearchPanel from '../features/search/components/FlightSearchPanel';
 import FlightList from '../features/search/components/FlightList';
@@ -10,7 +10,17 @@ const SearchPage: React.FC = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
   const userStr = localStorage.getItem('user');
-  const isLoggedIn = !!token && !!userStr;
+  const user = userStr ? JSON.parse(userStr) : null;
+  const isLoggedIn = !!token && !!user;
+  const role = user?.role || 'user';
+
+  // Redirect logged-in users to their home page
+  useEffect(() => {
+    if (isLoggedIn) {
+      const homePath = role?.toUpperCase() === "ADMIN" ? '/admin' : '/dashboard';
+      navigate(homePath, { replace: true });
+    }
+  }, [isLoggedIn, role, navigate]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
@@ -72,8 +82,17 @@ const SearchPage: React.FC = () => {
         return matchesRoute && matchesAirline && matchesPrice && matchesDate;
       });
 
-      // Transform flights for display
-      const displayFlights = matchedFlights.map(transformFlightToDisplay);
+      // Transform flights for display - filter out any that fail to transform
+      const displayFlights = matchedFlights
+        .map((flight: any) => {
+          try {
+            return transformFlightToDisplay(flight);
+          } catch (err) {
+            console.error('Error transforming flight:', err, flight);
+            return null;
+          }
+        })
+        .filter((flight: any) => flight !== null) as FlightDisplay[];
       setFlights(displayFlights);
     } catch (err) {
       setError('Failed to search flights. Please try again.');
@@ -107,10 +126,10 @@ const SearchPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-100/30">
       <NavigationBar />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="max-w-5xl mx-auto">
           {/* Page Title */}
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent mb-6 text-center">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent mb-4 sm:mb-6 text-center">
             Book a Flight
           </h1>
           
@@ -122,9 +141,9 @@ const SearchPage: React.FC = () => {
           
           {/* Show results below search panel if user is not logged in */}
           {!isLoggedIn && hasSearched && (
-            <div className="mt-8">
-              <h2 className="text-2xl font-semibold text-teal-800 mb-4">Available Flights</h2>
-              <p className="text-teal-700 mb-6">
+            <div className="mt-6 sm:mt-8">
+              <h2 className="text-xl sm:text-2xl font-semibold text-teal-800 mb-3 sm:mb-4">Available Flights</h2>
+              <p className="text-sm sm:text-base text-teal-700 mb-4 sm:mb-6">
                 {flights.length} flights found. Please log in to book a flight.
               </p>
               <FlightList

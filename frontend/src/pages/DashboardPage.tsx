@@ -3,15 +3,34 @@ import { useNavigate, useLocation } from "react-router-dom";
 import BookingList from '../features/dashboard/components/BookingList';
 import Sidebar from "../features/dashboard/components/Sidebar";
 import { Button } from "../components/ui/button";
-import { Home, User } from 'lucide-react';
+import { Home, User, Menu, X } from 'lucide-react';
 import { NotificationCenter } from '../features/notificationCenter';
 import { API_BASE_URL } from "../config";
 
 const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Disable body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (isSidebarOpen) {
+      // Check if we're on mobile (window width < 1024px which is lg breakpoint)
+      const isMobile = window.innerWidth < 1024;
+      if (isMobile) {
+        document.body.style.overflow = 'hidden';
+      }
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    // Cleanup function to restore scroll when component unmounts
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isSidebarOpen]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -130,7 +149,7 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-teal-50/50 via-cyan-50/50 to-teal-100/20">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50/50 via-cyan-50/50 to-teal-100/20">
       {/* Top Navigation Bar */}
       <nav className="sticky top-0 z-50 bg-gradient-to-r from-teal-50 to-cyan-50 border-b border-teal-200/50 shadow-md backdrop-blur-sm">
         <div className="w-full px-4 h-14 flex items-center justify-between">
@@ -161,14 +180,45 @@ const DashboardPage = () => {
       </nav>
 
       {/* Main Content with Sidebar */}
-      <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
-        <div className="sticky top-0 left-0 z-10">
-          <Sidebar role={role} />
+      <div className="flex flex-col lg:flex-row relative lg:h-[calc(100vh-3.5rem)]">
+        {/* Mobile Sidebar Overlay */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
+        {/* Sidebar - Collapsible on mobile, always visible on desktop */}
+        <div 
+          className={`
+            fixed lg:sticky top-14 left-0 z-50 lg:z-10
+            h-[calc(100vh-3.5rem)] lg:h-[calc(100vh-3.5rem)]
+            transform transition-transform duration-300 ease-in-out
+            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+            lg:top-14 lg:self-start
+          `}
+        >
+          <Sidebar role={role} onClose={() => setIsSidebarOpen(false)} />
         </div>
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-6">
+
+        {/* Main Content */}
+        <div className="flex-1 w-full lg:w-auto lg:overflow-y-auto">
+          {/* Mobile Menu Button */}
+          <div className="lg:hidden sticky z-30 bg-gradient-to-r from-teal-50 to-cyan-50 border-b border-teal-200/50 px-4 py-2 -mt-[1px]" style={{ top: 'calc(3.5rem - 1px)' }}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="text-teal-700 hover:text-teal-900"
+            >
+              {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
+          </div>
+
+          <div className="p-4 sm:p-6">
             <div className="flex justify-start items-center mb-4">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Your Bookings</h2>
+              <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Your Bookings</h2>
             </div>
             <BookingList />
           </div>

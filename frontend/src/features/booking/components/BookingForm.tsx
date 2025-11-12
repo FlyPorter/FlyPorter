@@ -179,28 +179,28 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
   const FlightSummaryCard: React.FC<FlightSummaryCardProps> = ({ flight, seatNumber, isReturn = false }) => (
     <Card className="mb-4">
-      <CardHeader>
-        <h3 className="text-xl font-semibold">{isReturn ? 'Return Flight' : 'Outbound Flight'}</h3>
+      <CardHeader className="px-4 sm:px-6 pb-3 sm:pb-4">
+        <h3 className="text-lg sm:text-xl font-semibold">{isReturn ? 'Return Flight' : 'Outbound Flight'}</h3>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
+      <CardContent className="px-4 sm:px-6">
+        <div className="space-y-2 sm:space-y-3">
           <div className="flex flex-col space-y-2">
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               {flight.airline.name} ({flight.airline.code})
             </div>
-            <div className="text-sm">
+            <div className="text-xs sm:text-sm break-words">
               {flight.departure.airport}{flight.departure.city ? ` (${flight.departure.city})` : ''} → {flight.arrival.airport}{flight.arrival.city ? ` (${flight.arrival.city})` : ''}
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Date: {flight.departure.date}
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Time: {flight.departure.time}
             </div>
-            <div className="text-sm">
+            <div className="text-xs sm:text-sm">
               Seat Number: {seatNumber}
             </div>
-            <div className="text-lg font-bold text-primary">
+            <div className="text-base sm:text-lg font-bold text-primary">
               Price: ${flight.price}
             </div>
           </div>
@@ -212,14 +212,14 @@ const BookingForm: React.FC<BookingFormProps> = ({
   return (
     <div className="max-w-full sm:max-w-2xl mx-auto">
       {/* Flight Summary */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <FlightSummaryCard flight={outboundFlight} seatNumber={outboundSeatNumber} />
         {returnFlight && returnSeatNumber && (
           <FlightSummaryCard flight={returnFlight} seatNumber={returnSeatNumber} isReturn />
         )}
         <Card className="mb-4">
-          <CardContent className="pt-6">
-            <div className="text-xl font-bold text-primary">
+          <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
+            <div className="text-lg sm:text-xl font-bold text-primary">
               Total Price: ${totalPrice.toFixed(2)}
             </div>
           </CardContent>
@@ -227,24 +227,25 @@ const BookingForm: React.FC<BookingFormProps> = ({
       </div>
 
       {/* Passenger Information */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Passenger Information</h2>
+      <div className="space-y-3 sm:space-y-4">
+        <h2 className="text-lg sm:text-xl font-semibold">Passenger Information</h2>
         
         {profileLoading ? (
-          <div className="text-center py-8">
-            <p className="text-gray-600">Loading profile...</p>
+          <div className="text-center py-6 sm:py-8">
+            <p className="text-sm sm:text-base text-gray-600">Loading profile...</p>
           </div>
         ) : profileError ? (
           <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-8">
-                <p className="text-red-600 mb-4">{profileError}</p>
-                <p className="text-gray-600 mb-4">
+            <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
+              <div className="text-center py-6 sm:py-8">
+                <p className="text-sm sm:text-base text-red-600 mb-4">{profileError}</p>
+                <p className="text-xs sm:text-sm text-gray-600 mb-4">
                   Please complete your profile before booking.
                 </p>
                 <Button
                   onClick={() => window.location.href = '/profile'}
                   variant="outline"
+                  className="text-sm sm:text-base"
                 >
                   Go to Profile
                 </Button>
@@ -253,14 +254,15 @@ const BookingForm: React.FC<BookingFormProps> = ({
           </Card>
         ) : !profile?.customer_info ? (
           <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-8">
-                <p className="text-gray-600 mb-4">
+            <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
+              <div className="text-center py-6 sm:py-8">
+                <p className="text-xs sm:text-sm text-gray-600 mb-4">
                   No profile information found. Please complete your profile before booking.
                 </p>
                 <Button
                   onClick={() => window.location.href = '/profile'}
                   variant="outline"
+                  className="text-sm sm:text-base"
                 >
                   Go to Profile
                 </Button>
@@ -269,33 +271,34 @@ const BookingForm: React.FC<BookingFormProps> = ({
           </Card>
         ) : (
           <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-3">
+            <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
+              <div className="space-y-2 sm:space-y-3">
                 <div>
-                  <p className="text-sm text-gray-500">Full Name</p>
-                  <p className="text-lg font-medium">{profile.customer_info.full_name}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Full Name</p>
+                  <p className="text-base sm:text-lg font-medium break-words">{profile.customer_info.full_name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Birth Date</p>
-                  <p className="text-lg">
+                  <p className="text-xs sm:text-sm text-gray-500">Birth Date</p>
+                  <p className="text-base sm:text-lg">
                     {profile.customer_info.date_of_birth 
                       ? new Date(profile.customer_info.date_of_birth).toLocaleDateString()
                       : 'Not provided'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Phone Number</p>
-                  <p className="text-lg">{profile.customer_info.phone || 'Not provided'}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Phone Number</p>
+                  <p className="text-base sm:text-lg">{profile.customer_info.phone || 'Not provided'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Passport Number</p>
-                  <p className="text-lg">{profile.customer_info.passport_number || 'Not provided'}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Passport Number</p>
+                  <p className="text-base sm:text-lg break-words">{profile.customer_info.passport_number || 'Not provided'}</p>
                 </div>
                 <div className="pt-2">
                   <Button
                     onClick={() => window.location.href = '/profile'}
                     variant="outline"
                     size="sm"
+                    className="text-xs sm:text-sm"
                   >
                     Update Profile
                   </Button>
@@ -307,14 +310,14 @@ const BookingForm: React.FC<BookingFormProps> = ({
       </div>
 
       {/* Payment Section */}
-      <div className="space-y-4 mt-8">
-        <h2 className="text-xl font-semibold">Payment Information</h2>
+      <div className="space-y-3 sm:space-y-4 mt-6 sm:mt-8">
+        <h2 className="text-lg sm:text-xl font-semibold">Payment Information</h2>
         
         <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
+          <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                   Cardholder Name
                 </label>
                 <input
@@ -323,15 +326,15 @@ const BookingForm: React.FC<BookingFormProps> = ({
                   value={paymentData.cardholderName}
                   onChange={(e) => handlePaymentChange('cardholderName', e.target.value)}
                   placeholder="Enter cardholder name"
-                  className="w-full p-2 border rounded-md placeholder:text-gray-400"
+                  className="w-full p-2 sm:p-2.5 text-sm sm:text-base border rounded-md placeholder:text-gray-400"
                 />
                 {paymentErrors.cardholderName && (
-                  <p className="mt-1 text-sm text-red-600">{paymentErrors.cardholderName}</p>
+                  <p className="mt-1 text-xs sm:text-sm text-red-600">{paymentErrors.cardholderName}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                   Card Number
                 </label>
                 <input
@@ -343,16 +346,16 @@ const BookingForm: React.FC<BookingFormProps> = ({
                   onChange={(e) => handlePaymentChange('cardNumber', e.target.value)}
                   placeholder="1234 5678 9012 3456"
                   maxLength={19}
-                  className="w-full p-2 border rounded-md placeholder:text-gray-400"
+                  className="w-full p-2 sm:p-2.5 text-sm sm:text-base border rounded-md placeholder:text-gray-400"
                 />
                 {paymentErrors.cardNumber && (
-                  <p className="mt-1 text-sm text-red-600">{paymentErrors.cardNumber}</p>
+                  <p className="mt-1 text-xs sm:text-sm text-red-600">{paymentErrors.cardNumber}</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     Expiry Date
                   </label>
                   <input
@@ -362,15 +365,15 @@ const BookingForm: React.FC<BookingFormProps> = ({
                     onChange={(e) => handlePaymentChange('expiryDate', e.target.value)}
                     placeholder="MM/YY"
                     maxLength={5}
-                    className="w-full p-2 border rounded-md placeholder:text-gray-400"
+                    className="w-full p-2 sm:p-2.5 text-sm sm:text-base border rounded-md placeholder:text-gray-400"
                   />
                   {paymentErrors.expiryDate && (
-                    <p className="mt-1 text-sm text-red-600">{paymentErrors.expiryDate}</p>
+                    <p className="mt-1 text-xs sm:text-sm text-red-600">{paymentErrors.expiryDate}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                     CVV
                   </label>
                   <input
@@ -380,10 +383,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
                     onChange={(e) => handlePaymentChange('cvv', e.target.value)}
                     placeholder="123"
                     maxLength={4}
-                    className="w-full p-2 border rounded-md placeholder:text-gray-400"
+                    className="w-full p-2 sm:p-2.5 text-sm sm:text-base border rounded-md placeholder:text-gray-400"
                   />
                   {paymentErrors.cvv && (
-                    <p className="mt-1 text-sm text-red-600">{paymentErrors.cvv}</p>
+                    <p className="mt-1 text-xs sm:text-sm text-red-600">{paymentErrors.cvv}</p>
                   )}
                 </div>
               </div>
@@ -396,7 +399,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
       <Button
         onClick={handleSubmit}
         disabled={isLoading || !profile?.customer_info || profileLoading || !isPaymentValid}
-        className="w-full mt-6"
+        className="w-full mt-4 sm:mt-6 text-sm sm:text-base py-2 sm:py-2.5"
       >
         {isLoading ? 'Processing...' : 'Confirm Booking'}
       </Button>

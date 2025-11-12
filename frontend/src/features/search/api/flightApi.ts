@@ -50,7 +50,7 @@ export const searchFlights = async (params: SearchParams): Promise<Flight[]> => 
     }
 
     const response = await fetch(
-      `${API_BASE_URL}/flight?${queryParams.toString()}`,
+      `${API_BASE_URL}/flight/search?${queryParams.toString()}`,
       {
         method: 'GET',
         headers
@@ -153,90 +153,37 @@ export const getAllFlights = async (): Promise<Flight[]> => {
 
 export const transformFlightToDisplay = (flight: any): FlightDisplay => {
   // Handle different response formats from backend
-  // listFlights() returns: { departure_time, arrival_time, ... }
-  // searchFlights() returns: { route: { departure_time, ... }, date, ... }
+  // Both listFlights() and searchFlights() return: { departure_time, arrival_time, ... } at root level
   
   let departureDateTime: Date;
   let arrivalDateTime: Date;
   let departureDateStr: string;
   let durationStr: string;
   
-  // Check if it's the listFlights format (has departure_time at root level)
-  if (flight.departure_time && !flight.route?.departure_time) {
-    // Format from listFlights()
-    try {
-      departureDateTime = new Date(flight.departure_time);
-      arrivalDateTime = new Date(flight.arrival_time);
-      
-      if (isNaN(departureDateTime.getTime())) {
-        console.error('Invalid departure_time:', flight.departure_time);
-        departureDateTime = new Date();
-      }
-      if (isNaN(arrivalDateTime.getTime())) {
-        console.error('Invalid arrival_time:', flight.arrival_time);
-        arrivalDateTime = new Date(departureDateTime.getTime() + 120 * 60000);
-      }
-      
-      departureDateStr = departureDateTime.toISOString().split('T')[0];
-      durationStr = flight.duration || '0m';
-    } catch (error) {
-      console.error('Error parsing flight times:', error);
-      departureDateTime = new Date();
-      arrivalDateTime = new Date();
-      departureDateStr = new Date().toISOString().split('T')[0];
-      durationStr = '0m';
-    }
-  } else {
-    // Format from searchFlights() - has route.departure_time
-    try {
-      departureDateTime = new Date(flight.route.departure_time);
-      // Check if date is valid
-      if (isNaN(departureDateTime.getTime())) {
-        console.error('Invalid departure_time:', flight.route.departure_time);
-        // Fallback to current date/time if invalid
-        departureDateTime = new Date();
-      }
-    } catch (error) {
-      console.error('Error parsing departure_time:', flight.route.departure_time, error);
+  // Both formats have departure_time at root level
+  try {
+    departureDateTime = new Date(flight.departure_time);
+    arrivalDateTime = new Date(flight.arrival_time);
+    
+    if (isNaN(departureDateTime.getTime())) {
+      console.error('Invalid departure_time:', flight.departure_time);
       departureDateTime = new Date();
     }
-  
-    // Extract date in YYYY-MM-DD format with validation
-    try {
-      departureDateStr = departureDateTime.toISOString().split('T')[0];
-    } catch (error) {
-      console.error('Error formatting departure date:', error);
-      departureDateStr = flight.date || new Date().toISOString().split('T')[0];
+    if (isNaN(arrivalDateTime.getTime())) {
+      console.error('Invalid arrival_time:', flight.arrival_time);
+      arrivalDateTime = new Date(departureDateTime.getTime() + 120 * 60000);
     }
     
-    // Parse duration - backend may return string (e.g., "2h 30m") or number (minutes)
-    let durationMinutes = 0;
-    const durationValue = flight.route?.duration as any; // Backend may return string or number
-    if (typeof durationValue === 'string') {
-      const durationStrVal = String(durationValue);
-      const hoursMatch = durationStrVal.match(/(\d+)h/);
-      const minutesMatch = durationStrVal.match(/(\d+)m/);
-      const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
-      const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
-      durationMinutes = hours * 60 + minutes;
-      durationStr = durationValue;
-    } else if (typeof durationValue === 'number') {
-      durationMinutes = durationValue;
-      durationStr = `${Math.floor(durationMinutes / 60)}h ${durationMinutes % 60}m`;
-    } else {
-      durationStr = flight.route?.formatted_duration || '0m';
-    }
+    departureDateStr = departureDateTime.toISOString().split('T')[0];
     
-    // Calculate arrival time
-    try {
-      arrivalDateTime = new Date(departureDateTime.getTime() + durationMinutes * 60000);
-      if (isNaN(arrivalDateTime.getTime())) {
-        arrivalDateTime = new Date(departureDateTime.getTime() + 120 * 60000); // Default 2 hours
-      }
-    } catch (error) {
-      console.error('Error calculating arrival time:', error);
-      arrivalDateTime = new Date(departureDateTime.getTime() + 120 * 60000); // Default 2 hours
-    }
+    // Duration is provided by backend as a string (e.g., "2h 30m")
+    durationStr = flight.duration || '0m';
+  } catch (error) {
+    console.error('Error parsing flight times:', error, flight);
+    departureDateTime = new Date();
+    arrivalDateTime = new Date();
+    departureDateStr = new Date().toISOString().split('T')[0];
+    durationStr = '0m';
   }
   
   // Format dates with error handling
@@ -276,21 +223,43 @@ export const transformFlightToDisplay = (flight: any): FlightDisplay => {
   const airlineCode = flight.airline_code;
   const airline = flight.airline || { code: airlineCode, name: airlineCode };
   const route = flight.route || {};
-  const departureAirport = route.departure_airport || route.origin_airport_code || '';
-  const destinationAirport = route.destination_airport || route.destination_airport_code || '';
-  // Try multiple paths to get city name from backend response
-  // Backend returns: route.origin_airport.city_name and route.destination_airport.city_name
-  const departureCity = route.origin_airport?.city_name || 
-                       route.departure_airport_rel?.city || 
-                       route.departure_airport_rel?.city_name ||
-                       route.origin_airport_rel?.city ||
-                       route.origin_airport?.airport_name?.replace(/\s+(International|Intl)\.?\s*Airport.*$/i, '') ||
-                       '';
-  const destinationCity = route.destination_airport?.city_name || 
-                         route.destination_airport_rel?.city || 
-                         route.destination_airport_rel?.city_name ||
-                         route.destination_airport?.airport_name?.replace(/\s+(International|Intl)\.?\s*Airport.*$/i, '') ||
-                         '';
+  
+  // Extract airport codes - backend searchFlights returns origin_airport_code and destination_airport_code as strings
+  // Also handle object format from origin_airport/destination_airport if needed
+  let departureAirport = '';
+  if (typeof route.origin_airport_code === 'string') {
+    departureAirport = route.origin_airport_code;
+  } else if (route.origin_airport && typeof route.origin_airport === 'object' && route.origin_airport.airport_code) {
+    departureAirport = String(route.origin_airport.airport_code);
+  } else if (typeof route.departure_airport === 'string') {
+    departureAirport = route.departure_airport;
+  }
+  
+  let destinationAirport = '';
+  if (typeof route.destination_airport_code === 'string') {
+    destinationAirport = route.destination_airport_code;
+  } else if (route.destination_airport && typeof route.destination_airport === 'object' && route.destination_airport.airport_code) {
+    destinationAirport = String(route.destination_airport.airport_code);
+  } else if (typeof route.destination_airport === 'string') {
+    destinationAirport = route.destination_airport;
+  }
+  
+  // Extract city names - ensure we always get strings, never objects
+  let departureCity = '';
+  if (route.origin_airport && typeof route.origin_airport === 'object') {
+    departureCity = route.origin_airport.city_name || '';
+  } else if (route.departure_airport_rel && typeof route.departure_airport_rel === 'object') {
+    departureCity = route.departure_airport_rel.city || route.departure_airport_rel.city_name || '';
+  } else if (route.origin_airport_rel && typeof route.origin_airport_rel === 'object') {
+    departureCity = route.origin_airport_rel.city || '';
+  }
+  
+  let destinationCity = '';
+  if (route.destination_airport && typeof route.destination_airport === 'object') {
+    destinationCity = route.destination_airport.city_name || '';
+  } else if (route.destination_airport_rel && typeof route.destination_airport_rel === 'object') {
+    destinationCity = route.destination_airport_rel.city || route.destination_airport_rel.city_name || '';
+  }
   const aircraft = route.aircraft || { id: flightId, capacity: flight.seat_capacity || 0, model: 'Unknown' };
 
   return {
@@ -298,10 +267,10 @@ export const transformFlightToDisplay = (flight: any): FlightDisplay => {
     flightNumber: String(flightNumber),
     airlineCode: airlineCode,
     date: departureDateStr,
-    availableTickets: flight.available_tickets || 0,
-    price: String(flight.price || flight.base_price || 0),
+    availableTickets: flight.available_seats || flight.available_tickets || 0,
+    price: String(flight.base_price || flight.price || 0),
     airline: {
-      code: airline.code || airlineCode,
+      code: airline.code || airline.airline_code || airlineCode,
       name: airline.name || airline.airline_name || airlineCode
     },
     departure: {

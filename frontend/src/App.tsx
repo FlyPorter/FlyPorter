@@ -18,11 +18,12 @@ import AddAirportPage from './pages/AddAirportPage';
 import AddAirlinePage from './pages/AddAirlinePage';
 import AddRoutePage from './pages/AddRoutePage';
 import ProfilePage from './features/profile/pages/ProfilePage';
+import AllBookingsPage from './pages/AllBookingsPage';
 
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 overflow-x-hidden">
         <Routes>
           <Route path="/" element={<SearchPage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -38,6 +39,7 @@ function App() {
           <Route path="/admin/add-airline" element={<AddAirlinePage />} />
           <Route path="/admin/add-route" element={<AddRoutePage />} />
           <Route path="/admin/update-flight/:id" element={<UpdateFlightPage />} />
+          <Route path="/admin/all-bookings" element={<AllBookingsPage />} />
           <Route path="/search" element={<SearchResultsPage />} />
           <Route path="/search-results" element={<SearchResultsPage />} />
           <Route path="/seat-selection" element={<SeatSelectionPage />} />
