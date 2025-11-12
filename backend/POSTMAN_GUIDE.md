@@ -39,6 +39,7 @@ You are now ready to follow the customer booking journey end-to-end.
 - `Payment` – mock card validation prior to confirming a booking
 - `Bookings` – create, list, and cancel bookings
 - `Notifications` – view booking confirmation/cancellation messages
+- `PDF Invoices` – generate and upload booking invoices to Digital Ocean Spaces
 - `Customers` – direct CRUD on customer info (admins or advanced use)
 - `Admin Setup` – optional utilities to create custom airlines/routes/flights
 - `Airports` / `Cities` – public reference data
@@ -105,7 +106,16 @@ Follow these steps in order to simulate the user story:
   ```
 - Result: saves `bookingId`, reaffirms `seatNumber`, and logs the confirmation code
 
-### 7. Manage Booking & Notifications
+### 7. Download Invoice (Optional)
+- Request: `GET /pdf/invoice/{{bookingId}}` or `POST /pdf/invoice/{{bookingId}}/upload`
+- Folder: `PDF Invoices`
+- Two options:
+  - **Download Direct**: `GET /pdf/invoice/{{bookingId}}` - PDF generated and downloaded immediately
+  - **Upload to Spaces**: `POST /pdf/invoice/{{bookingId}}/upload` - Uploads to Digital Ocean Spaces and returns a signed URL
+- Result: Get a professional PDF invoice for your booking
+- Note: Digital Ocean Spaces upload requires configuration (see below)
+
+### 8. Manage Booking & Notifications
 - View bookings: `GET /bookings` (or `filter=upcoming|past`)
 - Cancel: `DELETE /bookings/{{bookingId}}`
 - Notifications: `GET /notifications` (confirmation is created automatically)
@@ -123,20 +133,57 @@ Follow these steps in order to simulate the user story:
 | `bookingDate` | Departure datetime of selected flight | Yes | `GET /flight` |
 | `seatNumber` | Selected seat number | Yes | `GET /seat/:flight_id` or booking |
 | `bookingId` | Created booking ID | Yes | `POST /bookings` |
+| `invoiceUrl` | Signed URL for uploaded invoice | Yes | `POST /pdf/invoice/:id/upload` |
 | `routeId` | Last created route ID (admin) | Yes | Admin route creation |
 
 View/edit variables in Postman by opening the collection → **Variables** tab.
 
 ---
 
+## 📦 Digital Ocean Spaces Configuration (Optional)
+
+The PDF invoice upload feature requires Digital Ocean Spaces to be configured. This is **optional** - you can still download invoices directly without it.
+
+### Setup Steps:
+
+1. **Create a Digital Ocean Space**
+   - Log in to Digital Ocean → Spaces → Create a Space
+   - Choose a region (e.g., NYC3, SFO3)
+   - Name it (e.g., `flyporter-invoices`)
+
+2. **Generate API Keys**
+   - Go to API → Spaces access keys → Generate New Key
+   - Save both the Access Key and Secret Key
+
+3. **Configure Backend Environment**
+   Add these to your `backend/.env` file:
+   ```bash
+   SPACES_ENDPOINT="https://nyc3.digitaloceanspaces.com"
+   SPACES_REGION="nyc3"
+   SPACES_ACCESS_KEY="your-access-key"
+   SPACES_SECRET_KEY="your-secret-key"
+   SPACES_BUCKET="flyporter-invoices"
+   ```
+
+4. **Restart the server** and test with `POST /pdf/invoice/{{bookingId}}/upload`
+
+For detailed setup instructions, see:
+- `DIGITAL_OCEAN_SPACES_SETUP.md` - Complete setup guide
+- `DO_SPACES_QUICK_REFERENCE.md` - Quick reference
+- `TASK_1_CHECKLIST.md` - Setup checklist
+
+---
+
 ## 🛠 Troubleshooting
 
 - **401 Unauthorized** – log in again and confirm `authToken` is set
-- **403 Access denied** – you are trying to access another user’s data; only admins can do that
+- **403 Access denied** – you are trying to access another user's data; only admins can do that
 - **"Customer information required"** – run `PATCH /profile` with name, passport, and date of birth
 - **"Seat is not available"** – someone already booked it; re-run `GET /seat/{{flightId}}` to pick another
 - **Payment validation failed** – check card number (16 digits), CCV (3 digits), expiry (`YYYY-MM`), and that the expiry date is after `bookingDate`
 - **Connection issues** – ensure the server is running (`npm run dev`) and the `baseUrl` matches the port
+- **"Spaces configuration is incomplete"** – Digital Ocean Spaces environment variables are missing or incorrect; see the Spaces Configuration section above
+- **Invoice upload returns 404** – the booking doesn't exist or you don't own it; verify `bookingId` is correct and you're logged in as the booking owner
 
 ---
 
@@ -166,7 +213,9 @@ View/edit variables in Postman by opening the collection → **Variables** tab.
 - [ ] `POST /bookings` – confirm booking
 - [ ] `GET /bookings` – verify it appears
 - [ ] `GET /notifications` – see confirmation message
-- [ ] (Optional) `DELETE /bookings/{{bookingId}}`
+- [ ] (Optional) `GET /pdf/invoice/{{bookingId}}` – download invoice
+- [ ] (Optional) `POST /pdf/invoice/{{bookingId}}/upload` – upload to DO Spaces
+- [ ] (Optional) `DELETE /bookings/{{bookingId}}` – cancel booking
 
 ### Optional Admin Flow
 - [ ] Login as admin (`admin@123.com` / `admin123`)
