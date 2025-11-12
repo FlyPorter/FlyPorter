@@ -1,6 +1,7 @@
 import { prisma } from "../config/prisma.js";
 import type { BookingStatus } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
+import { uploadBookingInvoiceToSpaces } from "./pdf.service.js";
 
 /**
  * Generate a unique confirmation code (12 characters)
@@ -190,6 +191,21 @@ export async function createBooking(input: CreateBookingInput) {
                 title: "Booking Confirmed",
                 message: `Your booking ${confirmationCode} has been confirmed for flight on ${flight.departure_time.toISOString()}.`,
             },
+        });
+
+        return booking;
+    }).then(async (booking) => {
+        // 9. Automatically upload invoice PDF to Digital Ocean Spaces
+        // This is done async (fire-and-forget) to not block the booking response
+        // If it fails, user can still request it later via GET /api/pdf/invoice/:bookingId
+        uploadBookingInvoiceToSpaces({
+            bookingId: booking.booking_id,
+            userId: user_id,
+        }).then(() => {
+            console.log(`✓ Invoice uploaded to Spaces for booking ${booking.booking_id}`);
+        }).catch((error) => {
+            console.error(`✗ Failed to upload invoice for booking ${booking.booking_id}:`, error.message);
+            // Don't throw - this is best-effort, user can request it later
         });
 
         return booking;
