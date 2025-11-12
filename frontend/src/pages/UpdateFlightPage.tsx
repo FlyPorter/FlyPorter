@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import { API_BASE_URL } from "../config";
+import { X } from "lucide-react";
 
 const UpdateFlightPage = () => {
   const navigate = useNavigate();
@@ -102,49 +103,81 @@ const UpdateFlightPage = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4">Update Flight</h2>
-
-      {error && <p className="text-red-500">{error}</p>}
-
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-sm font-semibold mb-2">Seat Capacity</label>
-          <input
-            type="number"
-            name="seat_capacity"
-            value={flightData.seat_capacity}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
-            min="1"
-            required
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-semibold mb-2">Base Price</label>
-          <input
-            type="number"
-            name="base_price"
-            value={flightData.base_price}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
-            min="0"
-            step="0.01"
-            required
-          />
-        </div>
-
-        <div className="mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Faded Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={() => navigate("/admin")}
+      />
+      
+      {/* Modal Content */}
+      <div className="relative z-10 w-full max-w-md mx-4">
+        <div className="p-6 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-teal-200/50">
+          {/* Close Button */}
           <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-700"
+            onClick={() => navigate("/admin")}
+            className="absolute top-4 right-4 text-teal-600 hover:text-teal-800 transition-colors cursor-pointer"
           >
-            {isLoading ? "Updating..." : "Update Flight"}
+            <X className="h-5 w-5" />
           </button>
+
+          <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent pr-8">Update Flight</h2>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg border border-red-200 font-medium">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label className="block text-sm font-semibold mb-2 text-teal-700">Seat Capacity</label>
+              <input
+                type="number"
+                name="seat_capacity"
+                value={flightData.seat_capacity}
+                onChange={handleChange}
+                className="w-full p-2 border border-teal-200 rounded-lg focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
+                min="1"
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-semibold mb-2 text-teal-700">Base Price</label>
+              <input
+                type="number"
+                name="base_price"
+                value={flightData.base_price}
+                onChange={handleChange}
+                className="w-full p-2 border border-teal-200 rounded-lg focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
+                min="0"
+                step="0.01"
+                required
+              />
+            </div>
+
+            <div className="mb-4 flex gap-3">
+              <button
+                type="button"
+                onClick={() => navigate("/admin")}
+                className="flex-1 p-2 border border-teal-300 rounded-lg text-teal-700 hover:bg-teal-50 hover:border-teal-400 transition-colors cursor-pointer font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`flex-1 p-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all ${
+                  isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                }`}
+              >
+                {isLoading ? "Updating..." : "Update Flight"}
+              </button>
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
     </div>
   );
 };

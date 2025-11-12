@@ -287,28 +287,28 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
       : arrivalAirport;
     
     return (
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <h2 className="text-lg font-semibold mb-3">{isReturn ? 'Return Flight Details' : 'Outbound Flight Details'}</h2>
-        <div className="space-y-2">
-          <p><span className="font-medium">Airline:</span> {flight.airline.name} ({flight.airline.code})</p>
-          <p><span className="font-medium">From:</span> {departureDisplay}</p>
-          <p><span className="font-medium">To:</span> {arrivalDisplay}</p>
-          <p><span className="font-medium">Date:</span> {flight.departure.date}</p>
-          <p><span className="font-medium">Time:</span> {flight.departure.time}</p>
-          <p><span className="font-medium">Seat Number:</span> {ticket.seat_number}</p>
-          <p><span className="font-medium">Price:</span> ${ticket.price}</p>
+      <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-4 rounded-lg border border-teal-200/50">
+        <h2 className="text-lg font-semibold mb-3 text-teal-800">{isReturn ? 'Return Flight Details' : 'Outbound Flight Details'}</h2>
+        <div className="space-y-2 text-teal-700">
+          <p><span className="font-semibold text-teal-800">Airline:</span> {flight.airline.name} ({flight.airline.code})</p>
+          <p><span className="font-semibold text-teal-800">From:</span> {departureDisplay}</p>
+          <p><span className="font-semibold text-teal-800">To:</span> {arrivalDisplay}</p>
+          <p><span className="font-semibold text-teal-800">Date:</span> {flight.departure.date}</p>
+          <p><span className="font-semibold text-teal-800">Time:</span> {flight.departure.time}</p>
+          <p><span className="font-semibold text-teal-800">Seat Number:</span> {ticket.seat_number}</p>
+          <p><span className="font-semibold text-teal-800">Price:</span> <span className="text-teal-900 font-bold">${ticket.price}</span></p>
         </div>
-        <div className="mt-4 pt-4 border-t">
-          <h3 className="font-medium mb-2">Passenger Details</h3>
-          <div className="space-y-2">
-            <p><span className="font-medium">Name:</span> {ticket.passenger.name}</p>
-            <p><span className="font-medium">Birth Date:</span> {ticket.passenger.birth_date.split('T')[0]}</p>
-            <p><span className="font-medium">Gender:</span> {ticket.passenger.gender}</p>
+        <div className="mt-4 pt-4 border-t border-teal-200">
+          <h3 className="font-semibold mb-2 text-teal-800">Passenger Details</h3>
+          <div className="space-y-2 text-teal-700">
+            <p><span className="font-semibold text-teal-800">Name:</span> {ticket.passenger.name}</p>
+            <p><span className="font-semibold text-teal-800">Birth Date:</span> {ticket.passenger.birth_date.split('T')[0]}</p>
+            <p><span className="font-semibold text-teal-800">Gender:</span> {ticket.passenger.gender}</p>
             {ticket.passenger.address && (
-              <p><span className="font-medium">Address:</span> {ticket.passenger.address}</p>
+              <p><span className="font-semibold text-teal-800">Address:</span> {ticket.passenger.address}</p>
             )}
             {ticket.passenger.phone_number && (
-              <p><span className="font-medium">Phone:</span> {ticket.passenger.phone_number}</p>
+              <p><span className="font-semibold text-teal-800">Phone:</span> {ticket.passenger.phone_number}</p>
             )}
           </div>
         </div>
@@ -319,9 +319,9 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
   if (!outboundTicket || (isRoundTrip && !returnTicket)) {
     return (
       <div className="max-w-2xl mx-auto p-4 sm:p-6">
-        <Card>
+        <Card className="border-teal-200/50 shadow-2xl bg-white/90 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <div className="text-red-600">
+            <div className="text-red-600 font-semibold">
               <h1>Error: Missing booking information</h1>
             </div>
           </CardHeader>
@@ -338,9 +338,9 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
   if (isLoadingFlights) {
     return (
       <div className="max-w-2xl mx-auto p-4 sm:p-6">
-        <Card>
+        <Card className="border-teal-200/50 shadow-2xl bg-white/90 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-600">Loading booking details...</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-teal-700">Loading booking details...</h1>
           </CardHeader>
         </Card>
       </div>
@@ -351,9 +351,9 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
   if (flightError || !displayOutboundFlight) {
     return (
       <div className="max-w-2xl mx-auto p-4 sm:p-6">
-        <Card>
+        <Card className="border-teal-200/50 shadow-2xl bg-white/90 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <div className="text-red-600">
+            <div className="text-red-600 font-semibold">
               <h1>Error: {flightError || 'Failed to load booking details'}</h1>
             </div>
           </CardHeader>
@@ -365,67 +365,67 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
 
   return (
     <div className="max-w-2xl mx-auto p-4 sm:p-6">
-      <Card>
+      <Card className="border-teal-200/50 shadow-2xl bg-white/90 backdrop-blur-sm">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <CheckCircle2 className="w-16 h-16 text-green-500" />
+            <CheckCircle2 className="w-16 h-16 text-emerald-500" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-green-600">Booking Confirmed!</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Booking Confirmed!</h1>
+          <p className="text-teal-700 mt-2 font-medium">
             Your {isRoundTrip ? 'round trip' : 'one-way'} booking has been successfully completed
           </p>
         </CardHeader>
         
         <CardContent className="space-y-6">
           {/* PDF Invoice Links */}
-          <div className="flex flex-col items-center justify-center gap-2">
-            <FileText className="w-5 h-5 text-blue-600" />
+          <div className="flex flex-col items-center justify-center gap-2 p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg border border-teal-200/50">
+            <FileText className="w-5 h-5 text-teal-600" />
             {error ? (
               <div className="text-center">
-                <p className="text-red-500 mb-2">{error}</p>
-                <p className="text-sm text-gray-600">
+                <p className="text-red-500 mb-2 font-medium">{error}</p>
+                <p className="text-sm text-teal-700">
                   You can download your invoice later from the bookings page.
                 </p>
               </div>
             ) : isLoading ? (
               <div className="text-center">
-                <p className="text-gray-600">Loading invoice(s)...</p>
+                <p className="text-teal-700 font-medium">Loading invoice(s)...</p>
               </div>
             ) : (
               <div className="text-center space-y-3">
                 {pdfUrls.outbound ? (
                   <div>
-                    <p className="text-sm text-gray-600 mb-2">Outbound Flight Invoice</p>
+                    <p className="text-sm text-teal-700 mb-2 font-medium">Outbound Flight Invoice</p>
                     <a 
                       href={pdfUrls.outbound} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 underline font-medium"
+                      className="text-teal-600 hover:text-teal-800 underline font-semibold transition-colors"
                     >
                       View PDF Invoice
                     </a>
                   </div>
                 ) : (
                   <div>
-                    <p className="text-sm text-gray-500">Outbound invoice not available yet</p>
+                    <p className="text-sm text-teal-600">Outbound invoice not available yet</p>
                   </div>
                 )}
                 {isRoundTrip && (
                   pdfUrls.return ? (
                     <div>
-                      <p className="text-sm text-gray-600 mb-2">Return Flight Invoice</p>
+                      <p className="text-sm text-teal-700 mb-2 font-medium">Return Flight Invoice</p>
                       <a 
                         href={pdfUrls.return} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 underline font-medium"
+                        className="text-teal-600 hover:text-teal-800 underline font-semibold transition-colors"
                       >
                         View PDF Invoice
                       </a>
                     </div>
                   ) : (
                     <div>
-                      <p className="text-sm text-gray-500">Return invoice not available yet</p>
+                      <p className="text-sm text-teal-600">Return invoice not available yet</p>
                     </div>
                   )
                 )}
@@ -441,9 +441,9 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
             {isRoundTrip && displayReturnFlight && returnTicket && (
               <FlightDetailsCard flight={displayReturnFlight} ticket={returnTicket} isReturn />
             )}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-lg font-semibold">
-                Total Price: ${(Number(outboundTicket.price) + (returnTicket ? Number(returnTicket.price) : 0)).toFixed(2)}
+            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-4 rounded-lg border border-teal-200/50">
+              <p className="text-lg font-semibold text-teal-800">
+                Total Price: <span className="text-teal-900 font-bold text-xl">${(Number(outboundTicket.price) + (returnTicket ? Number(returnTicket.price) : 0)).toFixed(2)}</span>
               </p>
             </div>
           </div>
@@ -453,13 +453,13 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
             <Button 
               onClick={() => navigate('/')}
               variant="outline"
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto border-teal-300 text-teal-700 hover:bg-teal-50 hover:border-teal-400"
             >
               Back to Home
             </Button>
             <Button 
               onClick={() => navigate('/dashboard')}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl transition-all"
             >
               View My Bookings
             </Button>

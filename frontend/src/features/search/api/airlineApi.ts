@@ -8,14 +8,15 @@ export interface Airline {
 export const getAirlines = async (): Promise<Airline[]> => {
   try {
     const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No authentication token found');
+    
+    // Build headers - token is optional since this is a public endpoint
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     const response = await fetch(`${API_BASE_URL}/airline`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers
     });
 
     // Check if response is JSON before parsing

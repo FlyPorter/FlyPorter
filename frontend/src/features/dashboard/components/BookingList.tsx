@@ -11,6 +11,7 @@ const BookingList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const [selectedBooking, setSelectedBooking] = useState<BookingDisplay | null>(null);
+  const [showPastFlights, setShowPastFlights] = useState(false);
 
   
   useEffect(() => {
@@ -232,12 +233,44 @@ const BookingList: React.FC = () => {
     );
   }
 
-  return (
-    <div className="space-y-4">
-      {bookings.map((booking) => (
-        <Card key={booking.id} className="p-4 hover:shadow-md transition-shadow">
-          <div className="flex flex-col sm:flex-row justify-between items-start space-y-2 sm:space-y-0">
-            <div className="flex-1 w-full">
+  // Separate bookings into past and upcoming based on departure date
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+
+  const upcomingBookings = bookings.filter((booking) => {
+    const [year, month, day] = booking.date.split('-');
+    const departureDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    departureDate.setHours(0, 0, 0, 0);
+    return departureDate >= today;
+  }).sort((a, b) => {
+    // Sort by departure date (earliest first)
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateA.getTime() - dateB.getTime();
+  });
+
+  const pastBookings = bookings.filter((booking) => {
+    const [year, month, day] = booking.date.split('-');
+    const departureDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    departureDate.setHours(0, 0, 0, 0);
+    return departureDate < today;
+  }).sort((a, b) => {
+    // Sort by departure date (most recent first)
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateB.getTime() - dateA.getTime();
+  });
+
+  const renderBookingCard = (booking: BookingDisplay, isPastFlight: boolean = false) => (
+        <div className="flex flex-col lg:flex-row gap-4 w-full">
+          {/* Flight Card - Takes most of the width */}
+          <Card className="flex-1 p-4 hover:shadow-md transition-shadow relative">
+            {/* Price at top right corner */}
+            <div className="absolute top-4 right-4 text-xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+              ${booking.price}
+            </div>
+            
+            <div className="w-full pr-20">
               <div className="flex items-center space-x-4">
                 <div className="text-base sm:text-lg font-semibold">{booking.airline.name} ({booking.airline.code})</div>
                 <div className="text-sm sm:text-base text-gray-600">Flight {booking.flight_id}</div>
@@ -272,36 +305,87 @@ const BookingList: React.FC = () => {
                 All times are shown in origin city time
               </div>
             </div>
-            <div className="ml-0 sm:ml-4 text-left sm:text-right w-full sm:w-auto">
-              <div className="text-lg sm:text-xl font-bold text-blue-600">${booking.price}</div>
-            </div>
-          </div>
+          </Card>
 
-          {/* Actions: View, Modify, Cancel */}
-          <div className="mt-4 flex space-x-4">
-            <button
-              onClick={() => handleViewBooking(booking)}
-              className="text-blue-600 hover:text-blue-800 border border-blue-600 hover:border-blue-800 px-3 py-1 rounded cursor-pointer"
-            >
-              View
-            </button>
-            <button
-              onClick={() => handleModifyBooking(booking)}
-              className="text-yellow-600 hover:text-yellow-800 border border-yellow-600 hover:border-yellow-800 px-3 py-1 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
-            >
-              Change Seat
-            </button>
-            <button
-              onClick={() => handleCancelBooking(booking)}
-              className="text-red-600 hover:text-red-800 border border-red-600 hover:border-red-800 px-3 py-1 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
-            >
-              Cancel
-            </button>
+          {/* Actions Card - Separate card for buttons */}
+          <Card className="p-4 hover:shadow-md transition-shadow w-full lg:w-auto lg:min-w-[200px]">
+            <div className="flex flex-col items-center lg:items-center gap-2 h-full justify-center">
+              {/* Actions: View only for past flights, all actions for upcoming flights */}
+              <div className="flex flex-col gap-2 w-full">
+                <button
+                  onClick={() => handleViewBooking(booking)}
+                  className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white px-4 py-2 rounded-lg cursor-pointer font-medium transition-all shadow-md hover:shadow-lg"
+                >
+                  View
+                </button>
+                {!isPastFlight && (
+                  <>
+                    <button
+                      onClick={() => handleModifyBooking(booking)}
+                      className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white px-4 py-2 rounded-lg cursor-pointer font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isLoading}
+                    >
+                      Change Seat
+                    </button>
+                    <button
+                      onClick={() => handleCancelBooking(booking)}
+                      className="w-full bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white px-4 py-2 rounded-lg cursor-pointer font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isLoading}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </Card>
+        </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Upcoming Flights */}
+      {upcomingBookings.length > 0 && (
+        <div>
+          <h3 className="text-xl font-semibold mb-4 bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">
+            Upcoming Flights ({upcomingBookings.length})
+          </h3>
+          <div className="space-y-4">
+            {upcomingBookings.map((booking) => (
+              <div key={booking.id}>{renderBookingCard(booking, false)}</div>
+            ))}
           </div>
-        </Card>
-      ))}
+        </div>
+      )}
+
+      {/* Past Flights - Collapsible */}
+      {pastBookings.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowPastFlights(!showPastFlights)}
+            className="flex items-center justify-between w-full text-xl font-semibold mb-4 text-teal-800 hover:text-teal-900 transition-colors p-2 rounded-lg hover:bg-teal-50 border border-teal-200/50"
+          >
+            <span>Past Flights ({pastBookings.length})</span>
+            <span className="text-sm font-normal text-teal-600">
+              {showPastFlights ? '▼ Collapse' : '▶ Expand'}
+            </span>
+          </button>
+          {showPastFlights && (
+            <div className="space-y-4">
+              {pastBookings.map((booking) => (
+                <div key={booking.id}>{renderBookingCard(booking, true)}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Show message if no bookings in either category */}
+      {upcomingBookings.length === 0 && pastBookings.length === 0 && (
+        <div className="flex justify-center items-center h-64">
+          <div className="text-gray-500">No bookings found</div>
+        </div>
+      )}
 
       {/* Modal for Booking Details */}
       {selectedBooking && (

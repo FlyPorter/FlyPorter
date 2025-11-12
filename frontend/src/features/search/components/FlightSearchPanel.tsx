@@ -56,12 +56,14 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setError(null); // Clear any previous errors
         const [airlinesData, airportsData] = await Promise.all([
           getAirlines(),
           getAirports()
         ]);
         setAirlines(airlinesData);
         setAirports(airportsData);
+        setError(null); // Ensure error is cleared on success
       } catch (error) {
         console.error('Failed to load data:', error);
         setError('Failed to load necessary data. Please try again later.');
@@ -256,8 +258,16 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
     : airlines;
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 max-w-2xl bg-white shadow-sm">
-      <h2 className="text-xl font-semibold mb-4">Flight Search</h2>
+    <div className="border border-teal-200/50 rounded-xl p-6 md:p-8 bg-white/90 backdrop-blur-sm shadow-2xl">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Search Flights</h2>
+        <button
+          onClick={handleClearFilters}
+          className="text-sm text-teal-600 hover:text-teal-800 underline cursor-pointer font-medium transition-colors"
+        >
+          Clear Filters
+        </button>
+      </div>
 
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
@@ -271,44 +281,57 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
         </div>
       )}
 
-      {/* Trip Type Dropdown */}
-      <div className="mb-4">
-        <label className="block mb-2">Trip Type: </label>
-        <Select 
-          onValueChange={handleTripTypeChange} 
-          defaultValue={tripType}
-          disabled={disabled}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select trip type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="oneWay">One Way</SelectItem>
-            <SelectItem value="roundTrip">Round Trip</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Trip Type Toggle */}
+      <div className="mb-6">
+        <div className="flex gap-2 p-1 bg-teal-50 rounded-lg border border-teal-200/50">
+          <button
+            type="button"
+            onClick={() => handleTripTypeChange('oneWay')}
+            disabled={disabled}
+            className={`flex-1 px-4 py-2 rounded-md font-medium transition-all ${
+              tripType === 'oneWay'
+                ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg'
+                : 'text-teal-700 hover:text-teal-900 hover:bg-teal-100'
+            }`}
+          >
+            One Way
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTripTypeChange('roundTrip')}
+            disabled={disabled}
+            className={`flex-1 px-4 py-2 rounded-md font-medium transition-all ${
+              tripType === 'roundTrip'
+                ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg'
+                : 'text-teal-700 hover:text-teal-900 hover:bg-teal-100'
+            }`}
+          >
+            Round Trip
+          </button>
+        </div>
       </div>
 
       {/* Route Information */}
-      <div className="space-y-4">
-        <div className="mb-3 relative" ref={originRef}>
-          <label className="block mb-1">Origin: </label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="relative" ref={originRef}>
+          <label className="block mb-2 text-sm font-medium text-teal-700">From</label>
           <Input
             type="text"
             value={route.origin}
-            placeholder="Enter city name or airport"
+            placeholder="City or airport"
             onChange={(e) => handleOriginInput(e.target.value)}
             disabled={disabled}
+            className="w-full"
           />
           {showOriginSuggestions && originSuggestions.length > 0 && (
-            <div className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
+            <div className="absolute z-20 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
               {originSuggestions.map(airport => (
                 <div
                   key={airport.code}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  className="px-4 py-3 hover:bg-teal-50 cursor-pointer border-b last:border-b-0 transition-colors"
                   onClick={() => handleSuggestionClick('origin', airport)}
                 >
-                  <div className="font-medium">{airport.city}</div>
+                  <div className="font-medium text-gray-900">{airport.city}</div>
                   <div className="text-sm text-gray-500">{airport.code}</div>
                 </div>
               ))}
@@ -316,124 +339,128 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
           )}
         </div>
 
-        <div className="mb-3 relative" ref={destinationRef}>
-          <label className="block mb-1">Destination: </label>
+        <div className="relative" ref={destinationRef}>
+          <label className="block mb-2 text-sm font-medium text-teal-700">To</label>
           <Input
             type="text"
             value={route.destination}
-            placeholder="Enter city name or airport"
+            placeholder="City or airport"
             onChange={(e) => handleDestinationInput(e.target.value)}
             disabled={disabled}
+            className="w-full"
           />
           {showDestinationSuggestions && destinationSuggestions.length > 0 && (
-            <div className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
+            <div className="absolute z-20 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
               {destinationSuggestions.map(airport => (
                 <div
                   key={airport.code}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  className="px-4 py-3 hover:bg-teal-50 cursor-pointer border-b last:border-b-0 transition-colors"
                   onClick={() => handleSuggestionClick('destination', airport)}
                 >
-                  <div className="font-medium">{airport.city}</div>
+                  <div className="font-medium text-gray-900">{airport.city}</div>
                   <div className="text-sm text-gray-500">{airport.code}</div>
                 </div>
               ))}
             </div>
           )}
         </div>
+      </div>
 
-        <div className="mb-3">
-          <label className="block mb-1">Departure Date (Optional): </label>
+      {/* Date Selection */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className="block mb-2 text-sm font-medium text-teal-700">Departure Date</label>
           <Input
             type="date"
             value={route.departDate}
             onChange={(e) => handleRouteChange('departDate', e.target.value)}
             disabled={disabled}
-            placeholder="Select departure date"
+            className="w-full"
           />
         </div>
 
-        {/* Show "Return Date" only if it's a round-trip */}
         {tripType === 'roundTrip' && (
-          <div className="mb-3">
-            <label className="block mb-1">Return Date (Optional): </label>
+          <div>
+            <label className="block mb-2 text-sm font-medium text-teal-700">Return Date</label>
             <Input
               type="date"
               value={returnDate}
               onChange={(e) => setReturnDate(e.target.value)}
               disabled={disabled}
               min={route.departDate || undefined}
-              placeholder="Select return date"
+              className="w-full"
             />
           </div>
         )}
       </div>
 
-      {/* Airlines Dropdown Selection */}
-      <div className="mb-4">
-        <label className="block mb-1">Airlines: </label>
-        <Select 
-          onValueChange={setAirline} 
-          value={airline}
-          disabled={disabled}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="-- Please Select --" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Airlines</SelectItem>
-            {displayedAirlines.map((opt) => (
-              <SelectItem value={opt.code} key={opt.code}>
-                {opt.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Price Range */}
-      <div className="mb-4">
-        <label className="block mb-1">Price Range: </label>
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            value={priceRange[0]}
-            onChange={(e) => handlePriceChange(0, e.target.value)}
-            placeholder="Min price"
-            className="w-full"
-            min="0"
-          />
-          <span>-</span>
-          <Input
-            type="number"
-            value={priceRange[1]}
-            onChange={(e) => handlePriceChange(1, e.target.value)}
-            placeholder="Max price"
-            className="w-full"
-            min="0"
-          />
-        </div>
-        {priceError && (
-          <div className="mt-1 text-sm text-red-500">
-            {priceError}
+      {/* Airlines and Price Range - Collapsible Advanced Options */}
+      <details className="mb-6">
+        <summary className="cursor-pointer text-sm font-medium text-teal-700 hover:text-teal-900 mb-4 p-2 rounded-lg hover:bg-teal-50 transition-colors">
+          Advanced Options
+        </summary>
+        <div className="space-y-4 pt-4">
+          {/* Airlines Dropdown Selection */}
+          <div>
+            <label className="block mb-2 text-sm font-medium text-teal-700">Preferred Airline</label>
+            <Select 
+              onValueChange={setAirline} 
+              value={airline}
+              disabled={disabled}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="All Airlines" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Airlines</SelectItem>
+                {displayedAirlines.map((opt) => (
+                  <SelectItem value={opt.code} key={opt.code}>
+                    {opt.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        )}
-      </div>
 
-      {/* Search and Clear Buttons */}
-      <div className="mt-6 space-y-2">
+          {/* Price Range */}
+          <div>
+            <label className="block mb-2 text-sm font-medium text-teal-700">Price Range</label>
+            <div className="flex items-center gap-3">
+              <Input
+                type="number"
+                value={priceRange[0]}
+                onChange={(e) => handlePriceChange(0, e.target.value)}
+                placeholder="Min"
+                className="w-full"
+                min="0"
+              />
+              <span className="text-gray-500">-</span>
+              <Input
+                type="number"
+                value={priceRange[1]}
+                onChange={(e) => handlePriceChange(1, e.target.value)}
+                placeholder="Max"
+                className="w-full"
+                min="0"
+              />
+            </div>
+            {priceError && (
+              <div className="mt-1 text-sm text-red-500">
+                {priceError}
+              </div>
+            )}
+          </div>
+        </div>
+      </details>
+
+      {/* Search Button */}
+      <div className="mt-6">
         <Button 
           onClick={handleSearch}
           variant="default"
-          className="w-full bg-blue-500 hover:bg-blue-600 cursor-pointer"
+          className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer rounded-lg"
         >
-          Search
-        </Button>
-        <Button 
-          onClick={handleClearFilters}
-          variant="outline"
-          className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer"
-        >
-          Clear Filters
+          Search Flights
         </Button>
       </div>
     </div>

@@ -132,81 +132,100 @@ const AddAirlinePage = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold mb-4">Manage Airlines</h2>
+    <div className="min-h-screen bg-gradient-to-br from-teal-50/50 via-cyan-50/50 to-teal-100/20">
+      <div className="container mx-auto px-4 py-8">
+        <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Manage Airlines</h2>
 
-      <div className="mb-6 p-4 border rounded shadow">
-        <h3 className="text-lg font-semibold mb-2">Add Airline</h3>
-        <div className="flex gap-4">
-          <input
-            type="text"
-            placeholder="Airline Code"
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            className="border p-2 rounded w-1/3"
-          />
-          <input
-            type="text"
-            placeholder="Airline Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="border p-2 rounded w-1/3"
-          />
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg border border-red-200 font-medium">
+            {error}
+          </div>
+        )}
+
+        <div className="mb-6 p-6 border border-teal-200/50 rounded-lg shadow-2xl bg-white/90 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold mb-4 text-teal-800">Add Airline</h3>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-1 text-teal-700">Airline Code *</label>
+              <input
+                type="text"
+                placeholder="Airline Code"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
+                required
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-1 text-teal-700">Airline Name *</label>
+              <input
+                type="text"
+                placeholder="Airline Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
+                required
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={handleAddAirline}
+                className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all cursor-pointer"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="border border-teal-200/50 p-6 rounded-lg shadow-2xl bg-white/90 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold mb-4 text-teal-800">Existing Airlines</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gradient-to-r from-teal-50 to-cyan-50">
+                  <th className="border border-teal-200 p-3 text-left text-teal-800 font-semibold">Code</th>
+                  <th className="border border-teal-200 p-3 text-left text-teal-800 font-semibold">Name</th>
+                  <th className="border border-teal-200 p-3 text-left text-teal-800 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {airlines.map((airline) => (
+                  <tr key={airline.airline_code} className="border-b border-teal-100 hover:bg-teal-50/50 transition-colors">
+                    <td className="border border-teal-200 p-3 text-teal-900 font-medium">{airline.airline_code}</td>
+                    <td className="border border-teal-200 p-3">
+                      <input
+                        type="text"
+                        defaultValue={airline.airline_name}
+                        onBlur={(e) =>
+                          handleUpdateAirline(airline.airline_code, e.target.value)
+                        }
+                        className="border border-teal-200 p-1 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
+                      />
+                    </td>
+                    <td className="border border-teal-200 p-3">
+                      <button
+                        onClick={() => handleDeleteAirline(airline.airline_code)}
+                        className="bg-red-500 text-white px-4 py-1 rounded-lg hover:bg-red-600 transition-colors cursor-pointer font-medium shadow-md hover:shadow-lg"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="mt-6 text-center">
           <button
-            onClick={handleAddAirline}
-            className="bg-green-500 text-white px-4 py-2 rounded"
+            onClick={() => navigate("/admin")}
+            className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all cursor-pointer"
           >
-            Add
+            Back to Admin
           </button>
         </div>
-        {error && <p className="text-red-500 mt-2">{error}</p>}
-      </div>
-
-      <div className="border p-4 rounded shadow">
-        <h3 className="text-lg font-semibold mb-2">Existing Airlines</h3>
-        <table className="w-full border-collapse border border-gray-300">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="border p-2">Code</th>
-              <th className="border p-2">Name</th>
-              <th className="border p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {airlines.map((airline) => (
-              <tr key={airline.airline_code} className="border">
-                <td className="border p-2">{airline.airline_code}</td>
-                <td className="border p-2">
-                  <input
-                    type="text"
-                    defaultValue={airline.airline_name}
-                    onBlur={(e) =>
-                      handleUpdateAirline(airline.airline_code, e.target.value)
-                    }
-                    className="border p-1 rounded w-40"
-                  />
-                </td>
-                <td className="border p-2">
-                  <button
-                    onClick={() => handleDeleteAirline(airline.airline_code)}
-                    className="bg-red-500 text-white px-4 py-1 rounded"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="mt-6 text-center">
-        <button
-          onClick={() => navigate("/admin")}
-          className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
-        >
-          Back to Admin
-        </button>
       </div>
     </div>
   );

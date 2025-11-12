@@ -5,17 +5,17 @@ const Sidebar = ({ role }: { role: string }) => {
   
   const getLinkClasses = (path: string) => {
     const isActive = location.pathname === path;
-    return `mb-4 px-3 py-2 rounded transition-colors ${
+    return `mb-4 px-3 py-2 rounded-lg transition-all ${
       isActive 
-        ? 'bg-gray-700 text-white font-semibold' 
-        : 'hover:text-gray-400 hover:bg-gray-700'
+        ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-semibold shadow-lg' 
+        : 'text-teal-800 hover:text-teal-900 hover:bg-teal-50 hover:shadow-md'
     }`;
   };
 
   const isAdmin = role?.toUpperCase() === "ADMIN";
 
   return (
-    <div className="w-64 h-screen bg-gray-800 text-white flex flex-col p-4">
+    <div className="w-64 h-screen bg-gradient-to-b from-teal-50 to-cyan-50 border-r border-teal-200/50 text-teal-900 flex flex-col p-4 shadow-lg">
       <div className="mb-6">
         {/* Empty space where title used to be */}
       </div>

@@ -19,6 +19,16 @@ const SeatSelectionPage: React.FC = () => {
   });
   const [currentSelection, setCurrentSelection] = useState<'outbound' | 'return'>('outbound');
 
+  // Check authentication
+  React.useEffect(() => {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    if (!token || !user) {
+      // Redirect to login, then back to seat selection after login
+      navigate('/login', { state: { from: location.pathname, state: location.state } });
+    }
+  }, [navigate, location]);
+
   const handleSeatSelect = (seat: Seat) => {
     setSelectedSeats(prev => ({
       ...prev,
@@ -88,7 +98,7 @@ const SeatSelectionPage: React.FC = () => {
           </p>
           <button
             onClick={() => navigate('/search')}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            className="mt-4 px-4 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all"
           >
             Back to Search
           </button>
@@ -101,25 +111,25 @@ const SeatSelectionPage: React.FC = () => {
   const currentSeat = currentSelection === 'outbound' ? selectedSeats.outbound : selectedSeats.return;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50/50 via-cyan-50/50 to-teal-100/20">
       <NavigationBar onBack={handleBack} onForward={handleForward} />
       <div className="container mx-auto px-4 py-8">
         {isRoundTrip && (
           <div className="mb-6">
             <div className="flex items-center justify-center space-x-4">
-              <div className={`p-4 rounded-lg ${currentSelection === 'outbound' ? 'bg-blue-100 border-2 border-blue-500' : 'bg-gray-100'}`}>
-                <h3 className="font-medium">Outbound Flight</h3>
+              <div className={`p-4 rounded-lg transition-all ${currentSelection === 'outbound' ? 'bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-500 shadow-lg' : 'bg-gray-100 border border-gray-200'}`}>
+                <h3 className="font-medium text-teal-800">Outbound Flight</h3>
                 <p className="text-sm text-gray-600">{outboundFlight.airline.name} {outboundFlight.flightNumber}</p>
                 {selectedSeats.outbound && (
-                  <p className="text-sm text-green-600">Seat: {selectedSeats.outbound.seatNumber}</p>
+                  <p className="text-sm text-emerald-600 font-medium">Seat: {selectedSeats.outbound.seatNumber}</p>
                 )}
               </div>
               {isRoundTrip && (
-                <div className={`p-4 rounded-lg ${currentSelection === 'return' ? 'bg-blue-100 border-2 border-blue-500' : 'bg-gray-100'}`}>
-                  <h3 className="font-medium">Return Flight</h3>
+                <div className={`p-4 rounded-lg transition-all ${currentSelection === 'return' ? 'bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-500 shadow-lg' : 'bg-gray-100 border border-gray-200'}`}>
+                  <h3 className="font-medium text-teal-800">Return Flight</h3>
                   <p className="text-sm text-gray-600">{returnFlight.airline.name} {returnFlight.flightNumber}</p>
                   {selectedSeats.return && (
-                    <p className="text-sm text-green-600">Seat: {selectedSeats.return.seatNumber}</p>
+                    <p className="text-sm text-emerald-600 font-medium">Seat: {selectedSeats.return.seatNumber}</p>
                   )}
                 </div>
               )}
@@ -127,7 +137,7 @@ const SeatSelectionPage: React.FC = () => {
           </div>
         )}
 
-        <h2 className="text-2xl font-semibold mb-6 text-center">
+        <h2 className="text-2xl font-semibold mb-6 text-center bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">
           Select Your Seat - {currentSelection === 'outbound' ? 'Outbound Flight' : 'Return Flight'}
         </h2>
 
@@ -149,9 +159,9 @@ const SeatSelectionPage: React.FC = () => {
             onClick={handleForward}
             disabled={!currentSeat || (isRoundTrip && currentSelection === 'return' && !selectedSeats.outbound)}
             className={`
-              px-6 py-2 rounded-md text-white font-medium
+              px-6 py-2 rounded-lg text-white font-medium transition-all
               ${currentSeat 
-                ? 'bg-blue-500 hover:bg-blue-600' 
+                ? 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 shadow-lg hover:shadow-xl' 
                 : 'bg-gray-300 cursor-not-allowed'
               }
             `}

@@ -14,10 +14,7 @@ interface SearchParams {
 export const searchFlights = async (params: SearchParams): Promise<Flight[]> => {
   try {
     const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
+    
     // Build query parameters - only add if provided
     const queryParams = new URLSearchParams();
     
@@ -44,14 +41,19 @@ export const searchFlights = async (params: SearchParams): Promise<Flight[]> => 
       queryParams.append('max_price', params.priceMax.toString());
     }
 
+    // Build headers - token is optional since this is a public endpoint
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(
       `${API_BASE_URL}/flight?${queryParams.toString()}`,
       {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+        headers
       }
     );
 
