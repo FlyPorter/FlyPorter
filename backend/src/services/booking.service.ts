@@ -108,11 +108,6 @@ export async function createBooking(input: CreateBookingInput) {
             throw new Error("Flight not found");
         }
 
-        // Check if flight is in the past
-        if (new Date(flight.departure_time) < new Date()) {
-            throw new Error("Cannot book a flight that has already departed");
-        }
-
         // 3. Get seat and check availability
         const seat = await tx.seat.findUnique({
             where: {
