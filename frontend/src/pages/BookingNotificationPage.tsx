@@ -13,7 +13,8 @@ const BookingNotificationPage: React.FC = () => {
     isRoundTrip 
   } = location.state || {};
 
-  if (!outboundFlight || !outboundTicket || (isRoundTrip && (!returnFlight || !returnTicket))) {
+  // Only require tickets - flight data will be fetched from API
+  if (!outboundTicket || (isRoundTrip && !returnTicket)) {
     return <Navigate to="/search" replace />;
   }
 
