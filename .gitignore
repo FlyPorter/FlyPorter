@@ -14,3 +14,6 @@ package-lock.json
 
 k8s/secrets.yaml
 k8s/secrets-*.yaml
+
+CICD_GUIDE.md
+CICD_QUICKSTART.md
