@@ -1,0 +1,99 @@
+name: Build and Deploy to Digital Ocean Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'k8s/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  REGISTRY: registry.digitalocean.com
+  IMAGE_NAME: flyporter-backend
+  REGISTRY_NAME: flyporter
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # Step 1: Checkout code
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Step 2: Install doctl (Digital Ocean CLI)
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+    # Step 3: Login to DO Container Registry
+    - name: Login to Digital Ocean Container Registry
+      run: doctl registry login --expiry-seconds 1200
+
+    # Step 4: Build Docker image
+    - name: Build Docker image
+      run: |
+        docker build \
+          --platform linux/amd64 \
+          -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest \
+          -t ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+          ./backend
+
+    # Step 5: Push Docker image
+    - name: Push Docker image to DO Registry
+      run: |
+        docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
+        docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+    # Step 6: Set up kubectl
+    - name: Setup kubectl
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+        chmod 600 $HOME/.kube/config
+
+    # Step 7: Verify cluster connection
+    - name: Verify cluster connection
+      run: |
+        kubectl cluster-info
+        kubectl get nodes
+
+    # Step 8: Update Kubernetes deployment
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl set image deployment/flyporter-backend \
+          backend=${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+          -n flyporter
+        
+        # Wait for rollout to complete
+        kubectl rollout status deployment/flyporter-backend -n flyporter --timeout=5m
+
+    # Step 9: Verify deployment
+    - name: Verify deployment
+      run: |
+        echo "Checking pod status..."
+        kubectl get pods -n flyporter
+        
+        echo "Checking service..."
+        kubectl get svc flyporter-backend -n flyporter
+
+    # Step 10: Run health check
+    - name: Health check
+      run: |
+        EXTERNAL_IP=$(kubectl get svc flyporter-backend -n flyporter -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        echo "Backend URL: http://$EXTERNAL_IP"
+        
+        # Wait for service to be ready
+        echo "Waiting for service to be ready..."
+        sleep 15
+        
+        # Test health endpoint
+        echo "Testing health endpoint..."
+        curl -f http://$EXTERNAL_IP/api/health || exit 1
+        
+        echo "Deployment successful! Backend is live at http://$EXTERNAL_IP"
+
