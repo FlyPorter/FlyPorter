@@ -1,0 +1,149 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flyporter-backend
+  namespace: flyporter
+  labels:
+    app: flyporter-backend
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: flyporter-backend
+  template:
+    metadata:
+      labels:
+        app: flyporter-backend
+    spec:
+      imagePullSecrets:
+      - name: registry-flyporter
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - flyporter-backend
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: backend
+        image: registry.digitalocean.com/flyporter/flyporter-backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: flyporter-secrets
+              key: DATABASE_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: flyporter-secrets
+              key: JWT_SECRET
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: flyporter-secrets
+              key: GOOGLE_CLIENT_ID
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: flyporter-secrets
+              key: GOOGLE_CLIENT_SECRET
+        - name: SPACES_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: flyporter-secrets
+              key: SPACES_ACCESS_KEY
+        - name: SPACES_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: flyporter-secrets
+              key: SPACES_SECRET_KEY
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: flyporter-config
+              key: PORT
+        - name: API_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: flyporter-config
+              key: API_PREFIX
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: flyporter-config
+              key: NODE_ENV
+        - name: JWT_EXPIRES_IN
+          valueFrom:
+            configMapKeyRef:
+              name: flyporter-config
+              key: JWT_EXPIRES_IN
+        - name: SPACES_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: flyporter-config
+              key: SPACES_REGION
+        - name: SPACES_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: flyporter-config
+              key: SPACES_ENDPOINT
+        - name: SPACES_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: flyporter-config
+              key: SPACES_BUCKET
+        - name: SPACES_CDN_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: flyporter-config
+              key: SPACES_CDN_BASE_URL
+        - name: SPACES_INVOICE_PREFIX
+          valueFrom:
+            configMapKeyRef:
+              name: flyporter-config
+              key: SPACES_INVOICE_PREFIX
+        - name: GOOGLE_CALLBACK_URL
+          valueFrom:
+            configMapKeyRef:
+              name: flyporter-config
+              key: GOOGLE_CALLBACK_URL
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
