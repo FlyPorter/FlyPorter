@@ -82,18 +82,21 @@ export function googleCallback(req: Request, res: Response) {
         env.NODE_ENV === "development"
           ? `Authentication failed: ${err.message || err.toString()}`
           : "Authentication failed";
-      return sendError(res, errorMessage, 500);
+      // Redirect to frontend with error
+      const errorParam = encodeURIComponent(errorMessage);
+      return res.redirect(`${env.FRONTEND_URL}/auth/google/callback?error=${errorParam}`);
     }
     if (!user) {
       if (info?.message === "EMAIL_EXISTS") {
-        return sendError(res, `Email ${info.email} is already registered`, 409);
+        const errorMsg = `Email ${info.email} is already registered`;
+        return res.redirect(`${env.FRONTEND_URL}/auth/google/callback?error=${encodeURIComponent(errorMsg)}`);
       }
       console.error("Google OAuth user not found. Info:", info);
       const errorMessage =
         env.NODE_ENV === "development"
           ? `Authentication failed: ${info?.message || "User not found"}`
           : "Authentication failed";
-      return sendError(res, errorMessage, 401);
+      return res.redirect(`${env.FRONTEND_URL}/auth/google/callback?error=${encodeURIComponent(errorMessage)}`);
     }
 
     const token = generateToken({
@@ -102,19 +105,8 @@ export function googleCallback(req: Request, res: Response) {
       role: user.role,
     });
 
-    return sendSuccess(
-      res,
-      {
-        user: {
-          user_id: user.user_id,
-          email: user.email,
-          role: user.role,
-        },
-        token,
-      },
-      "Google login successful",
-      200
-    );
+    // Redirect to frontend with token in URL
+    return res.redirect(`${env.FRONTEND_URL}/auth/google/callback?token=${encodeURIComponent(token)}`);
   })(req, res);
 }
 
