@@ -13,6 +13,7 @@ export const env = {
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
   GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000",
+  FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:5173",
   SPACES_ENDPOINT: process.env.SPACES_ENDPOINT || "",
   SPACES_REGION: process.env.SPACES_REGION || "us-east-1",
   SPACES_ACCESS_KEY: process.env.SPACES_ACCESS_KEY || "",
