@@ -1,0 +1,11 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: flyporter-backend-pdb
+  namespace: flyporter
+spec:
+  selector:
+    matchLabels:
+      app: flyporter-backend
+  minAvailable: 1
+

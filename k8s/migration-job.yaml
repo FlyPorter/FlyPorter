@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flyporter-migration
+  namespace: flyporter
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      imagePullSecrets:
+      - name: registry-flyporter
+      containers:
+      - name: migrate
+        image: registry.digitalocean.com/flyporter/flyporter-backend:latest
+        command:
+        - sh
+        - -c
+        - |
+          npx prisma migrate deploy && npx prisma db seed
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: flyporter-secrets
+              key: DATABASE_URL
+

@@ -232,13 +232,8 @@ async function main() {
   };
 
   // Get future dates for test flights
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(8, 0, 0, 0);
-
-  const nextWeek = new Date();
-  nextWeek.setDate(nextWeek.getDate() + 7);
-  nextWeek.setHours(14, 0, 0, 0);
+  const yyzkDeparture = new Date('2026-01-01T08:00:00'); // Flights from YYZ
+  const yulDeparture = new Date('2026-01-07T14:00:00');  // Flights from YUL
 
   const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -258,27 +253,27 @@ async function main() {
 
   const flights = [
     {
-      route_id: createdRoutes[0]!.route_id, // YYZ → YVR
+      route_id: createdRoutes[0]!.route_id, // YYZ → YVR (departs from YYZ)
       airline_code: "FP",
-      departure_time: tomorrow,
-      arrival_time: new Date(tomorrow.getTime() + 5 * 60 * 60 * 1000), // +5 hours
+      departure_time: yyzkDeparture,
+      arrival_time: new Date(yyzkDeparture.getTime() + 5 * 60 * 60 * 1000), // +5 hours
       base_price: 249.99,
       seat_capacity: 24,
     },
     {
-      route_id: createdRoutes[1]!.route_id, // YVR → YYZ
-      airline_code: "FP",
-      departure_time: nextWeek,
-      arrival_time: new Date(nextWeek.getTime() + 5 * 60 * 60 * 1000), // +5 hours
-      base_price: 299.99,
-      seat_capacity: 24,
+      route_id: createdRoutes[2]!.route_id, // YYZ → YUL (departs from YYZ)
+      airline_code: "AC",
+      departure_time: new Date('2026-01-01T11:00:00'),
+      arrival_time: new Date('2026-01-01T12:30:00'), // +1.5 hours
+      base_price: 149.99,
+      seat_capacity: 18,
     },
     {
-      route_id: createdRoutes[2]!.route_id, // YYZ → YUL
+      route_id: createdRoutes[3]!.route_id, // YUL → YYZ (departs from YUL)
       airline_code: "AC",
-      departure_time: new Date(tomorrow.getTime() + 3 * 60 * 60 * 1000), // tomorrow 11am
-      arrival_time: new Date(tomorrow.getTime() + 4 * 60 * 60 * 1000), // +1 hour
-      base_price: 149.99,
+      departure_time: yulDeparture,
+      arrival_time: new Date(yulDeparture.getTime() + 90 * 60 * 1000), // +1.5 hours
+      base_price: 159.99,
       seat_capacity: 18,
     },
     // Super-future round trip flights to keep availability far out

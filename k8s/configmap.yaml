@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flyporter-config
+  namespace: flyporter
+data:
+  PORT: "3000"
+  API_PREFIX: "/api"
+  NODE_ENV: "production"
+  JWT_EXPIRES_IN: "7d"
+  SPACES_REGION: "tor1"
+  SPACES_ENDPOINT: "https://tor1.digitaloceanspaces.com"
+  SPACES_BUCKET: "flyporterbucket"
+  SPACES_CDN_BASE_URL: ""
+  SPACES_INVOICE_PREFIX: "invoices"
+  GOOGLE_CALLBACK_URL: "http://209.38.12.130"
+
