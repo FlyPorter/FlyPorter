@@ -11,7 +11,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
       {
         clientID: env.GOOGLE_CLIENT_ID,
         clientSecret: env.GOOGLE_CLIENT_SECRET,
-        callbackURL: `${env.GOOGLE_CALLBACK_URL}/api/auth/google/callback`,
+        callbackURL: `${env.GOOGLE_CALLBACK_URL}${env.API_PREFIX}/auth/google/callback`,
         scope: ["profile", "email"],
       },
       async (accessToken, refreshToken, profile, done) => {

@@ -76,13 +76,24 @@ export function googleCallback(req: Request, res: Response) {
   }
   passport.authenticate("google", { session: false }, (err: any, user: any, info: any) => {
     if (err) {
-      return sendError(res, "Authentication failed", 500);
+      console.error("Google OAuth error:", err);
+      // In development, show more details
+      const errorMessage =
+        env.NODE_ENV === "development"
+          ? `Authentication failed: ${err.message || err.toString()}`
+          : "Authentication failed";
+      return sendError(res, errorMessage, 500);
     }
     if (!user) {
       if (info?.message === "EMAIL_EXISTS") {
         return sendError(res, `Email ${info.email} is already registered`, 409);
       }
-      return sendError(res, "Authentication failed", 401);
+      console.error("Google OAuth user not found. Info:", info);
+      const errorMessage =
+        env.NODE_ENV === "development"
+          ? `Authentication failed: ${info?.message || "User not found"}`
+          : "Authentication failed";
+      return sendError(res, errorMessage, 401);
     }
 
     const token = generateToken({
