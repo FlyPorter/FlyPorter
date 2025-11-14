@@ -1,7 +1,18 @@
 import dotenv from "dotenv";
 
-// Load environment variables from .env file
-dotenv.config();
+// Load environment variables based on NODE_ENV
+// Development: .env
+// Production: .env.production (if exists, otherwise falls back to .env)
+// You can also set environment variables directly in DigitalOcean (recommended for production)
+const nodeEnv = process.env.NODE_ENV || "development";
+const envFile = nodeEnv === "production" ? ".env.production" : ".env";
+
+// Try to load the environment-specific file, fallback to .env if not found
+dotenv.config({ path: envFile });
+// Also load .env as fallback (for shared variables)
+if (nodeEnv === "production") {
+  dotenv.config({ path: ".env", override: false });
+}
 
 export const env = {
   DATABASE_URL: process.env.DATABASE_URL || "",
