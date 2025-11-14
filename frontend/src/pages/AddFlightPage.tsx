@@ -30,6 +30,20 @@ interface Route {
   };
 }
 
+// Helper function to get today's date in YYYY-MM-DD format
+const getTodayDate = (): string => {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+};
+
+// Helper function to get date 1 year from today in YYYY-MM-DD format
+const getMaxDate = (): string => {
+  const today = new Date();
+  const oneYearLater = new Date(today);
+  oneYearLater.setFullYear(today.getFullYear() + 1);
+  return oneYearLater.toISOString().split('T')[0];
+};
+
 const AddFlightPage = () => {
   const [creationMethod, setCreationMethod] = useState<'route' | 'airport'>('route');
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -335,6 +349,8 @@ const AddFlightPage = () => {
                   type="date"
                   value={departureDate}
                   onChange={(e) => setDepartureDate(e.target.value)}
+                  min={getTodayDate()}
+                  max={getMaxDate()}
                   className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
                   required
                 />
@@ -361,7 +377,8 @@ const AddFlightPage = () => {
                   type="date"
                   value={arrivalDate}
                   onChange={(e) => setArrivalDate(e.target.value)}
-                  min={departureDate}
+                  min={departureDate || getTodayDate()}
+                  max={getMaxDate()}
                   className="border border-teal-200 p-2 rounded-lg w-full focus:border-teal-400 focus:ring-2 focus:ring-teal-200 text-teal-900"
                   required
                 />

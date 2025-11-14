@@ -7,6 +7,12 @@ import NavigationBar from '../../../components/NavigationBar';
 import { getUserProfile, updateProfile } from '../api/profileApi';
 import { UpdatePassengerPayload } from '../types';
 
+// Helper function to get today's date in YYYY-MM-DD format
+const getTodayDate = (): string => {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+};
+
 const ProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -197,6 +203,7 @@ const ProfilePage: React.FC = () => {
                     type="date"
                     value={editForm.birth_date}
                     onChange={(e) => setEditForm({ ...editForm, birth_date: e.target.value })}
+                    max={getTodayDate()}
                     required
                     className="border-teal-200 focus:border-teal-400"
                   />
