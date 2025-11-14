@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate} from 'react-router-dom';
 import FlightSearchPanel from '../features/search/components/FlightSearchPanel';
 import FlightList from '../features/search/components/FlightList';
@@ -20,6 +20,7 @@ const SearchResultsPage: React.FC = () => {
   const [searchData, setSearchData] = useState<SearchData | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   // Disable body scroll when sidebar is open on mobile
   useEffect(() => {
@@ -64,6 +65,16 @@ const SearchResultsPage: React.FC = () => {
       fetchAllFlights();
     }
   }, [isAdmin]);
+
+  // Scroll to results when search results are available
+  useEffect(() => {
+    if (hasSearched && !isLoading && resultsRef.current && flights.length > 0) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [hasSearched, isLoading, flights.length]);
 
   const handleSearch = async (searchData: SearchData) => {
     setIsLoading(true);
@@ -272,7 +283,7 @@ const SearchResultsPage: React.FC = () => {
               {/* Flight List or Recommendations */}
               <div className="lg:col-span-3">
                 {hasSearched ? (
-                  <>
+                  <div ref={resultsRef}>
                     <div className="mb-4 sm:mb-6">
                       <h2 className="text-xl sm:text-2xl font-semibold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">
                         {isSearchingReturn ? 'Select Return Flight' : 'Available Flights'}
@@ -296,7 +307,7 @@ const SearchResultsPage: React.FC = () => {
                       isLoading={isLoading}
                       error={error}
                     />
-                  </>
+                  </div>
                 ) : (
                   <CheapFlightRecommendations />
                 )}

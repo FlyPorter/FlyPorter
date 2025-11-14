@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FlightSearchPanel from '../features/search/components/FlightSearchPanel';
 import FlightList from '../features/search/components/FlightList';
@@ -13,6 +13,7 @@ const SearchPage: React.FC = () => {
   const user = userStr ? JSON.parse(userStr) : null;
   const isLoggedIn = !!token && !!user;
   const role = user?.role || 'user';
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   // Redirect logged-in users to their home page
   useEffect(() => {
@@ -26,6 +27,16 @@ const SearchPage: React.FC = () => {
   const [error, setError] = useState<string | undefined>();
   const [flights, setFlights] = useState<FlightDisplay[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+
+  // Scroll to results when search results are available
+  useEffect(() => {
+    if (hasSearched && !isLoading && resultsRef.current && flights.length > 0) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [hasSearched, isLoading, flights.length]);
 
   const handleSearch = async (searchData: SearchData) => {
     // If user is logged in, navigate to search results page
@@ -161,7 +172,7 @@ const SearchPage: React.FC = () => {
           
           {/* Show results below search panel if user is not logged in */}
           {!isLoggedIn && hasSearched && (
-            <div className="mt-6 sm:mt-8">
+            <div ref={resultsRef} className="mt-6 sm:mt-8">
               <h2 className="text-xl sm:text-2xl font-semibold text-teal-800 mb-3 sm:mb-4">Available Flights</h2>
               <p className="text-sm sm:text-base text-teal-700 mb-4 sm:mb-6">
                 {flights.length} flights found. Please log in to book a flight.
