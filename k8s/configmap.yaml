@@ -24,6 +24,10 @@ data:
   # Google OAuth callback URL (HTTPS for production)
   GOOGLE_CALLBACK_URL: "https://api.flyporter.website"
   
+  # Frontend URL for OAuth redirects (HTTPS for production)
+  # This is where users are redirected after Google OAuth authentication
+  FRONTEND_URL: "https://flyporter.website"
+  
   # Port configuration
   PORT: "3000"
   

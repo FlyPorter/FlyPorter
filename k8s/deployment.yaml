@@ -123,6 +123,11 @@ spec:
             configMapKeyRef:
               name: flyporter-config
               key: GOOGLE_CALLBACK_URL
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: flyporter-config
+              key: FRONTEND_URL
         resources:
           requests:
             cpu: 100m
