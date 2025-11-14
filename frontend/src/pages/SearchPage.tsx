@@ -83,7 +83,7 @@ const SearchPage: React.FC = () => {
       });
 
       // Transform flights for display - filter out any that fail to transform
-      const displayFlights = matchedFlights
+      let displayFlights = matchedFlights
         .map((flight: any) => {
           try {
             return transformFlightToDisplay(flight);
@@ -93,6 +93,26 @@ const SearchPage: React.FC = () => {
           }
         })
         .filter((flight: any) => flight !== null) as FlightDisplay[];
+      
+      // Filter out past flights (only show future flights)
+      const now = new Date();
+      displayFlights = displayFlights.filter((flight: FlightDisplay) => {
+        try {
+          // Parse the departure date and time from the flight
+          // The flight has date (YYYY-MM-DD) and departure.time (HH:mm)
+          const departureDateStr = flight.date; // YYYY-MM-DD format
+          const departureTimeStr = flight.departure.time; // HH:mm format
+          const departureDateTime = new Date(`${departureDateStr}T${departureTimeStr}`);
+          
+          // Check if departure time is in the future
+          return departureDateTime > now;
+        } catch (err) {
+          console.error('Error parsing flight departure time:', err, flight);
+          // If we can't parse the date, exclude it to be safe
+          return false;
+        }
+      });
+      
       setFlights(displayFlights);
     } catch (err) {
       setError('Failed to search flights. Please try again.');
