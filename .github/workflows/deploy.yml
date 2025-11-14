@@ -65,19 +65,23 @@ jobs:
     # Step 8: Apply Kubernetes configurations (ConfigMap, Deployment, etc.)
     - name: Apply Kubernetes configurations
       run: |
-        # Apply ConfigMap (if changed)
-        if [ -f k8s/configmap.yaml ]; then
-          kubectl apply -f k8s/configmap.yaml
-        fi
+        # Apply namespace first (idempotent)
+        kubectl apply -f k8s/namespace.yaml || true
         
-        # Apply Deployment (if changed)
-        if [ -f k8s/deployment.yaml ]; then
-          kubectl apply -f k8s/deployment.yaml
-        fi
+        # Apply cert-issuer for HTTPS (idempotent)
+        kubectl apply -f k8s/cert-issuer.yaml || true
         
-        # Apply other k8s resources if needed
-        # kubectl apply -f k8s/ingress.yaml || true
-        # kubectl apply -f k8s/service.yaml || true
+        # Apply ConfigMap
+        kubectl apply -f k8s/configmap.yaml
+        
+        # Apply Service (needed for Ingress)
+        kubectl apply -f k8s/service.yaml
+        
+        # Apply Ingress (needed for HTTPS)
+        kubectl apply -f k8s/ingress.yaml
+        
+        # Apply Deployment
+        kubectl apply -f k8s/deployment.yaml
 
     # Step 9: Update Kubernetes deployment image
     - name: Deploy to Kubernetes
