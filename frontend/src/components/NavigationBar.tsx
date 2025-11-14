@@ -106,7 +106,11 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward, minima
                 {/* Notification Center */}
                 <NotificationCenter />
                 
-                <div className="flex items-center gap-2 px-3 py-2 text-teal-700 bg-teal-50 rounded-lg border border-teal-200/50">
+                <div 
+                  className="flex items-center gap-2 px-3 py-2 text-teal-700 bg-teal-50 rounded-lg border border-teal-200/50 cursor-pointer hover:bg-teal-100 hover:border-teal-300 transition-all duration-200"
+                  onClick={() => navigate('/profile', { state: { from: location.pathname } })}
+                  title="View Profile"
+                >
                   <User className="h-5 w-5" />
                   <span className="font-medium">{userEmail}</span>
                 </div>

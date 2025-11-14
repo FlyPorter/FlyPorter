@@ -288,7 +288,7 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
     : airlines;
 
   return (
-    <div className="border border-teal-200/50 rounded-xl p-4 sm:p-6 md:p-8 bg-white/90 backdrop-blur-sm shadow-2xl">
+    <div className="border border-teal-200/50 rounded-xl p-4 sm:p-5 md:p-6 lg:p-7 bg-white/90 backdrop-blur-sm shadow-2xl overflow-visible">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-4 sm:mb-6">
         <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Search Flights</h2>
         <button
@@ -345,12 +345,12 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
       <div className="mb-4">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4">
           {/* From Field */}
-          <div className="relative" ref={originRef}>
+          <div className="relative w-full" ref={originRef}>
             <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">From</label>
             <Input
               type="text"
               value={route.origin}
-              placeholder="City or airport"
+              placeholder="City or code"
               onChange={(e) => handleOriginInput(e.target.value)}
               disabled={disabled}
               className="w-full text-sm sm:text-base"
@@ -386,12 +386,12 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
           </div>
 
           {/* To Field */}
-          <div className="relative" ref={destinationRef}>
+          <div className="relative w-full" ref={destinationRef}>
             <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">To</label>
             <Input
               type="text"
               value={route.destination}
-              placeholder="City or airport"
+              placeholder="City or code"
               onChange={(e) => handleDestinationInput(e.target.value)}
               disabled={disabled}
               className="w-full text-sm sm:text-base"
@@ -416,7 +416,7 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
 
       {/* Date Selection */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div>
+        <div className="relative w-full min-w-0">
           <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">Departure Date</label>
           <Input
             type="date"
@@ -426,11 +426,15 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
             min={getTodayDate()}
             max={getMaxDate()}
             className="w-full text-sm sm:text-base"
+            style={{
+              paddingRight: '2.5rem',
+              minWidth: '160px'
+            }}
           />
         </div>
 
         {tripType === 'roundTrip' && (
-          <div>
+          <div className="relative w-full min-w-0">
             <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">Return Date</label>
             <Input
               type="date"
@@ -440,6 +444,10 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
               min={route.departDate || getTodayDate()}
               max={getMaxDate()}
               className="w-full text-sm sm:text-base"
+              style={{
+                paddingRight: '2.5rem',
+                minWidth: '160px'
+              }}
             />
           </div>
         )}

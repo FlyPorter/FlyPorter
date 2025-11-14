@@ -157,8 +157,8 @@ const SearchPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-100/30">
       <NavigationBar />
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        <div className="max-w-5xl mx-auto">
+      <div className="container mx-auto pl-2 sm:pl-3 md:pl-4 lg:pl-6 pr-4 sm:pr-6 lg:pr-8 py-4 sm:py-6 lg:py-8">
+        <div className="max-w-7xl mx-auto">
           {/* Page Title */}
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent mb-4 sm:mb-6 text-center">
             Book a Flight
