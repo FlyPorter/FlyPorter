@@ -150,8 +150,8 @@ The PDF invoice upload feature requires Digital Ocean Spaces to be configured. T
 
 1. **Create a Digital Ocean Space**
    - Log in to Digital Ocean → Spaces → Create a Space
-   - Choose a region (e.g., NYC3, SFO3)
-   - Name it (e.g., `flyporter-invoices`)
+   - Choose a region (e.g., tor1, SFO3)
+   - Name it (e.g., `flyporterbucket`)
 
 2. **Generate API Keys**
    - Go to API → Spaces access keys → Generate New Key
@@ -160,11 +160,11 @@ The PDF invoice upload feature requires Digital Ocean Spaces to be configured. T
 3. **Configure Backend Environment**
    Add these to your `backend/.env` file:
    ```bash
-   SPACES_ENDPOINT="https://nyc3.digitaloceanspaces.com"
-   SPACES_REGION="nyc3"
+   SPACES_ENDPOINT="https://tor1.digitaloceanspaces.com"
+   SPACES_REGION="tor1"
    SPACES_ACCESS_KEY="your-access-key"
    SPACES_SECRET_KEY="your-secret-key"
-   SPACES_BUCKET="flyporter-invoices"
+   SPACES_BUCKET="flyporterbucket"
    ```
 
 4. **Restart the server** and test with `POST /pdf/invoice/{{bookingId}}/upload`
