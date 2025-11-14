@@ -15,6 +15,9 @@ package-lock.json
 k8s/secrets.yaml
 k8s/secrets-*.yaml
 
+DEPLOYMENT.md
+AUTOSCALING_DEMO.md
+load-test-demo.sh
 K8S_CLUSTER_SETUP.md
 CICD_GUIDE.md
 CICD_QUICKSTART.md
