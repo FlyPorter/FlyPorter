@@ -101,16 +101,29 @@ jobs:
     # Step 11: Run health check
     - name: Health check
       run: |
-        EXTERNAL_IP=$(kubectl get svc flyporter-backend -n flyporter -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-        echo "Backend URL: http://$EXTERNAL_IP"
+        # Wait for deployment rollout to complete
+        echo "Waiting for deployment rollout..."
+        kubectl rollout status deployment/flyporter-backend -n flyporter --timeout=5m
         
-        # Wait for service to be ready
-        echo "Waiting for service to be ready..."
-        sleep 15
+        # Wait for pods to be ready
+        echo "Waiting for pods to be ready..."
+        sleep 10
         
-        # Test health endpoint
-        echo "Testing health endpoint..."
-        curl -f http://$EXTERNAL_IP/api/health || exit 1
-        
-        echo "Deployment successful! Backend is live at http://$EXTERNAL_IP"
+        # Test health endpoint via HTTPS domain
+        echo "Testing health endpoint via HTTPS domain..."
+        if curl -f https://api.flyporter.website/api/health; then
+          echo "HTTPS health check passed!"
+          echo "Deployment successful! Backend is live at https://api.flyporter.website"
+        else
+          echo "HTTPS health check failed, falling back to direct service IP..."
+          EXTERNAL_IP=$(kubectl get svc flyporter-backend -n flyporter -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          if [ -n "$EXTERNAL_IP" ]; then
+            echo "Testing via service IP: http://$EXTERNAL_IP"
+            curl -f http://$EXTERNAL_IP:3000/api/health || exit 1
+            echo "Health check passed via service IP"
+          else
+            echo "Error: Could not determine service IP"
+            exit 1
+          fi
+        fi
 
