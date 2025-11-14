@@ -21,11 +21,30 @@ const CheapFlightRecommendations: React.FC = () => {
           priceMax: 200
         });
         
-        // Transform and sort flights by price
-        const displayFlights = response
-          .map(transformFlightToDisplay)
+        // Transform flights
+        let displayFlights = response.map(transformFlightToDisplay);
+        
+        // Filter out past flights (only show future flights)
+        const now = new Date();
+        displayFlights = displayFlights.filter((flight: FlightDisplay) => {
+          try {
+            const departureDateStr = flight.date; // YYYY-MM-DD format
+            const departureTimeStr = flight.departure.time; // HH:mm format
+            const departureDateTime = new Date(`${departureDateStr}T${departureTimeStr}`);
+            
+            // Check if departure time is in the future
+            return departureDateTime > now;
+          } catch (err) {
+            console.error('Error parsing flight departure time:', err, flight);
+            // If we can't parse the date, exclude it to be safe
+            return false;
+          }
+        });
+        
+        // Sort by price and get top 10 cheapest flights
+        displayFlights = displayFlights
           .sort((a, b) => Number(a.price) - Number(b.price))
-          .slice(0, 10); // Get top 10 cheapest flights
+          .slice(0, 10);
 
         setRecommendations(displayFlights);
       } catch (err) {

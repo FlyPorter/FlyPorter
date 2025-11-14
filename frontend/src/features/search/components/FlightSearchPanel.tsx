@@ -22,6 +22,20 @@ interface FlightSearchPanelProps {
 const MAX_PRICE = 100000;
 const MAX_DISPLAYED_AIRLINES = 10;
 
+// Helper function to get today's date in YYYY-MM-DD format
+const getTodayDate = (): string => {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+};
+
+// Helper function to get date 1 year from today in YYYY-MM-DD format
+const getMaxDate = (): string => {
+  const today = new Date();
+  const oneYearLater = new Date(today);
+  oneYearLater.setFullYear(today.getFullYear() + 1);
+  return oneYearLater.toISOString().split('T')[0];
+};
+
 const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({ 
   onSearch, 
   onClearFilters,
@@ -375,6 +389,8 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
             value={route.departDate}
             onChange={(e) => handleRouteChange('departDate', e.target.value)}
             disabled={disabled}
+            min={getTodayDate()}
+            max={getMaxDate()}
             className="w-full text-sm sm:text-base"
           />
         </div>
@@ -387,7 +403,8 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
               value={returnDate}
               onChange={(e) => setReturnDate(e.target.value)}
               disabled={disabled}
-              min={route.departDate || undefined}
+              min={route.departDate || getTodayDate()}
+              max={getMaxDate()}
               className="w-full text-sm sm:text-base"
             />
           </div>
