@@ -1,5 +1,10 @@
 import PDFDocument from "pdfkit";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { prisma } from "../config/prisma.js";
 import { env } from "../config/env.js";
@@ -360,14 +365,25 @@ export async function getInvoiceSignedUrl(
   const prefix = env.SPACES_INVOICE_PREFIX.replace(/\/+$/, "");
   const key = `${prefix}/booking-${options.bookingId}.pdf`;
   const filename = `invoice-booking-${options.bookingId}.pdf`;
+  const client = getSpacesClient();
 
   try {
-    // Try to generate signed URL for existing file
+    // Check if invoice exists before generating signed URL
+    const headCommand = new HeadObjectCommand({
+      Bucket: env.SPACES_BUCKET,
+      Key: key,
+    });
+    await client.send(headCommand);
+
     const signedUrl = await generateSignedUrl(key, 3600);
     return { url: signedUrl, filename };
   } catch (error: any) {
-    // If file doesn't exist (404), upload it first
-    if (error?.name === "NoSuchKey" || error?.$metadata?.httpStatusCode === 404) {
+    const isMissing =
+      error?.name === "NoSuchKey" ||
+      error?.name === "NotFound" ||
+      error?.$metadata?.httpStatusCode === 404;
+
+    if (isMissing) {
       console.log(`Invoice not found in Spaces, uploading for booking ${options.bookingId}`);
       const uploadResult = await uploadBookingInvoiceToSpaces(options);
       return { url: uploadResult.url, filename };
@@ -378,4 +394,3 @@ export async function getInvoiceSignedUrl(
     return { url: uploadResult.url, filename };
   }
 }
-

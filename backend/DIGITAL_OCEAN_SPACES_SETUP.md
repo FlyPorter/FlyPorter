@@ -4,9 +4,9 @@
 
 1. **Log in to Digital Ocean** and go to **Spaces** from the left sidebar
 2. **Click "Create a Space"**
-3. **Choose a region** (e.g., NYC3, SFO3, SGP1, FRA1, AMS3)
+3. **Choose a region** (e.g., tor1, SFO3, SGP1, FRA1, AMS3)
    - Choose the region closest to your users for better performance
-4. **Set the name** (e.g., `flyporter-invoices`)
+4. **Set the name** (e.g., `flyporterbucket`)
 5. **Configure File Listing**:
    - Choose **"Restrict File Listing"** (recommended for security)
 6. **CDN (Optional)**:
@@ -37,18 +37,18 @@ Update the following variables in your `.env` file:
 
 ```bash
 # Replace with your Space's region
-SPACES_ENDPOINT="https://nyc3.digitaloceanspaces.com"
-SPACES_REGION="nyc3"
+SPACES_ENDPOINT="https://tor1.digitaloceanspaces.com"
+SPACES_REGION="tor1"
 
 # Add your access credentials
 SPACES_ACCESS_KEY="DO00XXXXXXXXXXXXX"
 SPACES_SECRET_KEY="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 # Your Space name
-SPACES_BUCKET="flyporter-invoices"
+SPACES_BUCKET="flyporterbucket"
 
-# (Optional) If you enabled CDN
-SPACES_CDN_BASE_URL="https://flyporter-invoices.nyc3.cdn.digitaloceanspaces.com"
+# We don't enabled CDN but if in the future we enable CDN # 
+SPACES_CDN_BASE_URL="https://flyporterbucket.tor1.cdn.digitaloceanspaces.com"
 
 # Directory structure for invoices
 SPACES_INVOICE_PREFIX="invoices"
@@ -58,7 +58,7 @@ SPACES_INVOICE_PREFIX="invoices"
 
 | Region | Endpoint |
 |--------|----------|
-| New York 3 | `https://nyc3.digitaloceanspaces.com` |
+| New York 3 | `https://tor1.digitaloceanspaces.com` |
 | San Francisco 3 | `https://sfo3.digitaloceanspaces.com` |
 | Singapore 1 | `https://sgp1.digitaloceanspaces.com` |
 | Frankfurt 1 | `https://fra1.digitaloceanspaces.com` |
@@ -112,8 +112,8 @@ curl -X POST http://localhost:3000/api/pdf/invoice/1/upload \
   "message": "Invoice uploaded successfully",
   "data": {
     "key": "invoices/booking-1-1699999999999.pdf",
-    "bucket": "flyporter-invoices",
-    "url": "https://flyporter-invoices.nyc3.digitaloceanspaces.com/invoices/booking-1-1699999999999.pdf"
+    "bucket": "flyporterbucket",
+    "url": "https://flyporterbucket.tor1.digitaloceanspaces.com/invoices/booking-1-1699999999999.pdf"
   }
 }
 ```
