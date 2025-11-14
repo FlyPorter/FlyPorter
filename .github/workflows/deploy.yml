@@ -62,12 +62,36 @@ jobs:
         kubectl cluster-info
         kubectl get nodes
 
-    # Step 8: Apply Kubernetes configurations (ConfigMap, Deployment, etc.)
-    - name: Apply Kubernetes configurations
+    # Step 8: Create or update Kubernetes secrets
+    # Security Note: Using environment variables instead of direct command args
+    # GitHub Actions automatically masks secrets in logs when used as env vars
+    - name: Create Kubernetes secrets
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        SPACES_ACCESS_KEY: ${{ secrets.SPACES_ACCESS_KEY }}
+        SPACES_SECRET_KEY: ${{ secrets.SPACES_SECRET_KEY }}
       run: |
-        # Apply namespace first (idempotent)
+        # Create namespace first (idempotent)
         kubectl apply -f k8s/namespace.yaml || true
         
+        # Create or update secrets from environment variables (idempotent)
+        # Using env vars ensures GitHub Actions masks them in logs
+        kubectl create secret generic flyporter-secrets \
+          --from-literal=DATABASE_URL="$DATABASE_URL" \
+          --from-literal=JWT_SECRET="$JWT_SECRET" \
+          --from-literal=GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
+          --from-literal=GOOGLE_CLIENT_SECRET="$GOOGLE_CLIENT_SECRET" \
+          --from-literal=SPACES_ACCESS_KEY="$SPACES_ACCESS_KEY" \
+          --from-literal=SPACES_SECRET_KEY="$SPACES_SECRET_KEY" \
+          --namespace=flyporter \
+          --dry-run=client -o yaml | kubectl apply -f -
+    
+    # Step 9: Apply Kubernetes configurations (ConfigMap, Deployment, etc.)
+    - name: Apply Kubernetes configurations
+      run: |
         # Apply cert-issuer for HTTPS (idempotent)
         kubectl apply -f k8s/cert-issuer.yaml || true
         
@@ -83,7 +107,7 @@ jobs:
         # Apply Deployment
         kubectl apply -f k8s/deployment.yaml
 
-    # Step 9: Update Kubernetes deployment image
+    # Step 10: Update Kubernetes deployment image
     - name: Deploy to Kubernetes
       run: |
         kubectl set image deployment/flyporter-backend \
@@ -93,7 +117,7 @@ jobs:
         # Wait for rollout to complete
         kubectl rollout status deployment/flyporter-backend -n flyporter --timeout=5m
 
-    # Step 10: Verify deployment
+    # Step 11: Verify deployment
     - name: Verify deployment
       run: |
         echo "Checking pod status..."
@@ -102,7 +126,7 @@ jobs:
         echo "Checking service..."
         kubectl get svc flyporter-backend -n flyporter
 
-    # Step 11: Run health check
+    # Step 12: Run health check
     - name: Health check
       run: |
         # Wait for deployment rollout to complete
