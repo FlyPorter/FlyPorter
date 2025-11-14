@@ -4,14 +4,28 @@ metadata:
   name: flyporter-config
   namespace: flyporter
 data:
-  PORT: "3000"
-  API_PREFIX: "/api"
+  # CORS allowed origins (comma-separated)
+  CORS_ORIGINS: "https://flyporter.website,https://www.flyporter.website,http://localhost:5173"
+  
+  # Node environment
   NODE_ENV: "production"
+  
+  # API prefix
+  API_PREFIX: "/api"
+  
+  # JWT expiration
   JWT_EXPIRES_IN: "7d"
-  SPACES_REGION: "tor1"
+  
+  # Digital Ocean Spaces configuration
   SPACES_ENDPOINT: "https://tor1.digitaloceanspaces.com"
-  SPACES_BUCKET: "flyporterbucket"
-  SPACES_CDN_BASE_URL: ""
+  SPACES_REGION: "tor1"
   SPACES_INVOICE_PREFIX: "invoices"
-  GOOGLE_CALLBACK_URL: "http://209.38.12.130"
-
+  
+  # Google OAuth callback URL (HTTPS for production)
+  GOOGLE_CALLBACK_URL: "https://api.flyporter.website"
+  
+  # Port configuration
+  PORT: "3000"
+  
+  # Note: Sensitive values (secrets) should be in secrets.yaml
+  # These are non-sensitive configuration values
