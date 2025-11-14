@@ -13,7 +13,7 @@ metadata:
     
     # CORS settings
     nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/cors-allow-origin: "https://flyporter.website,https://www.flyporter.website"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://app.flyporter.website,https://flyporter.website,https://www.flyporter.website"
     nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
     nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, PATCH, OPTIONS"
     nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"

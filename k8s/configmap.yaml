@@ -5,7 +5,7 @@ metadata:
   namespace: flyporter
 data:
   # CORS allowed origins (comma-separated)
-  CORS_ORIGINS: "https://flyporter.website,https://www.flyporter.website,http://localhost:5173"
+  CORS_ORIGINS: "https://app.flyporter.website,https://flyporter.website,https://www.flyporter.website,http://localhost:5173"
   
   # Node environment
   NODE_ENV: "production"
@@ -28,7 +28,7 @@ data:
   
   # Frontend URL for OAuth redirects (HTTPS for production)
   # This is where users are redirected after Google OAuth authentication
-  FRONTEND_URL: "https://flyporter.website"
+  FRONTEND_URL: "https://app.flyporter.website"
   
   # Port configuration
   PORT: "3000"
