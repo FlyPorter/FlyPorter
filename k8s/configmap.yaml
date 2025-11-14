@@ -19,8 +19,8 @@ data:
   # Digital Ocean Spaces configuration
   SPACES_ENDPOINT: "https://tor1.digitaloceanspaces.com"
   SPACES_REGION: "tor1"
-  SPACES_BUCKET: "flyporter"
-  SPACES_CDN_BASE_URL: "https://flyporter.tor1.cdn.digitaloceanspaces.com"
+  SPACES_BUCKET: "flyporterbucket"
+  SPACES_CDN_BASE_URL: ""
   SPACES_INVOICE_PREFIX: "invoices"
   
   # Google OAuth callback URL (HTTPS for production)
