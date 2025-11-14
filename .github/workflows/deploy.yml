@@ -62,7 +62,24 @@ jobs:
         kubectl cluster-info
         kubectl get nodes
 
-    # Step 8: Update Kubernetes deployment
+    # Step 8: Apply Kubernetes configurations (ConfigMap, Deployment, etc.)
+    - name: Apply Kubernetes configurations
+      run: |
+        # Apply ConfigMap (if changed)
+        if [ -f k8s/configmap.yaml ]; then
+          kubectl apply -f k8s/configmap.yaml
+        fi
+        
+        # Apply Deployment (if changed)
+        if [ -f k8s/deployment.yaml ]; then
+          kubectl apply -f k8s/deployment.yaml
+        fi
+        
+        # Apply other k8s resources if needed
+        # kubectl apply -f k8s/ingress.yaml || true
+        # kubectl apply -f k8s/service.yaml || true
+
+    # Step 9: Update Kubernetes deployment image
     - name: Deploy to Kubernetes
       run: |
         kubectl set image deployment/flyporter-backend \
@@ -72,7 +89,7 @@ jobs:
         # Wait for rollout to complete
         kubectl rollout status deployment/flyporter-backend -n flyporter --timeout=5m
 
-    # Step 9: Verify deployment
+    # Step 10: Verify deployment
     - name: Verify deployment
       run: |
         echo "Checking pod status..."
@@ -81,7 +98,7 @@ jobs:
         echo "Checking service..."
         kubectl get svc flyporter-backend -n flyporter
 
-    # Step 10: Run health check
+    # Step 11: Run health check
     - name: Health check
       run: |
         EXTERNAL_IP=$(kubectl get svc flyporter-backend -n flyporter -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
