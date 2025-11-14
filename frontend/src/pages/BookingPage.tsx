@@ -119,7 +119,7 @@ const BookingPage: React.FC = () => {
         id: outboundBooking.booking_id,
         passenger_id: userId,
         flight_id: bookingData!.outboundFlight.id,
-        seat_number: parseInt(bookingData!.outboundSeat.seatNumber),
+        seat_number: bookingData!.outboundSeat.seatNumber,
         price: outboundFinalPrice,
         passenger: {
           id: userId,
@@ -186,7 +186,7 @@ const BookingPage: React.FC = () => {
           id: returnBooking.booking_id,
           passenger_id: userId,
           flight_id: bookingData!.returnFlight.id,
-          seat_number: parseInt(bookingData!.returnSeat.seatNumber),
+          seat_number: bookingData!.returnSeat.seatNumber,
           price: returnFinalPrice,
           passenger: {
             id: userId,

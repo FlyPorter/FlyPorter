@@ -28,7 +28,7 @@ interface Ticket {
   id: number;
   passenger_id: number;
   flight_id: number;
-  seat_number: number;
+  seat_number: string;
   price: number;
   passenger: {
     id: number;
@@ -68,6 +68,10 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
   });
   const [isLoadingFlights, setIsLoadingFlights] = useState(true);
   const [flightError, setFlightError] = useState<string | null>(null);
+  const [fetchedSeatNumbers, setFetchedSeatNumbers] = useState<{ outbound: string | null; return: string | null }>({
+    outbound: null,
+    return: null
+  });
 
   // Fetch booking data directly from API to get city information
   useEffect(() => {
@@ -94,6 +98,9 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
 
         const outboundData = await outboundResponse.json();
         const outboundBooking = outboundData.success ? outboundData.data : outboundData;
+        
+        // Extract seat_number from the booking response
+        const outboundSeatNumber = outboundBooking.seat_number || outboundBooking.seat?.seat_number || null;
         
         // Extract flight data from backend response (same as BookingList)
         const outboundFlightData = outboundBooking.flight;
@@ -134,6 +141,7 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
         };
 
         let returnFlightForDisplay: Flight | null = null;
+        let returnSeatNumber = null;
 
         // Fetch return booking if round trip
         if (isRoundTrip && returnTicket) {
@@ -147,6 +155,9 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
           if (returnResponse.ok) {
             const returnData = await returnResponse.json();
             const returnBooking = returnData.success ? returnData.data : returnData;
+            
+            // Extract seat_number from the return booking response
+            returnSeatNumber = returnBooking.seat_number || returnBooking.seat?.seat_number || null;
             
             // Extract flight data from backend response
             const returnFlightData = returnBooking.flight;
@@ -191,6 +202,10 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
         setFetchedFlights({
           outbound: outboundFlightForDisplay,
           return: returnFlightForDisplay
+        });
+        setFetchedSeatNumbers({
+          outbound: outboundSeatNumber,
+          return: returnSeatNumber
         });
         setFlightError(null);
         setIsLoadingFlights(false);
@@ -271,7 +286,7 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
     fetchPdfUrls();
   }, [outboundTicket.id, returnTicket?.id, isRoundTrip]);
 
-  const FlightDetailsCard: React.FC<{ flight: Flight; ticket: Ticket; isReturn?: boolean }> = ({ flight, ticket, isReturn = false }) => {
+  const FlightDetailsCard: React.FC<{ flight: Flight; ticket: Ticket; seatNumber?: string | null; isReturn?: boolean }> = ({ flight, ticket, seatNumber, isReturn = false }) => {
     // Format: "City (Airport)" - same as BookingList
     // City comes directly from backend response: route.origin_airport.city_name
     const departureCity = flight.departure?.city || '';
@@ -286,6 +301,9 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
       ? `${arrivalCity.trim()} (${arrivalAirport})`
       : arrivalAirport;
     
+    // Use fetched seat_number from API if available, otherwise fall back to ticket prop
+    const displaySeatNumber = seatNumber !== null && seatNumber !== undefined ? seatNumber : ticket.seat_number;
+    
     return (
       <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-4 rounded-lg border border-teal-200/50">
         <h2 className="text-lg font-semibold mb-3 text-teal-800">{isReturn ? 'Return Flight Details' : 'Outbound Flight Details'}</h2>
@@ -295,7 +313,7 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
           <p><span className="font-semibold text-teal-800">To:</span> {arrivalDisplay}</p>
           <p><span className="font-semibold text-teal-800">Date:</span> {flight.departure.date}</p>
           <p><span className="font-semibold text-teal-800">Time:</span> {flight.departure.time}</p>
-          <p><span className="font-semibold text-teal-800">Seat Number:</span> {ticket.seat_number}</p>
+          <p><span className="font-semibold text-teal-800">Seat Number:</span> {displaySeatNumber}</p>
           <p><span className="font-semibold text-teal-800">Price:</span> <span className="text-teal-900 font-bold">${ticket.price}</span></p>
         </div>
         <div className="mt-4 pt-4 border-t border-teal-200">
@@ -436,10 +454,10 @@ export const BookingNotification: React.FC<BookingNotificationProps> = ({
           {/* Flight Details */}
           <div className="space-y-4">
             {displayOutboundFlight && (
-              <FlightDetailsCard flight={displayOutboundFlight} ticket={outboundTicket} />
+              <FlightDetailsCard flight={displayOutboundFlight} ticket={outboundTicket} seatNumber={fetchedSeatNumbers.outbound} />
             )}
             {isRoundTrip && displayReturnFlight && returnTicket && (
-              <FlightDetailsCard flight={displayReturnFlight} ticket={returnTicket} isReturn />
+              <FlightDetailsCard flight={displayReturnFlight} ticket={returnTicket} seatNumber={fetchedSeatNumbers.return} isReturn />
             )}
             <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-4 rounded-lg border border-teal-200/50">
               <p className="text-lg font-semibold text-teal-800">
