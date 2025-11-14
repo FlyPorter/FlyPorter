@@ -9,6 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { ArrowUpDown } from 'lucide-react';
 import { getAirlines, Airline } from '../api/airlineApi';
 import { getAirports, Airport } from '../api/airportApi';
 
@@ -173,6 +174,21 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
     }
   };
 
+  const handleSwapOriginDestination = () => {
+    // Swap origin and destination values
+    setRoute(prev => ({
+      ...prev,
+      origin: prev.destination,
+      destination: prev.origin
+    }));
+
+    // Close any open suggestion dropdowns
+    setShowOriginSuggestions(false);
+    setShowDestinationSuggestions(false);
+    setOriginSuggestions([]);
+    setDestinationSuggestions([]);
+  };
+
   const handlePriceChange = (index: 0 | 1, value: string) => {
     const numValue = Number(value);
     
@@ -326,57 +342,75 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
       </div>
 
       {/* Route Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div className="relative" ref={originRef}>
-          <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">From</label>
-          <Input
-            type="text"
-            value={route.origin}
-            placeholder="City or airport"
-            onChange={(e) => handleOriginInput(e.target.value)}
-            disabled={disabled}
-            className="w-full text-sm sm:text-base"
-          />
-          {showOriginSuggestions && originSuggestions.length > 0 && (
-            <div className="absolute z-20 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
-              {originSuggestions.map(airport => (
-                <div
-                  key={airport.code}
-                  className="px-3 sm:px-4 py-2 sm:py-3 hover:bg-teal-50 cursor-pointer border-b last:border-b-0 transition-colors"
-                  onClick={() => handleSuggestionClick('origin', airport)}
-                >
-                  <div className="text-sm sm:text-base font-medium text-gray-900">{airport.city}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">{airport.code}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      <div className="mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4">
+          {/* From Field */}
+          <div className="relative" ref={originRef}>
+            <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">From</label>
+            <Input
+              type="text"
+              value={route.origin}
+              placeholder="City or airport"
+              onChange={(e) => handleOriginInput(e.target.value)}
+              disabled={disabled}
+              className="w-full text-sm sm:text-base"
+            />
+            {showOriginSuggestions && originSuggestions.length > 0 && (
+              <div className="absolute z-20 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
+                {originSuggestions.map(airport => (
+                  <div
+                    key={airport.code}
+                    className="px-3 sm:px-4 py-2 sm:py-3 hover:bg-teal-50 cursor-pointer border-b last:border-b-0 transition-colors"
+                    onClick={() => handleSuggestionClick('origin', airport)}
+                  >
+                    <div className="text-sm sm:text-base font-medium text-gray-900">{airport.city}</div>
+                    <div className="text-xs sm:text-sm text-gray-500">{airport.code}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-        <div className="relative" ref={destinationRef}>
-          <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">To</label>
-          <Input
-            type="text"
-            value={route.destination}
-            placeholder="City or airport"
-            onChange={(e) => handleDestinationInput(e.target.value)}
-            disabled={disabled}
-            className="w-full text-sm sm:text-base"
-          />
-          {showDestinationSuggestions && destinationSuggestions.length > 0 && (
-            <div className="absolute z-20 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
-              {destinationSuggestions.map(airport => (
-                <div
-                  key={airport.code}
-                  className="px-3 sm:px-4 py-2 sm:py-3 hover:bg-teal-50 cursor-pointer border-b last:border-b-0 transition-colors"
-                  onClick={() => handleSuggestionClick('destination', airport)}
-                >
-                  <div className="text-sm sm:text-base font-medium text-gray-900">{airport.city}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">{airport.code}</div>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Swap Button */}
+          <div className="flex items-end justify-center md:justify-center">
+            <button
+              type="button"
+              onClick={handleSwapOriginDestination}
+              disabled={disabled}
+              className="mb-[2px] md:mb-[2px] p-2.5 rounded-full bg-teal-100 hover:bg-teal-200 text-teal-700 hover:text-teal-900 transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 border border-teal-200 hover:border-teal-300 shadow-sm hover:shadow-md active:scale-95"
+              aria-label="Swap origin and destination"
+              title="Swap origin and destination"
+            >
+              <ArrowUpDown className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* To Field */}
+          <div className="relative" ref={destinationRef}>
+            <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">To</label>
+            <Input
+              type="text"
+              value={route.destination}
+              placeholder="City or airport"
+              onChange={(e) => handleDestinationInput(e.target.value)}
+              disabled={disabled}
+              className="w-full text-sm sm:text-base"
+            />
+            {showDestinationSuggestions && destinationSuggestions.length > 0 && (
+              <div className="absolute z-20 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
+                {destinationSuggestions.map(airport => (
+                  <div
+                    key={airport.code}
+                    className="px-3 sm:px-4 py-2 sm:py-3 hover:bg-teal-50 cursor-pointer border-b last:border-b-0 transition-colors"
+                    onClick={() => handleSuggestionClick('destination', airport)}
+                  >
+                    <div className="text-sm sm:text-base font-medium text-gray-900">{airport.city}</div>
+                    <div className="text-xs sm:text-sm text-gray-500">{airport.code}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

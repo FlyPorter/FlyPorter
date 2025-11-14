@@ -172,7 +172,7 @@ const SearchPage: React.FC = () => {
           
           {/* Show results below search panel if user is not logged in */}
           {!isLoggedIn && hasSearched && (
-            <div ref={resultsRef} className="mt-6 sm:mt-8">
+            <div ref={resultsRef} className="mt-6 sm:mt-8 scroll-mt-20">
               <h2 className="text-xl sm:text-2xl font-semibold text-teal-800 mb-3 sm:mb-4">Available Flights</h2>
               <p className="text-sm sm:text-base text-teal-700 mb-4 sm:mb-6">
                 {flights.length} flights found. Please log in to book a flight.

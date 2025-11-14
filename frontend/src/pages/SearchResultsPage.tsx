@@ -283,7 +283,7 @@ const SearchResultsPage: React.FC = () => {
               {/* Flight List or Recommendations */}
               <div className="lg:col-span-3">
                 {hasSearched ? (
-                  <div ref={resultsRef}>
+                  <div ref={resultsRef} className="scroll-mt-20">
                     <div className="mb-4 sm:mb-6">
                       <h2 className="text-xl sm:text-2xl font-semibold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">
                         {isSearchingReturn ? 'Select Return Flight' : 'Available Flights'}
