@@ -208,7 +208,10 @@ const AdminPage = () => {
                 {/* Search Panel */}
                 <div className="lg:col-span-1">
                   <div className="lg:sticky lg:top-20 z-40">
-                    <FlightSearchPanel onSearch={handleSearch} />
+                    <FlightSearchPanel 
+                      onSearch={handleSearch}
+                      compactLayout={true}
+                    />
                   </div>
                 </div>
       

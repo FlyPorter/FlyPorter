@@ -2,7 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { BookingFormProps, PassengerInfo, Flight } from '../types';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { getUserProfile } from '../../profile/api/profileApi';
+import { Input } from "@/components/ui/input";
+import { getUserProfile, updateProfile } from '../../profile/api/profileApi';
+import { UpdatePassengerPayload } from '../../profile/types';
+import { Pencil, X, Check } from 'lucide-react';
 
 const BookingForm: React.FC<BookingFormProps> = ({
   outboundFlight,
@@ -15,6 +18,48 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [profile, setProfile] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editForm, setEditForm] = useState<UpdatePassengerPayload>({
+    name: '',
+    birth_date: '',
+    address: '',
+    phone_number: '',
+    passport_number: ''
+  });
+  const [fieldErrors, setFieldErrors] = useState<{
+    name?: string;
+    phone_number?: string;
+    passport_number?: string;
+  }>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Helper function to get today's date in YYYY-MM-DD format
+  const getTodayDate = (): string => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
+  // Validation functions
+  const validateName = (name: string): string | null => {
+    if (name && !/^[a-zA-Z\s'-]+$/.test(name)) {
+      return 'Name can only contain letters, spaces, hyphens, and apostrophes';
+    }
+    return null;
+  };
+
+  const validatePhone = (phone: string): string | null => {
+    if (phone && !/^[0-9\s\-\+]+$/.test(phone)) {
+      return 'Phone number can only contain numbers, spaces, hyphens, and plus signs';
+    }
+    return null;
+  };
+
+  const validatePassport = (passport: string): string | null => {
+    if (passport && !/^[a-zA-Z0-9]+$/.test(passport)) {
+      return 'Passport number can only contain letters and numbers';
+    }
+    return null;
+  };
   
   // Payment form state
   const [paymentData, setPaymentData] = useState({
@@ -37,6 +82,18 @@ const BookingForm: React.FC<BookingFormProps> = ({
         const userProfile = await getUserProfile();
         setProfile(userProfile);
         setProfileError(null);
+        // Initialize edit form with current profile data
+        if (userProfile.customer_info) {
+          setEditForm({
+            name: userProfile.customer_info.full_name || '',
+            birth_date: userProfile.customer_info.date_of_birth 
+              ? new Date(userProfile.customer_info.date_of_birth).toISOString().split('T')[0]
+              : '',
+            address: '',
+            phone_number: userProfile.customer_info.phone || '',
+            passport_number: userProfile.customer_info.passport_number || ''
+          });
+        }
       } catch (error: any) {
         console.error('Failed to fetch user profile:', error);
         setProfileError(error.message || 'Failed to load profile');
@@ -47,6 +104,109 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
     fetchUserProfile();
   }, []);
+
+  // Input handlers with validation
+  const handleNameChange = (value: string) => {
+    const filtered = value.replace(/[^a-zA-Z\s'-]/g, '');
+    setEditForm({ ...editForm, name: filtered });
+    const error = validateName(filtered);
+    setFieldErrors(prev => ({ ...prev, name: error || undefined }));
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const filtered = value.replace(/[^0-9\s\-\+]/g, '');
+    setEditForm({ ...editForm, phone_number: filtered });
+    const error = validatePhone(filtered);
+    setFieldErrors(prev => ({ ...prev, phone_number: error || undefined }));
+  };
+
+  const handlePassportChange = (value: string) => {
+    const filtered = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    setEditForm({ ...editForm, passport_number: filtered });
+    const error = validatePassport(filtered);
+    setFieldErrors(prev => ({ ...prev, passport_number: error || undefined }));
+  };
+
+  const handleEditProfile = () => {
+    if (profile?.customer_info) {
+      setEditForm({
+        name: profile.customer_info.full_name || '',
+        birth_date: profile.customer_info.date_of_birth 
+          ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
+          : '',
+        address: '',
+        phone_number: profile.customer_info.phone || '',
+        passport_number: profile.customer_info.passport_number || ''
+      });
+    } else {
+      // Initialize empty form for creating new profile
+      setEditForm({
+        name: '',
+        birth_date: '',
+        address: '',
+        phone_number: '',
+        passport_number: ''
+      });
+    }
+    setIsEditingProfile(true);
+    setSaveError(null);
+    setFieldErrors({});
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingProfile(false);
+    setSaveError(null);
+    setFieldErrors({});
+    // Reset form to current profile data
+    if (profile?.customer_info) {
+      setEditForm({
+        name: profile.customer_info.full_name || '',
+        birth_date: profile.customer_info.date_of_birth 
+          ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
+          : '',
+        address: '',
+        phone_number: profile.customer_info.phone || '',
+        passport_number: profile.customer_info.passport_number || ''
+      });
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setSaveError(null);
+      setFieldErrors({});
+
+      // Validate required fields
+      if (!editForm.name || !editForm.birth_date || !editForm.passport_number) {
+        setSaveError('Please fill in all required fields (Name, Birth Date, Passport Number)');
+        return;
+      }
+
+      // Validate field formats
+      const nameError = validateName(editForm.name);
+      const phoneError = editForm.phone_number ? validatePhone(editForm.phone_number) : null;
+      const passportError = validatePassport(editForm.passport_number);
+
+      const errors: typeof fieldErrors = {};
+      if (nameError) errors.name = nameError;
+      if (phoneError) errors.phone_number = phoneError;
+      if (passportError) errors.passport_number = passportError;
+
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        setSaveError('Please fix the validation errors before saving');
+        return;
+      }
+
+      const updatedProfile = await updateProfile(editForm);
+      setProfile(updatedProfile);
+      setIsEditingProfile(false);
+      setSaveError(null);
+      setFieldErrors({});
+    } catch (err: any) {
+      setSaveError(err.message || 'Failed to update profile information');
+    }
+  };
 
   // Credit card validation functions
   const validateCardNumber = (cardNumber: string): boolean => {
@@ -243,11 +403,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
                   Please complete your profile before booking.
                 </p>
                 <Button
-                  onClick={() => window.location.href = '/profile'}
+                  onClick={handleEditProfile}
                   variant="outline"
                   className="text-sm sm:text-base"
                 >
-                  Go to Profile
+                  Create Profile
                 </Button>
               </div>
             </CardContent>
@@ -260,12 +420,100 @@ const BookingForm: React.FC<BookingFormProps> = ({
                   No profile information found. Please complete your profile before booking.
                 </p>
                 <Button
-                  onClick={() => window.location.href = '/profile'}
+                  onClick={handleEditProfile}
                   variant="outline"
                   className="text-sm sm:text-base"
                 >
-                  Go to Profile
+                  Create Profile
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : isEditingProfile ? (
+          <Card>
+            <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
+              <div className="space-y-3 sm:space-y-4">
+                {saveError && (
+                  <div className="p-3 bg-red-50 text-red-700 rounded-md text-xs sm:text-sm border border-red-200">
+                    {saveError}
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs sm:text-sm text-teal-700 mb-1 font-medium">Full Name *</p>
+                  <Input
+                    value={editForm.name}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    placeholder="Enter full name (letters only)"
+                    required
+                    className={`border-teal-200 focus:border-teal-400 text-sm sm:text-base ${
+                      fieldErrors.name ? 'border-red-300 focus:border-red-400' : ''
+                    }`}
+                  />
+                  {fieldErrors.name && (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.name}</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm text-teal-700 mb-1 font-medium">Birth Date *</p>
+                  <Input
+                    type="date"
+                    value={editForm.birth_date}
+                    onChange={(e) => setEditForm({ ...editForm, birth_date: e.target.value })}
+                    max={getTodayDate()}
+                    required
+                    className="border-teal-200 focus:border-teal-400 text-sm sm:text-base"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm text-teal-700 mb-1 font-medium">Phone Number</p>
+                  <Input
+                    type="tel"
+                    value={editForm.phone_number}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    placeholder="Enter phone number (digits only)"
+                    className={`border-teal-200 focus:border-teal-400 text-sm sm:text-base ${
+                      fieldErrors.phone_number ? 'border-red-300 focus:border-red-400' : ''
+                    }`}
+                  />
+                  {fieldErrors.phone_number && (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.phone_number}</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm text-teal-700 mb-1 font-medium">Passport Number *</p>
+                  <Input
+                    value={editForm.passport_number}
+                    onChange={(e) => handlePassportChange(e.target.value)}
+                    placeholder="Enter passport number (letters and numbers only)"
+                    required
+                    className={`border-teal-200 focus:border-teal-400 text-sm sm:text-base uppercase ${
+                      fieldErrors.passport_number ? 'border-red-300 focus:border-red-400' : ''
+                    }`}
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                  {fieldErrors.passport_number && (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.passport_number}</p>
+                  )}
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    onClick={handleSaveProfile}
+                    className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white text-xs sm:text-sm"
+                    size="sm"
+                  >
+                    <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    {profile?.customer_info ? 'Save' : 'Create Profile'}
+                  </Button>
+                  <Button
+                    onClick={handleCancelEdit}
+                    variant="outline"
+                    size="sm"
+                    className="border-teal-300 text-teal-700 hover:bg-teal-50 hover:border-teal-400 text-xs sm:text-sm"
+                  >
+                    <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    Cancel
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -295,12 +543,13 @@ const BookingForm: React.FC<BookingFormProps> = ({
                 </div>
                 <div className="pt-2">
                   <Button
-                    onClick={() => window.location.href = '/profile'}
+                    onClick={handleEditProfile}
                     variant="outline"
                     size="sm"
                     className="text-xs sm:text-sm"
                   >
-                    Update Profile
+                    <Pencil className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    Edit Profile
                   </Button>
                 </div>
               </div>
