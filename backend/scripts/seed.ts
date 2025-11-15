@@ -113,6 +113,12 @@ async function main() {
     { city_name: "Vancouver", country: "Canada", timezone: "America/Vancouver" },
     { city_name: "Montreal", country: "Canada", timezone: "America/Montreal" },
     { city_name: "Ottawa", country: "Canada", timezone: "America/Toronto" },
+    { city_name: "Calgary", country: "Canada", timezone: "America/Edmonton" },
+    { city_name: "Edmonton", country: "Canada", timezone: "America/Edmonton" },
+    { city_name: "Halifax", country: "Canada", timezone: "America/Halifax" },
+    { city_name: "Winnipeg", country: "Canada", timezone: "America/Winnipeg" },
+    { city_name: "Quebec City", country: "Canada", timezone: "America/Toronto" },
+    { city_name: "Victoria", country: "Canada", timezone: "America/Vancouver" },
   ];
 
   for (const city of cities) {
@@ -134,6 +140,12 @@ async function main() {
     { airport_code: "YVR", city_name: "Vancouver", airport_name: "Vancouver International Airport" },
     { airport_code: "YUL", city_name: "Montreal", airport_name: "Montreal-Pierre Elliott Trudeau International Airport" },
     { airport_code: "YOW", city_name: "Ottawa", airport_name: "Ottawa Macdonald-Cartier International Airport" },
+    { airport_code: "YYC", city_name: "Calgary", airport_name: "Calgary International Airport" },
+    { airport_code: "YEG", city_name: "Edmonton", airport_name: "Edmonton International Airport" },
+    { airport_code: "YHZ", city_name: "Halifax", airport_name: "Halifax Stanfield International Airport" },
+    { airport_code: "YWG", city_name: "Winnipeg", airport_name: "Winnipeg James Armstrong Richardson International Airport" },
+    { airport_code: "YQB", city_name: "Quebec City", airport_name: "Jean Lesage International Airport" },
+    { airport_code: "YYJ", city_name: "Victoria", airport_name: "Victoria International Airport" },
   ];
 
   for (const airport of airports) {
@@ -176,21 +188,32 @@ async function main() {
     { origin_airport_code: "YUL", destination_airport_code: "YYZ" }, // Montreal → Toronto
     { origin_airport_code: "YYZ", destination_airport_code: "YOW" }, // Toronto → Ottawa
     { origin_airport_code: "YOW", destination_airport_code: "YYZ" }, // Ottawa → Toronto
+    { origin_airport_code: "YYZ", destination_airport_code: "YYC" }, // Toronto → Calgary
+    { origin_airport_code: "YYC", destination_airport_code: "YYZ" }, // Calgary → Toronto
+    { origin_airport_code: "YVR", destination_airport_code: "YYC" }, // Vancouver → Calgary
+    { origin_airport_code: "YYC", destination_airport_code: "YVR" }, // Calgary → Vancouver
+    { origin_airport_code: "YUL", destination_airport_code: "YHZ" }, // Montreal → Halifax
+    { origin_airport_code: "YHZ", destination_airport_code: "YUL" }, // Halifax → Montreal
+    { origin_airport_code: "YEG", destination_airport_code: "YWG" }, // Edmonton → Winnipeg
+    { origin_airport_code: "YWG", destination_airport_code: "YEG" }, // Winnipeg → Edmonton
+    { origin_airport_code: "YYZ", destination_airport_code: "YQB" }, // Toronto → Quebec City
+    { origin_airport_code: "YQB", destination_airport_code: "YYZ" }, // Quebec City → Toronto
   ];
 
-  const createdRoutes: Array<{ route_id: number; origin_airport_code: string; destination_airport_code: string }> = [];
+  const routeMap: Record<string, number> = {};
+
   for (const route of routes) {
     const existing = await prisma.route.findFirst({
       where: route,
     });
-    
+
     if (!existing) {
       const created = await prisma.route.create({
         data: route,
       });
-      createdRoutes.push(created);
+      routeMap[`${route.origin_airport_code}_${route.destination_airport_code}`] = created.route_id;
     } else {
-      createdRoutes.push(existing);
+      routeMap[`${route.origin_airport_code}_${route.destination_airport_code}`] = existing.route_id;
     }
   }
   console.log(`Created ${routes.length} routes`);
@@ -253,7 +276,7 @@ async function main() {
 
   const flights = [
     {
-      route_id: createdRoutes[0]!.route_id, // YYZ → YVR (departs from YYZ)
+      route_id: routeMap["YYZ_YVR"]!, // YYZ → YVR (departs from YYZ)
       airline_code: "FP",
       departure_time: yyzkDeparture,
       arrival_time: new Date(yyzkDeparture.getTime() + 5 * 60 * 60 * 1000), // +5 hours
@@ -261,7 +284,7 @@ async function main() {
       seat_capacity: 24,
     },
     {
-      route_id: createdRoutes[2]!.route_id, // YYZ → YUL (departs from YYZ)
+      route_id: routeMap["YYZ_YUL"]!, // YYZ → YUL (departs from YYZ)
       airline_code: "AC",
       departure_time: new Date('2026-01-01T11:00:00'),
       arrival_time: new Date('2026-01-01T12:30:00'), // +1.5 hours
@@ -269,7 +292,7 @@ async function main() {
       seat_capacity: 18,
     },
     {
-      route_id: createdRoutes[3]!.route_id, // YUL → YYZ (departs from YUL)
+      route_id: routeMap["YUL_YYZ"]!, // YUL → YYZ (departs from YUL)
       airline_code: "AC",
       departure_time: yulDeparture,
       arrival_time: new Date(yulDeparture.getTime() + 90 * 60 * 1000), // +1.5 hours
@@ -278,7 +301,7 @@ async function main() {
     },
     // Super-future round trip flights to keep availability far out
     {
-      route_id: createdRoutes[0]!.route_id, // YYZ → YVR (far future)
+      route_id: routeMap["YYZ_YVR"]!, // YYZ → YVR (far future)
       airline_code: "FP",
       departure_time: farFutureOutboundYYZToYVR,
       arrival_time: new Date(farFutureOutboundYYZToYVR.getTime() + 5 * 60 * 60 * 1000),
@@ -286,7 +309,7 @@ async function main() {
       seat_capacity: 40,
     },
     {
-      route_id: createdRoutes[1]!.route_id, // YVR → YYZ (return, far future)
+      route_id: routeMap["YVR_YYZ"]!, // YVR → YYZ (return, far future)
       airline_code: "FP",
       departure_time: farFutureReturnYVRToYYZ,
       arrival_time: new Date(farFutureReturnYVRToYYZ.getTime() + 5 * 60 * 60 * 1000),
@@ -294,7 +317,7 @@ async function main() {
       seat_capacity: 40,
     },
     {
-      route_id: createdRoutes[2]!.route_id, // YYZ → YUL (far future)
+      route_id: routeMap["YYZ_YUL"]!, // YYZ → YUL (far future)
       airline_code: "AC",
       departure_time: farFutureOutboundYYZToYUL,
       arrival_time: new Date(farFutureOutboundYYZToYUL.getTime() + 90 * 60 * 1000),
@@ -302,12 +325,93 @@ async function main() {
       seat_capacity: 28,
     },
     {
-      route_id: createdRoutes[3]!.route_id, // YUL → YYZ (return, far future)
+      route_id: routeMap["YUL_YYZ"]!, // YUL → YYZ (return, far future)
       airline_code: "AC",
       departure_time: farFutureReturnYULToYYZ,
       arrival_time: new Date(farFutureReturnYULToYYZ.getTime() + 90 * 60 * 1000),
       base_price: 199.99,
       seat_capacity: 28,
+    },
+    // Additional round trip coverage for Canadian cities
+    {
+      route_id: routeMap["YYZ_YYC"]!, // YYZ → YYC
+      airline_code: "FP",
+      departure_time: new Date("2026-02-10T07:15:00"),
+      arrival_time: new Date("2026-02-10T09:45:00"),
+      base_price: 289.99,
+      seat_capacity: 32,
+    },
+    {
+      route_id: routeMap["YYC_YYZ"]!, // YYC → YYZ
+      airline_code: "FP",
+      departure_time: new Date("2026-02-17T16:10:00"),
+      arrival_time: new Date("2026-02-17T22:30:00"),
+      base_price: 294.99,
+      seat_capacity: 32,
+    },
+    {
+      route_id: routeMap["YVR_YYC"]!, // YVR → YYC
+      airline_code: "AC",
+      departure_time: new Date("2026-03-01T10:00:00"),
+      arrival_time: new Date("2026-03-01T12:15:00"),
+      base_price: 219.99,
+      seat_capacity: 26,
+    },
+    {
+      route_id: routeMap["YYC_YVR"]!, // YYC → YVR
+      airline_code: "AC",
+      departure_time: new Date("2026-03-08T08:45:00"),
+      arrival_time: new Date("2026-03-08T09:55:00"),
+      base_price: 224.99,
+      seat_capacity: 26,
+    },
+    {
+      route_id: routeMap["YUL_YHZ"]!, // YUL → YHZ
+      airline_code: "AC",
+      departure_time: new Date("2026-04-05T06:30:00"),
+      arrival_time: new Date("2026-04-05T09:40:00"),
+      base_price: 209.0,
+      seat_capacity: 24,
+    },
+    {
+      route_id: routeMap["YHZ_YUL"]!, // YHZ → YUL
+      airline_code: "AC",
+      departure_time: new Date("2026-04-12T17:50:00"),
+      arrival_time: new Date("2026-04-12T19:55:00"),
+      base_price: 214.0,
+      seat_capacity: 24,
+    },
+    {
+      route_id: routeMap["YEG_YWG"]!, // YEG → YWG
+      airline_code: "FP",
+      departure_time: new Date("2026-05-10T13:20:00"),
+      arrival_time: new Date("2026-05-10T16:45:00"),
+      base_price: 239.99,
+      seat_capacity: 30,
+    },
+    {
+      route_id: routeMap["YWG_YEG"]!, // YWG → YEG
+      airline_code: "FP",
+      departure_time: new Date("2026-05-17T09:10:00"),
+      arrival_time: new Date("2026-05-17T11:25:00"),
+      base_price: 234.99,
+      seat_capacity: 30,
+    },
+    {
+      route_id: routeMap["YYZ_YQB"]!, // YYZ → YQB
+      airline_code: "FP",
+      departure_time: new Date("2026-06-01T07:05:00"),
+      arrival_time: new Date("2026-06-01T08:40:00"),
+      base_price: 179.99,
+      seat_capacity: 22,
+    },
+    {
+      route_id: routeMap["YQB_YYZ"]!, // YQB → YYZ
+      airline_code: "FP",
+      departure_time: new Date("2026-06-08T18:20:00"),
+      arrival_time: new Date("2026-06-08T20:00:00"),
+      base_price: 184.99,
+      seat_capacity: 22,
     },
   ];
 
@@ -370,4 +474,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
