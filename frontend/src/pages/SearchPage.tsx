@@ -33,8 +33,18 @@ const SearchPage: React.FC = () => {
     if (hasSearched && !isLoading && resultsRef.current && flights.length > 0) {
       // Small delay to ensure DOM is updated
       setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+        if (resultsRef.current) {
+          // Calculate offset to account for sticky panel (top-20 = 5rem = 80px) plus some margin
+          const offset = 100;
+          const elementPosition = resultsRef.current.getBoundingClientRect().top + window.pageYOffset;
+          const offsetPosition = elementPosition - offset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
+      }, 150);
     }
   }, [hasSearched, isLoading, flights.length]);
 
@@ -165,10 +175,12 @@ const SearchPage: React.FC = () => {
           </h1>
           
           {/* Search Form Card */}
-          <FlightSearchPanel 
-            onSearch={handleSearch} 
-            onClearFilters={handleClearFilters}
-          />
+          <div className="sticky top-20 z-30 mb-4 sm:mb-6">
+            <FlightSearchPanel 
+              onSearch={handleSearch} 
+              onClearFilters={handleClearFilters}
+            />
+          </div>
           
           {/* Show results below search panel if user is not logged in */}
           {!isLoggedIn && hasSearched && (

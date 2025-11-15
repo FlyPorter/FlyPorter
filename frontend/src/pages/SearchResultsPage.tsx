@@ -267,15 +267,16 @@ const SearchResultsPage: React.FC = () => {
           </div>
 
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 items-start">
               {/* Search Panel */}
               <div className="lg:col-span-1">
-                <div className="lg:sticky lg:top-20 z-40">
+                <div className="lg:sticky lg:top-[5.5rem] z-40">
                   <FlightSearchPanel 
                     onSearch={handleSearch}
                     onClearFilters={handleClearFilters}
                     disabled={isSearchingReturn}
                     initialSearchData={searchData}
+                    compactLayout={true}
                   />
                 </div>
               </div>

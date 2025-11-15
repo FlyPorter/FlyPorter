@@ -18,6 +18,7 @@ interface FlightSearchPanelProps {
   onClearFilters?: () => void;
   disabled?: boolean;
   initialSearchData?: SearchData | null;
+  compactLayout?: boolean; // When true, uses vertical stacked layout for narrow screens
 }
 
 const MAX_PRICE = 100000;
@@ -41,7 +42,8 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
   onSearch, 
   onClearFilters,
   disabled = false,
-  initialSearchData = null 
+  initialSearchData = null,
+  compactLayout = false
 }) => {
   const [tripType, setTripType] = useState<TripType>(initialSearchData?.tripType || 'oneWay');
   const [route, setRoute] = useState<Route>(initialSearchData?.route || { 
@@ -342,8 +344,8 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
       </div>
 
       {/* Route Information */}
-      <div className="mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4">
+      {compactLayout ? (
+        <div className="mb-4 space-y-3">
           {/* From Field */}
           <div className="relative w-full" ref={originRef}>
             <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">From</label>
@@ -371,17 +373,17 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
             )}
           </div>
 
-          {/* Swap Button */}
-          <div className="flex items-end justify-center md:justify-center">
+          {/* Swap Button - Inline between fields */}
+          <div className="flex items-center justify-center -my-1">
             <button
               type="button"
               onClick={handleSwapOriginDestination}
               disabled={disabled}
-              className="mb-[2px] md:mb-[2px] p-2.5 rounded-full bg-teal-100 hover:bg-teal-200 text-teal-700 hover:text-teal-900 transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 border border-teal-200 hover:border-teal-300 shadow-sm hover:shadow-md active:scale-95"
+              className="p-1.5 rounded-full bg-teal-100 hover:bg-teal-200 text-teal-700 hover:text-teal-900 transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 border border-teal-200 hover:border-teal-300 shadow-sm hover:shadow-md active:scale-95"
               aria-label="Swap origin and destination"
               title="Swap origin and destination"
             >
-              <ArrowUpDown className="h-5 w-5" />
+              <ArrowUpDown className="h-4 w-4" />
             </button>
           </div>
 
@@ -412,36 +414,91 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
             )}
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4">
+            {/* From Field */}
+            <div className="relative w-full" ref={originRef}>
+              <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">From</label>
+              <Input
+                type="text"
+                value={route.origin}
+                placeholder="City or code"
+                onChange={(e) => handleOriginInput(e.target.value)}
+                disabled={disabled}
+                className="w-full text-sm sm:text-base"
+              />
+              {showOriginSuggestions && originSuggestions.length > 0 && (
+                <div className="absolute z-20 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
+                  {originSuggestions.map(airport => (
+                    <div
+                      key={airport.code}
+                      className="px-3 sm:px-4 py-2 sm:py-3 hover:bg-teal-50 cursor-pointer border-b last:border-b-0 transition-colors"
+                      onClick={() => handleSuggestionClick('origin', airport)}
+                    >
+                      <div className="text-sm sm:text-base font-medium text-gray-900">{airport.city}</div>
+                      <div className="text-xs sm:text-sm text-gray-500">{airport.code}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Swap Button */}
+            <div className="flex items-end justify-center md:justify-center">
+              <button
+                type="button"
+                onClick={handleSwapOriginDestination}
+                disabled={disabled}
+                className="mb-[2px] md:mb-[2px] p-2.5 rounded-full bg-teal-100 hover:bg-teal-200 text-teal-700 hover:text-teal-900 transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 border border-teal-200 hover:border-teal-300 shadow-sm hover:shadow-md active:scale-95"
+                aria-label="Swap origin and destination"
+                title="Swap origin and destination"
+              >
+                <ArrowUpDown className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* To Field */}
+            <div className="relative w-full" ref={destinationRef}>
+              <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">To</label>
+              <Input
+                type="text"
+                value={route.destination}
+                placeholder="City or code"
+                onChange={(e) => handleDestinationInput(e.target.value)}
+                disabled={disabled}
+                className="w-full text-sm sm:text-base"
+              />
+              {showDestinationSuggestions && destinationSuggestions.length > 0 && (
+                <div className="absolute z-20 w-full bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
+                  {destinationSuggestions.map(airport => (
+                    <div
+                      key={airport.code}
+                      className="px-3 sm:px-4 py-2 sm:py-3 hover:bg-teal-50 cursor-pointer border-b last:border-b-0 transition-colors"
+                      onClick={() => handleSuggestionClick('destination', airport)}
+                    >
+                      <div className="text-sm sm:text-base font-medium text-gray-900">{airport.city}</div>
+                      <div className="text-xs sm:text-sm text-gray-500">{airport.code}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Date Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div className="relative w-full min-w-0">
-          <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">Departure Date</label>
-          <Input
-            type="date"
-            value={route.departDate}
-            onChange={(e) => handleRouteChange('departDate', e.target.value)}
-            disabled={disabled}
-            min={getTodayDate()}
-            max={getMaxDate()}
-            className="w-full text-sm sm:text-base"
-            style={{
-              paddingRight: '2.5rem',
-              minWidth: '160px'
-            }}
-          />
-        </div>
-
-        {tripType === 'roundTrip' && (
+      {compactLayout ? (
+        <div className="mb-4 space-y-4">
           <div className="relative w-full min-w-0">
-            <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">Return Date</label>
+            <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">Departure Date</label>
             <Input
               type="date"
-              value={returnDate}
-              onChange={(e) => setReturnDate(e.target.value)}
+              value={route.departDate}
+              onChange={(e) => handleRouteChange('departDate', e.target.value)}
               disabled={disabled}
-              min={route.departDate || getTodayDate()}
+              min={getTodayDate()}
               max={getMaxDate()}
               className="w-full text-sm sm:text-base"
               style={{
@@ -450,8 +507,65 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
               }}
             />
           </div>
-        )}
-      </div>
+
+          {tripType === 'roundTrip' && (
+            <div className="relative w-full min-w-0">
+              <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">Return Date</label>
+              <Input
+                type="date"
+                value={returnDate}
+                onChange={(e) => setReturnDate(e.target.value)}
+                disabled={disabled}
+                min={route.departDate || getTodayDate()}
+                max={getMaxDate()}
+                className="w-full text-sm sm:text-base"
+                style={{
+                  paddingRight: '2.5rem',
+                  minWidth: '160px'
+                }}
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="relative w-full min-w-0">
+            <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">Departure Date</label>
+            <Input
+              type="date"
+              value={route.departDate}
+              onChange={(e) => handleRouteChange('departDate', e.target.value)}
+              disabled={disabled}
+              min={getTodayDate()}
+              max={getMaxDate()}
+              className="w-full text-sm sm:text-base"
+              style={{
+                paddingRight: '2.5rem',
+                minWidth: '160px'
+              }}
+            />
+          </div>
+
+          {tripType === 'roundTrip' && (
+            <div className="relative w-full min-w-0">
+              <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">Return Date</label>
+              <Input
+                type="date"
+                value={returnDate}
+                onChange={(e) => setReturnDate(e.target.value)}
+                disabled={disabled}
+                min={route.departDate || getTodayDate()}
+                max={getMaxDate()}
+                className="w-full text-sm sm:text-base"
+                style={{
+                  paddingRight: '2.5rem',
+                  minWidth: '160px'
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Airlines and Price Range - Collapsible Advanced Options */}
       <details className="mb-4 sm:mb-6">

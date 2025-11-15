@@ -19,6 +19,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward, minima
   const isLoggedIn = !!token && !!user;
   const userEmail = user?.email || 'User';
   const role = user?.role || 'user';
+  const isAdmin = role?.toUpperCase() === "ADMIN";
 
   // Pages that have sidebar (hide arrow buttons)
   const pagesWithSidebar = ['/search', '/admin', '/admin/all-bookings', '/settings', '/dashboard'];
@@ -107,9 +108,21 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward, minima
                 <NotificationCenter />
                 
                 <div 
-                  className="flex items-center gap-2 px-3 py-2 text-teal-700 bg-teal-50 rounded-lg border border-teal-200/50 cursor-pointer hover:bg-teal-100 hover:border-teal-300 transition-all duration-200"
-                  onClick={() => navigate('/profile', { state: { from: location.pathname } })}
-                  title="View Profile"
+                  className={`flex items-center gap-2 px-3 py-2 text-teal-700 bg-teal-50 rounded-lg border border-teal-200/50 transition-all duration-200 ${
+                    isAdmin 
+                      ? '' 
+                      : 'cursor-pointer hover:bg-teal-100 hover:border-teal-300 hover:shadow-md active:scale-95'
+                  }`}
+                  onClick={isAdmin ? undefined : () => navigate('/profile', { state: { from: location.pathname } })}
+                  title={isAdmin ? undefined : "Click to view/edit profile"}
+                  role={isAdmin ? undefined : "button"}
+                  tabIndex={isAdmin ? undefined : 0}
+                  onKeyDown={isAdmin ? undefined : (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate('/profile', { state: { from: location.pathname } });
+                    }
+                  }}
                 >
                   <User className="h-5 w-5" />
                   <span className="font-medium">{userEmail}</span>
