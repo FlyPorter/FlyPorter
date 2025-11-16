@@ -10,8 +10,10 @@ import { Pencil, X, Check } from 'lucide-react';
 const BookingForm: React.FC<BookingFormProps> = ({
   outboundFlight,
   outboundSeatNumber,
+  outboundSeatMultiplier = 1,
   returnFlight,
   returnSeatNumber,
+  returnSeatMultiplier = 1,
   onSubmit,
   isLoading = false,
 }) => {
@@ -329,15 +331,23 @@ const BookingForm: React.FC<BookingFormProps> = ({
     await onSubmit(passengerInfo);
   };
 
-  const totalPrice = parseFloat(outboundFlight.price) + (returnFlight ? parseFloat(returnFlight.price) : 0);
+  // Calculate final prices with multipliers
+  const outboundBasePrice = parseFloat(outboundFlight.price);
+  const outboundFinalPrice = outboundBasePrice * outboundSeatMultiplier;
+  const returnBasePrice = returnFlight ? parseFloat(returnFlight.price) : 0;
+  const returnFinalPrice = returnFlight ? returnBasePrice * returnSeatMultiplier : 0;
+  const totalPrice = outboundFinalPrice + returnFinalPrice;
 
   interface FlightSummaryCardProps {
     flight: Flight;
     seatNumber: string;
+    basePrice: number;
+    finalPrice: number;
+    multiplier: number;
     isReturn?: boolean;
   }
 
-  const FlightSummaryCard: React.FC<FlightSummaryCardProps> = ({ flight, seatNumber, isReturn = false }) => (
+  const FlightSummaryCard: React.FC<FlightSummaryCardProps> = ({ flight, seatNumber, basePrice, finalPrice, multiplier, isReturn = false }) => (
     <Card className="mb-4">
       <CardHeader className="px-4 sm:px-6 pb-3 sm:pb-4">
         <h3 className="text-lg sm:text-xl font-semibold">{isReturn ? 'Return Flight' : 'Outbound Flight'}</h3>
@@ -360,8 +370,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
             <div className="text-xs sm:text-sm">
               Seat Number: {seatNumber}
             </div>
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              Base Price: ${basePrice.toFixed(2)}
+            </div>
             <div className="text-base sm:text-lg font-bold text-primary">
-              Price: ${flight.price}
+              Final Price: ${finalPrice.toFixed(2)}
             </div>
           </div>
         </div>
@@ -373,9 +386,22 @@ const BookingForm: React.FC<BookingFormProps> = ({
     <div className="max-w-full sm:max-w-2xl mx-auto">
       {/* Flight Summary */}
       <div className="mb-4 sm:mb-6">
-        <FlightSummaryCard flight={outboundFlight} seatNumber={outboundSeatNumber} />
+        <FlightSummaryCard 
+          flight={outboundFlight} 
+          seatNumber={outboundSeatNumber}
+          basePrice={outboundBasePrice}
+          finalPrice={outboundFinalPrice}
+          multiplier={outboundSeatMultiplier}
+        />
         {returnFlight && returnSeatNumber && (
-          <FlightSummaryCard flight={returnFlight} seatNumber={returnSeatNumber} isReturn />
+          <FlightSummaryCard 
+            flight={returnFlight} 
+            seatNumber={returnSeatNumber}
+            basePrice={returnBasePrice}
+            finalPrice={returnFinalPrice}
+            multiplier={returnSeatMultiplier}
+            isReturn 
+          />
         )}
         <Card className="mb-4">
           <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">

@@ -58,8 +58,10 @@ export interface Flight {
 export interface BookingFormProps {
   outboundFlight: Flight;
   outboundSeatNumber: string;
+  outboundSeatMultiplier?: number;
   returnFlight?: Flight;
   returnSeatNumber?: string;
+  returnSeatMultiplier?: number;
   onSubmit: (data: PassengerInfo) => Promise<void>;
   isLoading: boolean;
 } 
