@@ -270,8 +270,10 @@ const BookingPage: React.FC = () => {
           <BookingForm 
             outboundFlight={outboundFlight}
             outboundSeatNumber={bookingData.outboundSeat.seatNumber}
+            outboundSeatMultiplier={parseFloat(bookingData.outboundSeat.price)}
             returnFlight={returnFlight}
             returnSeatNumber={bookingData.returnSeat?.seatNumber}
+            returnSeatMultiplier={bookingData.returnSeat ? parseFloat(bookingData.returnSeat.price) : undefined}
             onSubmit={handleBookingSubmit}
             isLoading={isLoading}
           />
