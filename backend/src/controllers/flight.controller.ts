@@ -1,6 +1,13 @@
 import type { Request, Response } from "express";
 import type { FlightSearchFilters } from "../services/flight.service.js";
-import { createFlight, listFlights, getFlightById, deleteFlightById, updateFlightById, searchFlights } from "../services/flight.service.js";
+import {
+  createFlight,
+  listFlights,
+  getFlightById,
+  deleteFlightById,
+  updateFlightById,
+  searchFlights,
+} from "../services/flight.service.js";
 import { sendSuccess, sendError } from "../utils/response.util.js";
 
 export async function searchFlightsHandler(req: Request, res: Response) {
@@ -14,6 +21,65 @@ export async function searchFlightsHandler(req: Request, res: Response) {
     return sendSuccess(res, results);
   } catch (e: any) {
     const msg = e?.message || "Failed to search flights";
+    return sendError(res, msg, 500);
+  }
+}
+
+/**
+ * GET /flight/search/round-trip
+ * Round-trip search, using same filters as one-way plus return_date.
+ * Returns { outbound: Flight[], inbound: Flight[] }.
+ */
+export async function searchRoundTripFlightsHandler(req: Request, res: Response) {
+  // Extract core params
+  const departureAirport = getSingleQueryValue(req.query.departure_airport);
+  const destinationAirport = getSingleQueryValue(req.query.destination_airport);
+  const date = getSingleQueryValue(req.query.date);
+  const returnDate = getSingleQueryValue(req.query.return_date);
+
+  if (!departureAirport || !destinationAirport || !date || !returnDate) {
+    return sendError(
+      res,
+      "departure_airport, destination_airport, date, and return_date are required",
+      400
+    );
+  }
+
+  // Build a "one-way" query object for outbound using original query
+  const outboundQuery: Request["query"] = {
+    ...req.query,
+    departure_airport: departureAirport,
+    destination_airport: destinationAirport,
+    date,
+  };
+
+  // Build a "one-way" query object for inbound with swapped airports and return_date
+  const inboundQuery: Request["query"] = {
+    ...req.query,
+    departure_airport: destinationAirport,
+    destination_airport: departureAirport,
+    date: returnDate,
+  };
+
+  const outboundParsed = parseFlightSearchQuery(outboundQuery);
+  if ("error" in outboundParsed) {
+    return sendError(res, outboundParsed.error, 400);
+  }
+
+  const inboundParsed = parseFlightSearchQuery(inboundQuery);
+  if ("error" in inboundParsed) {
+    return sendError(res, inboundParsed.error, 400);
+  }
+
+  try {
+    const [outbound, inbound] = await Promise.all([
+      searchFlights(outboundParsed.filters),
+      searchFlights(inboundParsed.filters),
+    ]);
+
+    return sendSuccess(res, { outbound, inbound });
+  } catch (e: any) {
+    const msg = e?.message || "Failed to search round-trip flights";
     return sendError(res, msg, 500);
   }
 }
