@@ -10,6 +10,7 @@ import {
     getPastBookings,
     getAllBookings,
     cancelAnyBooking,
+    createRoundTripBooking,
     type CreateBookingInput,
 } from "../services/booking.service.js";
 
@@ -258,5 +259,74 @@ export async function cancelAnyBookingHandler(req: Request, res: Response) {
 
         const { status, msg } = mapPrismaError(e);
         return sendError(res, msg, status);
+    }
+}
+
+/**
+ * POST /bookings/round-trip
+ * Create a round-trip booking (outbound + inbound) in a single transaction.
+ *
+ * Body:
+ * {
+ *   "outbound": { "flight_id": number, "seat_number": string },
+ *   "inbound":  { "flight_id": number, "seat_number": string }
+ * }
+ */
+export async function createRoundTripBookingHandler(req: Request, res: Response) {
+    const userId = (req as any).user?.userId;
+
+    if (!userId) {
+        return sendError(res, "User not authenticated", 401);
+    }
+
+    const { outbound, inbound } = req.body || {};
+
+    const outboundFlightId = parseId(outbound?.flight_id);
+    const inboundFlightId = parseId(inbound?.flight_id);
+    const outboundSeat = outbound?.seat_number;
+    const inboundSeat = inbound?.seat_number;
+
+    if (!outboundFlightId || !inboundFlightId) {
+        return sendError(res, "Valid outbound.flight_id and inbound.flight_id are required", 422);
+    }
+
+    if (!outboundSeat || typeof outboundSeat !== "string" || !inboundSeat || typeof inboundSeat !== "string") {
+        return sendError(res, "Valid outbound.seat_number and inbound.seat_number are required", 422);
+    }
+
+    try {
+        const result = await createRoundTripBooking({
+            user_id: userId,
+            outbound: {
+                flight_id: outboundFlightId,
+                seat_number: outboundSeat.trim(),
+            },
+            inbound: {
+                flight_id: inboundFlightId,
+                seat_number: inboundSeat.trim(),
+            },
+        });
+
+        return sendSuccess(res, result, "Round-trip booking created successfully", 201);
+    } catch (e: any) {
+        const msg: string = e?.message || "Failed to create round-trip booking";
+        if (msg.includes("Customer information required")) {
+            return sendError(res, msg, 400);
+        }
+        if (msg.includes("Flight not found")) {
+            return sendError(res, msg, 404);
+        }
+        if (msg.includes("Seat not found")) {
+            return sendError(res, msg, 404);
+        }
+        if (msg.includes("not available")) {
+            return sendError(res, msg, 409);
+        }
+        if (msg.includes("already departed")) {
+            return sendError(res, msg, 400);
+        }
+
+        const { status, msg: mappedMsg } = mapPrismaError(e);
+        return sendError(res, mappedMsg, status);
     }
 }

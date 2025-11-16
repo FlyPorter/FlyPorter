@@ -3,6 +3,7 @@ import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { requireAdmin } from "../middlewares/role.middleware.js";
 import {
     createBookingHandler,
+    createRoundTripBookingHandler,
     getBookingsHandler,
     getBookingByIdHandler,
     cancelBookingHandler,
@@ -14,6 +15,9 @@ const router = Router();
 
 // All booking routes require authentication
 router.use(authMiddleware);
+
+// POST /bookings/round-trip - Create a round-trip booking (outbound + inbound)
+router.post("/round-trip", createRoundTripBookingHandler);
 
 // POST /bookings - Create a new booking
 router.post("/", createBookingHandler);

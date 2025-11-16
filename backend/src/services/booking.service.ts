@@ -1,5 +1,5 @@
 import { prisma } from "../config/prisma.js";
-import type { BookingStatus } from "@prisma/client";
+import type { BookingStatus, Prisma } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 import { uploadBookingInvoiceToSpaces } from "./pdf.service.js";
 
@@ -79,123 +79,131 @@ export interface BookingWithDetails {
  * 5. Creating booking with confirmation code and notification
  * All in a transaction for data consistency
  */
-export async function createBooking(input: CreateBookingInput) {
+async function createBookingInTransaction(
+    tx: Prisma.TransactionClient,
+    input: CreateBookingInput
+) {
     const { user_id, flight_id, seat_number } = input;
 
-    return prisma.$transaction(async (tx) => {
+    // 1. Check if user has customer info (passenger info required)
+    const customerInfo = await tx.customerInfo.findUnique({
+        where: { user_id },
+    });
+
+    if (!customerInfo) {
+        throw new Error(
+            "Customer information required. Please complete your profile with name and passport details before booking."
+        );
+    }
+
+    // 2. Get flight details for price calculation
+    const flight = await tx.flight.findUnique({
+        where: { flight_id },
+        select: {
+            flight_id: true,
+            departure_time: true,
+            base_price: true,
+        },
+    });
+
+    if (!flight) {
+        throw new Error("Flight not found");
+    }
+
+    // 3. Get seat and check availability
+    const seat = await tx.seat.findUnique({
+        where: {
+            flight_id_seat_number: {
+                flight_id,
+                seat_number,
+            },
+        },
+    });
+
+    if (!seat) {
+        throw new Error("Seat not found");
+    }
+
+    if (!seat.is_available) {
+        throw new Error("Seat is not available");
+    }
+
+    // 4. Attempt to lock the seat to prevent concurrent bookings
+    const seatLock = await tx.seat.updateMany({
+        where: {
+            flight_id,
+            seat_number,
+            is_available: true,
+        },
+        data: {
+            is_available: false,
+        },
+    });
+
+    if (seatLock.count === 0) {
+        throw new Error("Seat is not available");
+    }
+
+    // 5. Calculate total price
+    const basePrice = new Decimal(flight.base_price);
+    const priceModifier = new Decimal(seat.price_modifier);
+    const totalPrice = basePrice.mul(priceModifier);
+
+    // 6. Generate unique confirmation code
+    let confirmationCode = generateConfirmationCode();
+    let attempts = 0;
+    while (attempts < 10) {
+        const existing = await tx.booking.findUnique({
+            where: { confirmation_code: confirmationCode },
+        });
+        if (!existing) break;
+        confirmationCode = generateConfirmationCode();
+        attempts++;
+    }
+
+    // 7. Create the booking
+    const booking = await tx.booking.create({
+        data: {
+            user_id,
+            flight_id,
+            seat_number,
+            status: input.status || "confirmed",
+            total_price: totalPrice,
+            confirmation_code: confirmationCode,
+        },
+        select: {
+            booking_id: true,
+            user_id: true,
+            flight_id: true,
+            seat_number: true,
+            booking_time: true,
+            status: true,
+            total_price: true,
+            confirmation_code: true,
+            updated_at: true,
+        },
+    });
+
+    // 8. Create notification for booking confirmation
+    await tx.notification.create({
+        data: {
+            user_id,
+            booking_id: booking.booking_id,
+            flight_id,
+            type: "booking_confirmed",
+            title: "Booking Confirmed",
+            message: `Your booking ${confirmationCode} has been confirmed for flight on ${flight.departure_time.toISOString()}.`,
+        },
+    });
+
+    return booking;
+}
+
+export async function createBooking(input: CreateBookingInput) {
+    const { user_id } = input;
+
+    return prisma.$transaction((tx) => createBookingInTransaction(tx, input)).then(async (booking) => {
         // 1. Check if user has customer info (passenger info required)
-        const customerInfo = await tx.customerInfo.findUnique({
-            where: { user_id },
-        });
-
-        if (!customerInfo) {
-            throw new Error(
-                "Customer information required. Please complete your profile with name and passport details before booking."
-            );
-        }
-
-        // 2. Get flight details for price calculation
-        const flight = await tx.flight.findUnique({
-            where: { flight_id },
-            select: {
-                flight_id: true,
-                departure_time: true,
-                base_price: true,
-            },
-        });
-
-        if (!flight) {
-            throw new Error("Flight not found");
-        }
-
-        // 3. Get seat and check availability
-        const seat = await tx.seat.findUnique({
-            where: {
-                flight_id_seat_number: {
-                    flight_id,
-                    seat_number,
-                },
-            },
-        });
-
-        if (!seat) {
-            throw new Error("Seat not found");
-        }
-
-        if (!seat.is_available) {
-            throw new Error("Seat is not available");
-        }
-
-        // 4. Attempt to lock the seat to prevent concurrent bookings
-        const seatLock = await tx.seat.updateMany({
-            where: {
-                flight_id,
-                seat_number,
-                is_available: true,
-            },
-            data: {
-                is_available: false,
-            },
-        });
-
-        if (seatLock.count === 0) {
-            throw new Error("Seat is not available");
-        }
-
-        // 5. Calculate total price
-        const basePrice = new Decimal(flight.base_price);
-        const priceModifier = new Decimal(seat.price_modifier);
-        const totalPrice = basePrice.mul(priceModifier);
-
-        // 6. Generate unique confirmation code
-        let confirmationCode = generateConfirmationCode();
-        let attempts = 0;
-        while (attempts < 10) {
-            const existing = await tx.booking.findUnique({
-                where: { confirmation_code: confirmationCode },
-            });
-            if (!existing) break;
-            confirmationCode = generateConfirmationCode();
-            attempts++;
-        }
-
-        // 7. Create the booking
-        const booking = await tx.booking.create({
-            data: {
-                user_id,
-                flight_id,
-                seat_number,
-                status: input.status || "confirmed",
-                total_price: totalPrice,
-                confirmation_code: confirmationCode,
-            },
-            select: {
-                booking_id: true,
-                user_id: true,
-                flight_id: true,
-                seat_number: true,
-                booking_time: true,
-                status: true,
-                total_price: true,
-                confirmation_code: true,
-                updated_at: true,
-            },
-        });
-
-        // 8. Create notification for booking confirmation
-        await tx.notification.create({
-            data: {
-                user_id,
-                booking_id: booking.booking_id,
-                flight_id,
-                type: "booking_confirmed",
-                title: "Booking Confirmed",
-                message: `Your booking ${confirmationCode} has been confirmed for flight on ${flight.departure_time.toISOString()}.`,
-            },
-        });
-
-        return booking;
-    }).then(async (booking) => {
         // 9. Automatically upload invoice PDF to Digital Ocean Spaces
         // This is done async (fire-and-forget) to not block the booking response
         // If it fails, user can still request it later via GET /api/pdf/invoice/:bookingId
@@ -211,6 +219,63 @@ export async function createBooking(input: CreateBookingInput) {
 
         return booking;
     });
+}
+
+export interface RoundTripBookingInput {
+    user_id: number;
+    outbound: {
+        flight_id: number;
+        seat_number: string;
+    };
+    inbound: {
+        flight_id: number;
+        seat_number: string;
+    };
+}
+
+export async function createRoundTripBooking(input: RoundTripBookingInput) {
+    const { user_id, outbound, inbound } = input;
+
+    const result = await prisma.$transaction(async (tx) => {
+        const outboundBooking = await createBookingInTransaction(tx, {
+            user_id,
+            flight_id: outbound.flight_id,
+            seat_number: outbound.seat_number,
+            status: "confirmed",
+        });
+
+        const inboundBooking = await createBookingInTransaction(tx, {
+            user_id,
+            flight_id: inbound.flight_id,
+            seat_number: inbound.seat_number,
+            status: "confirmed",
+        });
+
+        return { outbound: outboundBooking, inbound: inboundBooking };
+    });
+
+    // Fire-and-forget invoice uploads for both legs
+    uploadBookingInvoiceToSpaces({
+        bookingId: result.outbound.booking_id,
+        userId: user_id,
+    }).catch((error) => {
+        console.error(
+            `✗ Failed to upload invoice for outbound booking ${result.outbound.booking_id}:`,
+            error.message
+        );
+    });
+
+    uploadBookingInvoiceToSpaces({
+        bookingId: result.inbound.booking_id,
+        userId: user_id,
+    }).catch((error) => {
+        console.error(
+            `✗ Failed to upload invoice for inbound booking ${result.inbound.booking_id}:`,
+            error.message
+        );
+    });
+
+    return result;
 }
 
 /**
