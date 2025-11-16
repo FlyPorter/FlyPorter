@@ -4,12 +4,12 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { uploadBookingInvoiceToSpaces } from "./pdf.service.js";
 
 /**
- * Generate a unique confirmation code (12 characters)
+ * Generate a unique confirmation code (6 uppercase alphanumeric characters)
  */
 function generateConfirmationCode(): string {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Avoid ambiguous chars
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let code = "";
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 6; i++) {
         code += chars[Math.floor(Math.random() * chars.length)];
     }
     return code;
@@ -995,4 +995,3 @@ export async function cancelAnyBooking(bookingId: number) {
         return updatedBooking;
     });
 }
-

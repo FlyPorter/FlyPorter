@@ -37,6 +37,8 @@ model Airport {
   city         City     @relation(fields: [city_name], references: [city_name], onDelete: Cascade)
   routes_from  Route[]  @relation("OriginAirport")
   routes_to    Route[]  @relation("DestinationAirport")
+
+  @@index([city_name])
 }
 
 model Airline {
@@ -53,6 +55,10 @@ model Route {
   origin_airport           Airport  @relation("OriginAirport", fields: [origin_airport_code], references: [airport_code])
   destination_airport      Airport  @relation("DestinationAirport", fields: [destination_airport_code], references: [airport_code])
   flights                  Flight[]
+
+  @@unique([origin_airport_code, destination_airport_code])
+  @@index([origin_airport_code])
+  @@index([destination_airport_code])
 }
 
 model Flight {
@@ -69,6 +75,9 @@ model Flight {
   seats          Seat[]
   bookings       Booking[]
   notifications  Notification[]
+
+  @@index([route_id, departure_time])
+  @@index([airline_code])
 }
 
 model Seat {
@@ -81,6 +90,7 @@ model Seat {
   bookings       Booking[]
 
   @@id([flight_id, seat_number])
+  @@index([flight_id, is_available])
 }
 
 model Booking {
@@ -97,6 +107,10 @@ model Booking {
   flight            Flight         @relation(fields: [flight_id], references: [flight_id])
   seat              Seat           @relation(fields: [flight_id, seat_number], references: [flight_id, seat_number])
   notifications     Notification[]
+
+  @@index([user_id])
+  @@index([flight_id])
+  @@index([user_id, status])
 }
 
 model CustomerInfo {
