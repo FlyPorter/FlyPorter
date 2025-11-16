@@ -44,10 +44,19 @@ export async function getBookingInvoiceUrlHandler(req: Request, res: Response) {
       200
     );
   } catch (error: any) {
-    console.error("Invoice URL generation error:", error);
+    // Only log if it's not a Spaces configuration issue (local development)
+    if (!error?.message?.includes("configuration is incomplete") && 
+        !error?.message?.includes("Spaces configuration")) {
+      console.error("Invoice URL generation error:", error);
+    }
 
-    if (error?.message?.includes("configuration is incomplete")) {
-      return sendError(res, "DigitalOcean Spaces is not configured", 500);
+    if (error?.message?.includes("configuration is incomplete") || 
+        error?.message?.includes("Spaces configuration")) {
+      return sendError(
+        res,
+        "DigitalOcean Spaces is not configured. Please use /api/pdf/invoice/:bookingId/download for direct download.",
+        503
+      );
     }
 
     if (error?.message?.includes("not found")) {

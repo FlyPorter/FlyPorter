@@ -72,12 +72,13 @@ export interface BookingWithDetails {
 /**
  * Create a new booking
  * This handles:
- * 1. Checking if passenger info exists
- * 2. Validating flight details
- * 3. Locking seat availability
- * 4. Calculating total price
- * 5. Creating booking with confirmation code and notification
+ * 1. Validating flight details
+ * 2. Locking seat availability
+ * 3. Calculating total price
+ * 4. Creating booking with confirmation code and notification
  * All in a transaction for data consistency
+ * 
+ * Note: Passenger information can be provided at booking time and is not required in profile.
  */
 async function createBookingInTransaction(
     tx: Prisma.TransactionClient,
@@ -85,18 +86,7 @@ async function createBookingInTransaction(
 ) {
     const { user_id, flight_id, seat_number } = input;
 
-    // 1. Check if user has customer info (passenger info required)
-    const customerInfo = await tx.customerInfo.findUnique({
-        where: { user_id },
-    });
-
-    if (!customerInfo) {
-        throw new Error(
-            "Customer information required. Please complete your profile with name and passport details before booking."
-        );
-    }
-
-    // 2. Get flight details for price calculation
+    // 1. Get flight details for price calculation
     const flight = await tx.flight.findUnique({
         where: { flight_id },
         select: {
@@ -110,7 +100,7 @@ async function createBookingInTransaction(
         throw new Error("Flight not found");
     }
 
-    // 3. Get seat and check availability
+    // 2. Get seat and check availability
     const seat = await tx.seat.findUnique({
         where: {
             flight_id_seat_number: {
@@ -128,7 +118,7 @@ async function createBookingInTransaction(
         throw new Error("Seat is not available");
     }
 
-    // 4. Attempt to lock the seat to prevent concurrent bookings
+    // 3. Attempt to lock the seat to prevent concurrent bookings
     const seatLock = await tx.seat.updateMany({
         where: {
             flight_id,
@@ -144,12 +134,12 @@ async function createBookingInTransaction(
         throw new Error("Seat is not available");
     }
 
-    // 5. Calculate total price
+    // 4. Calculate total price
     const basePrice = new Decimal(flight.base_price);
     const priceModifier = new Decimal(seat.price_modifier);
     const totalPrice = basePrice.mul(priceModifier);
 
-    // 6. Generate unique confirmation code
+    // 5. Generate unique confirmation code
     let confirmationCode = generateConfirmationCode();
     let attempts = 0;
     while (attempts < 10) {
@@ -161,7 +151,7 @@ async function createBookingInTransaction(
         attempts++;
     }
 
-    // 7. Create the booking
+    // 6. Create the booking
     const booking = await tx.booking.create({
         data: {
             user_id,
@@ -184,7 +174,7 @@ async function createBookingInTransaction(
         },
     });
 
-    // 8. Create notification for booking confirmation
+    // 7. Create notification for booking confirmation
     await tx.notification.create({
         data: {
             user_id,
@@ -213,7 +203,10 @@ export async function createBooking(input: CreateBookingInput) {
         }).then(() => {
             console.log(`✓ Invoice uploaded to Spaces for booking ${booking.booking_id}`);
         }).catch((error) => {
-            console.error(`✗ Failed to upload invoice for booking ${booking.booking_id}:`, error.message);
+            // Only log if it's not a Spaces configuration issue (local development)
+            if (!error?.message?.includes("Spaces configuration is incomplete")) {
+                console.error(`✗ Failed to upload invoice for booking ${booking.booking_id}:`, error.message);
+            }
             // Don't throw - this is best-effort, user can request it later
         });
 
@@ -259,20 +252,26 @@ export async function createRoundTripBooking(input: RoundTripBookingInput) {
         bookingId: result.outbound.booking_id,
         userId: user_id,
     }).catch((error) => {
-        console.error(
-            `✗ Failed to upload invoice for outbound booking ${result.outbound.booking_id}:`,
-            error.message
-        );
+        // Only log if it's not a Spaces configuration issue (local development)
+        if (!error?.message?.includes("Spaces configuration is incomplete")) {
+            console.error(
+                `✗ Failed to upload invoice for outbound booking ${result.outbound.booking_id}:`,
+                error.message
+            );
+        }
     });
 
     uploadBookingInvoiceToSpaces({
         bookingId: result.inbound.booking_id,
         userId: user_id,
     }).catch((error) => {
-        console.error(
-            `✗ Failed to upload invoice for inbound booking ${result.inbound.booking_id}:`,
-            error.message
-        );
+        // Only log if it's not a Spaces configuration issue (local development)
+        if (!error?.message?.includes("Spaces configuration is incomplete")) {
+            console.error(
+                `✗ Failed to upload invoice for inbound booking ${result.inbound.booking_id}:`,
+                error.message
+            );
+        }
     });
 
     return result;

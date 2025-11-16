@@ -43,7 +43,7 @@ const mapPrismaError = (e: unknown) => {
  * - flight_id: number (required)
  * - seat_number: string (required)
  * 
- * Note: user_id comes from JWT token, passenger info from CustomerInfo table
+ * Note: user_id comes from JWT token. Passenger info can be provided at booking time.
  */
 export async function createBookingHandler(req: Request, res: Response) {
     // Get user ID from JWT token (set by authMiddleware)
@@ -83,9 +83,6 @@ export async function createBookingHandler(req: Request, res: Response) {
         );
     } catch (e: any) {
         // Handle specific error messages from service
-        if (e.message?.includes("Customer information required")) {
-            return sendError(res, e.message, 400);
-        }
         if (e.message?.includes("Flight not found")) {
             return sendError(res, e.message, 404);
         }
@@ -311,9 +308,6 @@ export async function createRoundTripBookingHandler(req: Request, res: Response)
         return sendSuccess(res, result, "Round-trip booking created successfully", 201);
     } catch (e: any) {
         const msg: string = e?.message || "Failed to create round-trip booking";
-        if (msg.includes("Customer information required")) {
-            return sendError(res, msg, 400);
-        }
         if (msg.includes("Flight not found")) {
             return sendError(res, msg, 404);
         }
