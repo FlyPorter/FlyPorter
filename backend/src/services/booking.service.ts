@@ -514,6 +514,192 @@ export async function getBookingById(
 }
 
 /**
+ * Change seat for an existing booking (customer-initiated)
+ *
+ * Rules:
+ * - Booking must belong to the given user
+ * - Booking status must be confirmed
+ * - New seat must be on the same flight and currently available
+ * - Seat locking is done via updateMany (optimistic lock) to avoid race conditions
+ * - Old seat is released back to available
+ * - Total price is recalculated: base_price * newSeat.price_modifier
+ */
+export async function changeBookingSeat(params: {
+    bookingId: number;
+    userId: number;
+    newSeatNumber: string;
+}): Promise<BookingWithDetails> {
+    const { bookingId, userId, newSeatNumber } = params;
+
+    const updatedBooking = await prisma.$transaction(async (tx) => {
+        // 1. Load booking with ownership & status check + flight base price
+        const booking = await tx.booking.findFirst({
+            where: {
+                booking_id: bookingId,
+                user_id: userId,
+                status: "confirmed",
+            },
+            select: {
+                booking_id: true,
+                user_id: true,
+                flight_id: true,
+                seat_number: true,
+                flight: {
+                    select: {
+                        base_price: true,
+                    },
+                },
+            },
+        });
+
+        if (!booking) {
+            throw new Error("Booking not found or not eligible for seat change");
+        }
+
+        const trimmedSeatNumber = newSeatNumber.trim();
+        if (!trimmedSeatNumber) {
+            throw new Error("New seat_number is required");
+        }
+
+        // 2. Ensure new seat exists on same flight
+        const newSeat = await tx.seat.findUnique({
+            where: {
+                flight_id_seat_number: {
+                    flight_id: booking.flight_id,
+                    seat_number: trimmedSeatNumber,
+                },
+            },
+        });
+
+        if (!newSeat) {
+            throw new Error("Seat not found");
+        }
+
+        if (!newSeat.is_available) {
+            throw new Error("Seat is not available");
+        }
+
+        // 3. Lock new seat optimistically
+        const seatLock = await tx.seat.updateMany({
+            where: {
+                flight_id: booking.flight_id,
+                seat_number: trimmedSeatNumber,
+                is_available: true,
+            },
+            data: {
+                is_available: false,
+            },
+        });
+
+        if (seatLock.count === 0) {
+            throw new Error("Seat is not available");
+        }
+
+        // 4. Release old seat
+        await tx.seat.update({
+            where: {
+                flight_id_seat_number: {
+                    flight_id: booking.flight_id,
+                    seat_number: booking.seat_number,
+                },
+            },
+            data: {
+                is_available: true,
+            },
+        });
+
+        // 5. Recalculate total price
+        const basePrice = new Decimal(booking.flight.base_price);
+        const priceModifier = new Decimal(newSeat.price_modifier);
+        const totalPrice = basePrice.mul(priceModifier);
+
+        // 6. Update booking record
+        await tx.booking.update({
+            where: { booking_id: booking.booking_id },
+            data: {
+                seat_number: trimmedSeatNumber,
+                total_price: totalPrice,
+                updated_at: new Date(),
+            },
+        });
+
+        // 7. Return booking with details (fresh read)
+        const updated = await tx.booking.findFirst({
+            where: { booking_id: booking.booking_id },
+            select: {
+                booking_id: true,
+                user_id: true,
+                flight_id: true,
+                seat_number: true,
+                booking_time: true,
+                status: true,
+                total_price: true,
+                confirmation_code: true,
+                updated_at: true,
+                user: {
+                    select: {
+                        email: true,
+                        customer_info: {
+                            select: {
+                                full_name: true,
+                            },
+                        },
+                    },
+                },
+                flight: {
+                    select: {
+                        flight_id: true,
+                        departure_time: true,
+                        arrival_time: true,
+                        base_price: true,
+                        route: {
+                            select: {
+                                route_id: true,
+                                origin_airport: {
+                                    select: {
+                                        airport_code: true,
+                                        airport_name: true,
+                                        city_name: true,
+                                    },
+                                },
+                                destination_airport: {
+                                    select: {
+                                        airport_code: true,
+                                        airport_name: true,
+                                        city_name: true,
+                                    },
+                                },
+                            },
+                        },
+                        airline: {
+                            select: {
+                                airline_code: true,
+                                airline_name: true,
+                            },
+                        },
+                    },
+                },
+                seat: {
+                    select: {
+                        seat_number: true,
+                        class: true,
+                        price_modifier: true,
+                    },
+                },
+            },
+        });
+
+        if (!updated) {
+            throw new Error("Failed to load updated booking");
+        }
+
+        return updated;
+    });
+
+    return updatedBooking;
+}
+
+/**
  * Cancel a booking
  * This handles:
  * 1. Update booking status to cancelled
