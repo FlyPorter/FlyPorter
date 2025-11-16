@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { getUserProfile, updateProfile } from '../../profile/api/profileApi';
 import { UpdatePassengerPayload } from '../../profile/types';
 import { Pencil, X, Check } from 'lucide-react';
+import { validatePayment as validatePaymentApi } from '../api/paymentApi';
 
 const BookingForm: React.FC<BookingFormProps> = ({
   outboundFlight,
@@ -76,6 +77,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
     cvv: '',
     cardholderName: ''
   });
+  const [validatingPayment, setValidatingPayment] = useState(false);
+  const [paymentValidationError, setPaymentValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -217,21 +220,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
     return /^\d{16}$/.test(cleaned);
   };
 
-  const validateExpiryDate = (expiryDate: string): boolean => {
-    // Check MM/YY format
-    const regex = /^(0[1-9]|1[0-2])\/\d{2}$/;
-    if (!regex.test(expiryDate)) return false;
-    
-    const [month, year] = expiryDate.split('/');
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear() % 100;
-    const currentMonth = currentDate.getMonth() + 1;
-    
-    const expYear = parseInt(year);
-    const expMonth = parseInt(month);
-    
-    return expYear > currentYear || (expYear === currentYear && expMonth >= currentMonth);
-  };
 
   const validateCVV = (cvv: string): boolean => {
     return /^\d{3,4}$/.test(cvv);
@@ -242,10 +230,28 @@ const BookingForm: React.FC<BookingFormProps> = ({
   };
 
   const handlePaymentChange = (field: string, value: string) => {
-    setPaymentData(prev => ({ ...prev, [field]: value }));
-    
     // Clear error when user starts typing
     setPaymentErrors(prev => ({ ...prev, [field]: '' }));
+    // Clear payment validation error when user modifies payment fields
+    if (paymentValidationError) {
+      setPaymentValidationError(null);
+    }
+    
+    // Filter cardholder name - letters, spaces, apostrophes, and hyphens only
+    if (field === 'cardholderName') {
+      const filtered = value.replace(/[^a-zA-Z\s'-]/g, '');
+      setPaymentData(prev => ({ ...prev, cardholderName: filtered }));
+      return;
+    }
+    
+    // Filter CVV - numbers only
+    if (field === 'cvv') {
+      const filtered = value.replace(/\D/g, '');
+      if (filtered.length <= 4) {
+        setPaymentData(prev => ({ ...prev, cvv: filtered }));
+      }
+      return;
+    }
     
     // Format card number with spaces
     if (field === 'cardNumber') {
@@ -255,6 +261,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         const formatted = cleaned.replace(/(\d{4})(?=\d)/g, '$1 ');
         setPaymentData(prev => ({ ...prev, cardNumber: formatted }));
       }
+      return;
     }
     
     // Format expiry date
@@ -264,7 +271,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
         const formatted = cleaned.replace(/(\d{2})(?=\d)/g, '$1/');
         setPaymentData(prev => ({ ...prev, expiryDate: formatted }));
       }
+      return;
     }
+    
+    // Default: update field as-is
+    setPaymentData(prev => ({ ...prev, [field]: value }));
   };
 
   const validatePayment = (): boolean => {
@@ -277,10 +288,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
     if (!validateCardNumber(paymentData.cardNumber)) {
       errors.cardNumber = 'Please enter a valid 16-digit card number';
-    }
-
-    if (!validateExpiryDate(paymentData.expiryDate)) {
-      errors.expiryDate = 'Please enter a valid expiry date (MM/YY)';
     }
 
     if (!validateCVV(paymentData.cvv)) {
@@ -298,15 +305,14 @@ const BookingForm: React.FC<BookingFormProps> = ({
   // Memoized validation result to prevent infinite re-renders
   const isPaymentValid = useMemo(() => {
     return validateCardNumber(paymentData.cardNumber) &&
-           validateExpiryDate(paymentData.expiryDate) &&
            validateCVV(paymentData.cvv) &&
            validateCardholderName(paymentData.cardholderName);
-  }, [paymentData.cardNumber, paymentData.expiryDate, paymentData.cvv, paymentData.cardholderName]);
+  }, [paymentData.cardNumber, paymentData.cvv, paymentData.cardholderName]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate payment before proceeding
+    // Validate payment form fields first
     if (!validatePayment()) {
       return;
     }
@@ -315,6 +321,30 @@ const BookingForm: React.FC<BookingFormProps> = ({
     if (!profile?.customer_info) {
       alert('Please complete your profile first before booking.');
       return;
+    }
+    
+    // Validate payment with backend API
+    setPaymentValidationError(null);
+    setValidatingPayment(true);
+    try {
+      const paymentValidation = await validatePaymentApi(
+        paymentData.cardNumber,
+        paymentData.expiryDate,
+        paymentData.cvv
+      );
+      
+      if (!paymentValidation.valid) {
+        setPaymentValidationError('Payment validation failed. Please check your payment information and try again.');
+        setValidatingPayment(false);
+        return;
+      }
+    } catch (error: any) {
+      console.error('Payment validation error:', error);
+      setPaymentValidationError(error.message || 'Payment validation failed. Please try again.');
+      setValidatingPayment(false);
+      return;
+    } finally {
+      setValidatingPayment(false);
     }
     
     // Submit profile data
@@ -591,6 +621,22 @@ const BookingForm: React.FC<BookingFormProps> = ({
         <Card>
           <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
             <div className="space-y-3 sm:space-y-4">
+              {paymentValidationError && (
+                <div className="p-3 sm:p-4 bg-red-50 text-red-700 rounded-md text-xs sm:text-sm border border-red-200 flex items-start gap-2">
+                  <svg 
+                    className="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 flex-shrink-0" 
+                    fill="currentColor" 
+                    viewBox="0 0 20 20"
+                  >
+                    <path 
+                      fillRule="evenodd" 
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" 
+                      clipRule="evenodd" 
+                    />
+                  </svg>
+                  <span className="flex-1">{paymentValidationError}</span>
+                </div>
+              )}
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
                   Cardholder Name
@@ -653,6 +699,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
                   </label>
                   <input
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     required
                     value={paymentData.cvv}
                     onChange={(e) => handlePaymentChange('cvv', e.target.value)}
@@ -673,10 +721,10 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
       <Button
         onClick={handleSubmit}
-        disabled={isLoading || !profile?.customer_info || profileLoading || !isPaymentValid}
+        disabled={isLoading || validatingPayment || !profile?.customer_info || profileLoading || !isPaymentValid}
         className="w-full mt-4 sm:mt-6 text-sm sm:text-base py-2 sm:py-2.5"
       >
-        {isLoading ? 'Processing...' : 'Confirm Booking'}
+        {isLoading ? 'Processing...' : validatingPayment ? 'Validating Payment...' : 'Confirm Booking'}
       </Button>
     </div>
   );
