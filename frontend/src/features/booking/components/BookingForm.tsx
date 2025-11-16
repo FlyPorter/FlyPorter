@@ -3,6 +3,7 @@ import { BookingFormProps, PassengerInfo, Flight } from '../types';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getUserProfile, updateProfile } from '../../profile/api/profileApi';
 import { UpdatePassengerPayload } from '../../profile/types';
 import { Pencil, X, Check } from 'lucide-react';
@@ -22,6 +23,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [passengerMode, setPassengerMode] = useState<'existing' | 'new'>('new'); // 'existing' for using saved info, 'new' for entering new info
   const [editForm, setEditForm] = useState<UpdatePassengerPayload>({
     name: '',
     birth_date: '',
@@ -98,10 +100,19 @@ const BookingForm: React.FC<BookingFormProps> = ({
             phone_number: userProfile.customer_info.phone || '',
             passport_number: userProfile.customer_info.passport_number || ''
           });
+          // If profile exists, default to using existing info
+          setPassengerMode('existing');
+          setIsEditingProfile(false);
+        } else {
+          // If no profile exists, show the form for user to enter information
+          setPassengerMode('new');
+          setIsEditingProfile(true);
         }
       } catch (error: any) {
         console.error('Failed to fetch user profile:', error);
         setProfileError(error.message || 'Failed to load profile');
+        // If profile fetch fails, still show the form for user to enter information
+        setIsEditingProfile(true);
       } finally {
         setProfileLoading(false);
       }
@@ -203,9 +214,14 @@ const BookingForm: React.FC<BookingFormProps> = ({
         return;
       }
 
-      const updatedProfile = await updateProfile(editForm);
-      setProfile(updatedProfile);
-      setIsEditingProfile(false);
+      // If profile exists, save to profile and close the form
+      if (profile?.customer_info) {
+        const updatedProfile = await updateProfile(editForm);
+        setProfile(updatedProfile);
+        setIsEditingProfile(false);
+      }
+      // If no profile exists, don't close the form - user can continue to fill payment and book
+      
       setSaveError(null);
       setFieldErrors({});
     } catch (err: any) {
@@ -317,10 +333,53 @@ const BookingForm: React.FC<BookingFormProps> = ({
       return;
     }
     
-    // Check if profile exists
-    if (!profile?.customer_info) {
-      alert('Please complete your profile first before booking.');
-      return;
+    // Get passenger info based on mode
+    let passengerData: PassengerInfo;
+    
+    if (passengerMode === 'existing' && profile?.customer_info) {
+      // Use existing profile info
+      passengerData = {
+        name: profile.customer_info.full_name,
+        birth_date: profile.customer_info.date_of_birth 
+          ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
+          : '',
+        gender: 'male',
+        address: '',
+        phone_number: profile.customer_info.phone || ''
+      };
+    } else {
+      // Validate required passenger information from form
+      if (!editForm.name || !editForm.birth_date || !editForm.passport_number) {
+        setSaveError('Please fill in all required fields (Name, Birth Date, Passport Number)');
+        setIsEditingProfile(true); // Show the form if not already visible
+        return;
+      }
+      
+      // Validate field formats
+      const nameError = validateName(editForm.name);
+      const phoneError = editForm.phone_number ? validatePhone(editForm.phone_number) : null;
+      const passportError = validatePassport(editForm.passport_number);
+      
+      const errors: typeof fieldErrors = {};
+      if (nameError) errors.name = nameError;
+      if (phoneError) errors.phone_number = phoneError;
+      if (passportError) errors.passport_number = passportError;
+      
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        setSaveError('Please fix the validation errors before booking');
+        setIsEditingProfile(true);
+        return;
+      }
+      
+      // Use form data
+      passengerData = {
+        name: editForm.name,
+        birth_date: editForm.birth_date,
+        gender: 'male',
+        address: '',
+        phone_number: editForm.phone_number || ''
+      };
     }
     
     // Validate payment with backend API
@@ -347,18 +406,23 @@ const BookingForm: React.FC<BookingFormProps> = ({
       setValidatingPayment(false);
     }
     
-    // Submit profile data
-    const passengerInfo: PassengerInfo = {
-      name: profile.customer_info.full_name,
-      birth_date: profile.customer_info.date_of_birth 
-        ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
-        : '',
-      gender: 'male', // Default since gender is removed from profile
-      address: '',
-      phone_number: profile.customer_info.phone || ''
-    };
+    // If new passenger info was entered, save it to profile after booking
+    if (passengerMode === 'new' && (!profile?.customer_info || 
+        profile.customer_info.full_name !== editForm.name ||
+        profile.customer_info.passport_number !== editForm.passport_number)) {
+      // Save will happen after successful booking, but we don't wait for it here
+      // to avoid blocking the booking process
+      updateProfile(editForm).then((updatedProfile) => {
+        setProfile(updatedProfile);
+        // Update mode to existing after saving
+        setPassengerMode('existing');
+      }).catch((err) => {
+        console.error('Failed to save passenger info to profile:', err);
+        // Don't block booking if profile save fails
+      });
+    }
     
-    await onSubmit(passengerInfo);
+    await onSubmit(passengerData);
   };
 
   // Calculate final prices with multipliers
@@ -444,7 +508,50 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
       {/* Passenger Information */}
       <div className="space-y-3 sm:space-y-4">
-        <h2 className="text-lg sm:text-xl font-semibold">Passenger Information</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg sm:text-xl font-semibold">Passenger Information</h2>
+          {!profileLoading && profile?.customer_info && (
+            <Select
+              value={passengerMode}
+              onValueChange={(value: 'existing' | 'new') => {
+                setPassengerMode(value);
+                if (value === 'existing' && profile.customer_info) {
+                  // Load existing info
+                  setEditForm({
+                    name: profile.customer_info.full_name || '',
+                    birth_date: profile.customer_info.date_of_birth 
+                      ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
+                      : '',
+                    address: '',
+                    phone_number: profile.customer_info.phone || '',
+                    passport_number: profile.customer_info.passport_number || ''
+                  });
+                  setIsEditingProfile(false);
+                } else {
+                  // Clear form for new info
+                  setEditForm({
+                    name: '',
+                    birth_date: '',
+                    address: '',
+                    phone_number: '',
+                    passport_number: ''
+                  });
+                  setIsEditingProfile(true);
+                }
+                setSaveError(null);
+                setFieldErrors({});
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select passenger" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="existing">Use Saved Info</SelectItem>
+                <SelectItem value="new">Enter New Info</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </div>
         
         {profileLoading ? (
           <div className="text-center py-6 sm:py-8">
@@ -456,36 +563,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
               <div className="text-center py-6 sm:py-8">
                 <p className="text-sm sm:text-base text-red-600 mb-4">{profileError}</p>
                 <p className="text-xs sm:text-sm text-gray-600 mb-4">
-                  Please complete your profile before booking.
+                  Please enter passenger information below to continue with booking.
                 </p>
-                <Button
-                  onClick={handleEditProfile}
-                  variant="outline"
-                  className="text-sm sm:text-base"
-                >
-                  Create Profile
-                </Button>
               </div>
             </CardContent>
           </Card>
-        ) : !profile?.customer_info ? (
-          <Card>
-            <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
-              <div className="text-center py-6 sm:py-8">
-                <p className="text-xs sm:text-sm text-gray-600 mb-4">
-                  No profile information found. Please complete your profile before booking.
-                </p>
-                <Button
-                  onClick={handleEditProfile}
-                  variant="outline"
-                  className="text-sm sm:text-base"
-                >
-                  Create Profile
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : isEditingProfile ? (
+        ) : (isEditingProfile || passengerMode === 'new' || !profile?.customer_info) ? (
           <Card>
             <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
               <div className="space-y-3 sm:space-y-4">
@@ -551,29 +634,31 @@ const BookingForm: React.FC<BookingFormProps> = ({
                     <p className="text-xs text-red-600 mt-1">{fieldErrors.passport_number}</p>
                   )}
                 </div>
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    onClick={handleSaveProfile}
-                    className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white text-xs sm:text-sm"
-                    size="sm"
-                  >
-                    <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                    {profile?.customer_info ? 'Save' : 'Create Profile'}
-                  </Button>
-                  <Button
-                    onClick={handleCancelEdit}
-                    variant="outline"
-                    size="sm"
-                    className="border-teal-300 text-teal-700 hover:bg-teal-50 hover:border-teal-400 text-xs sm:text-sm"
-                  >
-                    <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                    Cancel
-                  </Button>
-                </div>
+                {profile?.customer_info && (
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      onClick={handleSaveProfile}
+                      className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white text-xs sm:text-sm"
+                      size="sm"
+                    >
+                      <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      Save
+                    </Button>
+                    <Button
+                      onClick={handleCancelEdit}
+                      variant="outline"
+                      size="sm"
+                      className="border-teal-300 text-teal-700 hover:bg-teal-50 hover:border-teal-400 text-xs sm:text-sm"
+                    >
+                      <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
-        ) : (
+        ) : passengerMode === 'existing' && profile?.customer_info ? (
           <Card>
             <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
               <div className="space-y-2 sm:space-y-3">
@@ -611,7 +696,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
               </div>
             </CardContent>
           </Card>
-        )}
+        ) : null}
       </div>
 
       {/* Payment Section */}
@@ -721,7 +806,14 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
       <Button
         onClick={handleSubmit}
-        disabled={isLoading || validatingPayment || !profile?.customer_info || profileLoading || !isPaymentValid}
+        disabled={
+          isLoading || 
+          validatingPayment || 
+          profileLoading || 
+          !isPaymentValid || 
+          (passengerMode === 'new' && (!editForm.name || !editForm.birth_date || !editForm.passport_number)) ||
+          (passengerMode === 'existing' && !profile?.customer_info)
+        }
         className="w-full mt-4 sm:mt-6 text-sm sm:text-base py-2 sm:py-2.5"
       >
         {isLoading ? 'Processing...' : validatingPayment ? 'Validating Payment...' : 'Confirm Booking'}
