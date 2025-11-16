@@ -11,6 +11,7 @@ import {
     getAllBookings,
     cancelAnyBooking,
     createRoundTripBooking,
+    changeBookingSeat,
     type CreateBookingInput,
 } from "../services/booking.service.js";
 
@@ -26,11 +27,11 @@ const parseId = (v: unknown) => {
  * Map Prisma errors to HTTP responses
  */
 const mapPrismaError = (e: unknown) => {
-    if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        if (e.code === "P2025") return { status: 404, msg: "Resource not found" };
-        if (e.code === "P2002") return { status: 409, msg: "Duplicate booking" };
-        if (e.code === "P2003") return { status: 400, msg: "Invalid reference" };
-    }
+    const err = e as any;
+    const code = err?.code as string | undefined;
+    if (code === "P2025") return { status: 404, msg: "Resource not found" };
+    if (code === "P2002") return { status: 409, msg: "Duplicate booking" };
+    if (code === "P2003") return { status: 400, msg: "Invalid reference" };
     return { status: 400, msg: "Database error" };
 };
 
@@ -328,5 +329,49 @@ export async function createRoundTripBookingHandler(req: Request, res: Response)
 
         const { status, msg: mappedMsg } = mapPrismaError(e);
         return sendError(res, mappedMsg, status);
+    }
+}
+
+/**
+ * PATCH /bookings/:id/seat
+ * Change seat for an existing booking (customer)
+ *
+ * Body:
+ * - seat_number: string (required) – new seat number on the same flight
+ */
+export async function changeBookingSeatHandler(req: Request, res: Response) {
+    const userId = (req as any).user?.userId;
+
+    if (!userId) {
+        return sendError(res, "User not authenticated", 401);
+    }
+
+    const bookingId = parseId(req.params.id);
+    if (!bookingId) {
+        return sendError(res, "Valid booking ID is required", 422);
+    }
+
+    const { seat_number } = req.body || {};
+    if (!seat_number || typeof seat_number !== "string") {
+        return sendError(res, "Valid seat_number is required", 422);
+    }
+
+    try {
+        const updated = await changeBookingSeat({
+            bookingId,
+            userId,
+            newSeatNumber: seat_number.trim(),
+        });
+
+        return sendSuccess(res, updated, "Seat changed successfully");
+    } catch (e: any) {
+        const msg: string = e?.message || "Failed to change seat";
+        if (msg.includes("not found")) {
+            return sendError(res, msg, 404);
+        }
+        if (msg.includes("not available")) {
+            return sendError(res, msg, 409);
+        }
+        return sendError(res, msg, 400);
     }
 }

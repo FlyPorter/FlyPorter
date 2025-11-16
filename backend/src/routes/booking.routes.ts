@@ -9,6 +9,7 @@ import {
     cancelBookingHandler,
     getAllBookingsHandler,
     cancelAnyBookingHandler,
+    changeBookingSeatHandler,
 } from "../controllers/booking.controller.js";
 
 const router = Router();
@@ -30,6 +31,9 @@ router.get("/admin/all", requireAdmin, getAllBookingsHandler);
 
 // GET /bookings/:id - Get a single booking by ID
 router.get("/:id", getBookingByIdHandler);
+
+// PATCH /bookings/:id/seat - Change seat for an existing booking
+router.patch("/:id/seat", changeBookingSeatHandler);
 
 // DELETE /bookings/admin/:id - Cancel any booking (admin only)
 // Must come before /:id to ensure proper route matching
