@@ -10,8 +10,8 @@ export function validatePayment(
   const normalizedCard = cardNumber.replace(/\s|-/g, "");
   if (!/^\d{16}$/.test(normalizedCard)) return false;
 
-  // 3-digit CCV
-  if (!/^\d{3}$/.test(ccv)) return false;
+  // 3 or 4-digit CCV
+  if (!/^\d{3,4}$/.test(ccv)) return false;
 
   // Parse dates
   const bookingDate = new Date(bookingDateISO);
@@ -32,6 +32,5 @@ export function validatePayment(
 
   return true;
 }
-
 
 
