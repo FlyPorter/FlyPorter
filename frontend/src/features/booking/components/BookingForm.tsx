@@ -192,15 +192,23 @@ const BookingForm: React.FC<BookingFormProps> = ({
       setSaveError(null);
       setFieldErrors({});
 
-      // Validate required fields
-      if (!editForm.name || !editForm.birth_date || !editForm.passport_number) {
+      // Validate required fields (with trim check)
+      if (!editForm.name || (typeof editForm.name === 'string' && editForm.name.trim() === '')) {
+        setSaveError('Please fill in all required fields (Name, Birth Date, Passport Number)');
+        return;
+      }
+      if (!editForm.birth_date || (typeof editForm.birth_date === 'string' && editForm.birth_date.trim() === '')) {
+        setSaveError('Please fill in all required fields (Name, Birth Date, Passport Number)');
+        return;
+      }
+      if (!editForm.passport_number || (typeof editForm.passport_number === 'string' && editForm.passport_number.trim() === '')) {
         setSaveError('Please fill in all required fields (Name, Birth Date, Passport Number)');
         return;
       }
 
       // Validate field formats
       const nameError = validateName(editForm.name);
-      const phoneError = editForm.phone_number ? validatePhone(editForm.phone_number) : null;
+      const phoneError = editForm.phone_number && editForm.phone_number.trim() ? validatePhone(editForm.phone_number) : null;
       const passportError = validatePassport(editForm.passport_number);
 
       const errors: typeof fieldErrors = {};
@@ -214,13 +222,12 @@ const BookingForm: React.FC<BookingFormProps> = ({
         return;
       }
 
-      // If profile exists, save to profile and close the form
-      if (profile?.customer_info) {
-        const updatedProfile = await updateProfile(editForm);
-        setProfile(updatedProfile);
-        setIsEditingProfile(false);
-      }
-      // If no profile exists, don't close the form - user can continue to fill payment and book
+      // Save to profile (create or update)
+      // updateProfile API supports both creating and updating
+      const updatedProfile = await updateProfile(editForm);
+      setProfile(updatedProfile);
+      setIsEditingProfile(false);
+      setPassengerMode('existing'); // Switch to existing mode after saving
       
       setSaveError(null);
       setFieldErrors({});
@@ -330,6 +337,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
     
     // Validate payment form fields first
     if (!validatePayment()) {
+      alert('Please fill in all payment information correctly.');
       return;
     }
     
@@ -337,6 +345,31 @@ const BookingForm: React.FC<BookingFormProps> = ({
     let passengerData: PassengerInfo;
     
     if (passengerMode === 'existing' && profile?.customer_info) {
+      // Check if passport number exists when using saved info
+      if (!profile.customer_info.passport_number || profile.customer_info.passport_number.trim() === '') {
+        alert('Passport number is required for booking. Please enter your passport information in the passenger information section.');
+        setIsEditingProfile(true);
+        setPassengerMode('new');
+        // Clear form and set passport field as required
+        setEditForm({
+          name: profile.customer_info.full_name || '',
+          birth_date: profile.customer_info.date_of_birth 
+            ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
+            : '',
+          address: '',
+          phone_number: profile.customer_info.phone || '',
+          passport_number: '' // User needs to enter this
+        });
+        // Scroll to passenger information section
+        setTimeout(() => {
+          const passengerSection = document.querySelector('[data-passenger-section]');
+          if (passengerSection) {
+            passengerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+        return;
+      }
+      
       // Use existing profile info
       passengerData = {
         name: profile.customer_info.full_name,
@@ -349,16 +382,28 @@ const BookingForm: React.FC<BookingFormProps> = ({
       };
     } else {
       // Validate required passenger information from form
-      if (!editForm.name || !editForm.birth_date || !editForm.passport_number) {
-        setSaveError('Please fill in all required fields (Name, Birth Date, Passport Number)');
+      const missingFields: string[] = [];
+      if (!editForm.name || (typeof editForm.name === 'string' && editForm.name.trim() === '')) missingFields.push('Full Name');
+      if (!editForm.birth_date || (typeof editForm.birth_date === 'string' && editForm.birth_date.trim() === '')) missingFields.push('Birth Date');
+      if (!editForm.passport_number || (typeof editForm.passport_number === 'string' && editForm.passport_number.trim() === '')) missingFields.push('Passport Number');
+      
+      if (missingFields.length > 0) {
+        alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
         setIsEditingProfile(true); // Show the form if not already visible
+        // Scroll to passenger information section
+        setTimeout(() => {
+          const passengerSection = document.querySelector('[data-passenger-section]');
+          if (passengerSection) {
+            passengerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
         return;
       }
       
-      // Validate field formats
-      const nameError = validateName(editForm.name);
-      const phoneError = editForm.phone_number ? validatePhone(editForm.phone_number) : null;
-      const passportError = validatePassport(editForm.passport_number);
+      // Validate field formats (only if fields are not empty)
+      const nameError = editForm.name && editForm.name.trim() ? validateName(editForm.name) : null;
+      const phoneError = editForm.phone_number && editForm.phone_number.trim() ? validatePhone(editForm.phone_number) : null;
+      const passportError = editForm.passport_number && editForm.passport_number.trim() ? validatePassport(editForm.passport_number) : null;
       
       const errors: typeof fieldErrors = {};
       if (nameError) errors.name = nameError;
@@ -369,6 +414,19 @@ const BookingForm: React.FC<BookingFormProps> = ({
         setFieldErrors(errors);
         setSaveError('Please fix the validation errors before booking');
         setIsEditingProfile(true);
+        return;
+      }
+      
+      // Double-check passport number is not empty after trim (safety check)
+      if (!editForm.passport_number || editForm.passport_number.trim() === '') {
+        alert('Passport number is required for booking. Please enter your passport information.');
+        setIsEditingProfile(true);
+        setTimeout(() => {
+          const passengerSection = document.querySelector('[data-passenger-section]');
+          if (passengerSection) {
+            passengerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
         return;
       }
       
@@ -507,7 +565,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
       </div>
 
       {/* Passenger Information */}
-      <div className="space-y-3 sm:space-y-4">
+      <div className="space-y-3 sm:space-y-4" data-passenger-section>
         <div className="flex items-center justify-between">
           <h2 className="text-lg sm:text-xl font-semibold">Passenger Information</h2>
           {!profileLoading && profile?.customer_info && (
@@ -809,10 +867,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         disabled={
           isLoading || 
           validatingPayment || 
-          profileLoading || 
-          !isPaymentValid || 
-          (passengerMode === 'new' && (!editForm.name || !editForm.birth_date || !editForm.passport_number)) ||
-          (passengerMode === 'existing' && !profile?.customer_info)
+          profileLoading
         }
         className="w-full mt-4 sm:mt-6 text-sm sm:text-base py-2 sm:py-2.5"
       >

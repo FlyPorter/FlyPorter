@@ -175,14 +175,21 @@ async function createBookingInTransaction(
     });
 
     // 7. Create notification for booking confirmation
+    const flightDate = new Date(flight.departure_time);
+    const formattedDate = flightDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+    
     await tx.notification.create({
         data: {
             user_id,
             booking_id: booking.booking_id,
             flight_id,
-            type: "booking_confirmed",
+            type: "BOOKING_CONFIRMATION",
             title: "Booking Confirmed",
-            message: `Your booking ${confirmationCode} has been confirmed for flight on ${flight.departure_time.toISOString()}.`,
+            message: `Your booking ${confirmationCode} has been confirmed for flight on ${formattedDate}.`,
         },
     });
 
@@ -673,7 +680,7 @@ export async function cancelBooking(bookingId: number, userId: number) {
                 user_id: userId,
                 booking_id: bookingId,
                 flight_id: booking.flight_id,
-                type: "booking_cancelled",
+                type: "BOOKING_CANCELLATION",
                 title: "Booking Cancelled",
                 message: `Your booking ${booking.confirmation_code} has been cancelled.`,
             },
@@ -985,7 +992,7 @@ export async function cancelAnyBooking(bookingId: number) {
                 user_id: booking.user_id,
                 booking_id: bookingId,
                 flight_id: booking.flight_id,
-                type: "booking_cancelled",
+                type: "BOOKING_CANCELLATION",
                 title: "Booking Cancelled",
                 message: `Your booking ${booking.confirmation_code} has been cancelled by an administrator.`,
             },

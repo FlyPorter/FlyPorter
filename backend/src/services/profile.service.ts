@@ -10,7 +10,7 @@ export interface ProfileData {
         info_id: number;
         full_name: string;
         phone: string | null;
-        passport_number: string;
+        passport_number: string | null;
         date_of_birth: Date;
         emergency_contact_name: string | null;
         emergency_contact_phone: string | null;
@@ -21,10 +21,27 @@ export interface UpdateProfileInput {
     email?: string;
     full_name?: string;
     phone?: string | null;
-    passport_number?: string;
+    passport_number?: string | null;
     date_of_birth?: Date;
     emergency_contact_name?: string | null;
     emergency_contact_phone?: string | null;
+}
+
+/**
+ * Register or update push notification token for a user
+ */
+export async function registerPushToken(userId: number, pushToken: string) {
+    return prisma.user.update({
+        where: { user_id: userId },
+        data: {
+            push_token: pushToken,
+            updated_at: new Date(),
+        },
+        select: {
+            user_id: true,
+            push_token: true,
+        },
+    });
 }
 
 /**

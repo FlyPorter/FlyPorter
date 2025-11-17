@@ -4,7 +4,7 @@ export interface CreateCustomerInput {
     user_id: number;
     full_name: string;
     phone?: string;
-    passport_number: string;
+    passport_number?: string | null;
     date_of_birth: Date;
     emergency_contact_name?: string;
     emergency_contact_phone?: string;
@@ -13,7 +13,7 @@ export interface CreateCustomerInput {
 export interface UpdateCustomerInput {
     full_name?: string;
     phone?: string;
-    passport_number?: string;
+    passport_number?: string | null;
     date_of_birth?: Date;
     emergency_contact_name?: string;
     emergency_contact_phone?: string;
