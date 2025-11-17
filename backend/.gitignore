@@ -12,3 +12,6 @@ package-lock.json
 
 # TypeScript build output
 dist/
+
+MIGRATION_GUIDE.md
+MIGRATION_WORKFLOW_EXPLAINED.md
