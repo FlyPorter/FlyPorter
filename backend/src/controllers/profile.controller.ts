@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { Prisma } from "@prisma/client";
 import { sendSuccess, sendError } from "../utils/response.util.js";
-import { getProfile, updateProfile, type UpdateProfileInput } from "../services/profile.service.js";
+import { getProfile, updateProfile, registerPushToken, type UpdateProfileInput } from "../services/profile.service.js";
 
 /**
  * Parse date of birth from request body
@@ -104,6 +104,32 @@ export async function updateProfileHandler(req: Request, res: Response) {
     try {
         const updated = await updateProfile(userId, data);
         return sendSuccess(res, updated, "Profile updated successfully");
+    } catch (e) {
+        const { status, msg } = mapPrismaError(e);
+        return sendError(res, msg, status);
+    }
+}
+
+/**
+ * POST /profile/push-token
+ * Register or update push notification token
+ */
+export async function registerPushTokenHandler(req: Request, res: Response) {
+    const userId = (req as any).user?.userId;
+
+    if (!userId) {
+        return sendError(res, "User not authenticated", 401);
+    }
+
+    const { pushToken } = req.body ?? {};
+
+    if (!pushToken || typeof pushToken !== "string") {
+        return sendError(res, "Valid push token is required", 422);
+    }
+
+    try {
+        const result = await registerPushToken(userId, pushToken);
+        return sendSuccess(res, result, "Push token registered successfully");
     } catch (e) {
         const { status, msg } = mapPrismaError(e);
         return sendError(res, msg, status);

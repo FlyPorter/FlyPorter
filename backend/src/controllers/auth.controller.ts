@@ -7,12 +7,18 @@ import { env } from "../config/env.js";
 
 export async function register(req: Request, res: Response) {
   try {
-    const { email, password, role, phone, phone_number } = req.body;
+    const { email, password, role, phone, phone_number, full_name, name } = req.body;
     const normalizedPhone =
       typeof phone !== "undefined"
         ? phone
         : typeof phone_number !== "undefined"
         ? phone_number
+        : undefined;
+    const normalizedName =
+      typeof full_name === "string" && full_name.trim().length
+        ? full_name.trim()
+        : typeof name === "string" && name.trim().length
+        ? name.trim()
         : undefined;
 
     // Validate input
@@ -34,6 +40,7 @@ export async function register(req: Request, res: Response) {
       email,
       password,
       phone: normalizedPhone,
+      full_name: normalizedName,
     });
 
     return sendSuccess(res, result, "User registered successfully", 201);

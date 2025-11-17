@@ -6,6 +6,7 @@ export interface RegisterInput {
   email: string;
   password: string;
   phone?: string;
+  full_name?: string;
 }
 
 export interface LoginInput {
@@ -13,8 +14,10 @@ export interface LoginInput {
   password: string;
 }
 
+const DEFAULT_DOB_PLACEHOLDER = new Date("1900-01-01T00:00:00.000Z");
+
 export async function registerUser(input: RegisterInput) {
-  const { email, password, phone } = input;
+  const { email, password, phone, full_name } = input;
 
   // Check if user already exists
   const existingUser = await prisma.user.findUnique({
@@ -28,21 +31,40 @@ export async function registerUser(input: RegisterInput) {
   // Hash password
   const password_hash = await hashPassword(password);
 
-  // Create user - always as customer (admin accounts are pre-configured)
-  const user = await prisma.user.create({
-    data: {
-      email,
-      password_hash,
-      role: "customer",
-      phone: phone ?? null,
-    },
-    select: {
-      user_id: true,
-      email: true,
-      role: true,
-      phone: true,
-      created_at: true,
-    },
+  const derivedFullName =
+    full_name?.trim() ||
+    email.split("@")[0]?.replace(/\./g, " ") ||
+    "New Customer";
+
+  // Create user and prefill customer info in a single transaction
+  const user = await prisma.$transaction(async (tx) => {
+    const createdUser = await tx.user.create({
+      data: {
+        email,
+        password_hash,
+        role: "customer",
+        phone: phone ?? null,
+      },
+      select: {
+        user_id: true,
+        email: true,
+        role: true,
+        phone: true,
+        created_at: true,
+      },
+    });
+
+    await tx.customerInfo.create({
+      data: {
+        user_id: createdUser.user_id,
+        full_name: derivedFullName,
+        phone: phone ?? null,
+        passport_number: null,
+        date_of_birth: DEFAULT_DOB_PLACEHOLDER,
+      },
+    });
+
+    return createdUser;
   });
 
   // Generate token
