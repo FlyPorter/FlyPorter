@@ -7,7 +7,13 @@ import { env } from "../config/env.js";
 
 export async function register(req: Request, res: Response) {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, role, phone, phone_number } = req.body;
+    const normalizedPhone =
+      typeof phone !== "undefined"
+        ? phone
+        : typeof phone_number !== "undefined"
+        ? phone_number
+        : undefined;
 
     // Validate input
     if (!email || !password) {
@@ -27,6 +33,7 @@ export async function register(req: Request, res: Response) {
     const result = await registerUser({
       email,
       password,
+      phone: normalizedPhone,
     });
 
     return sendSuccess(res, result, "User registered successfully", 201);
@@ -116,4 +123,3 @@ export async function logout(req: Request, res: Response) {
   // This endpoint confirms the logout and can be used for logging/analytics
   return sendSuccess(res, { message: "Logged out successfully" }, "Logout successful", 200);
 }
-
