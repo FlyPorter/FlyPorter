@@ -2,6 +2,51 @@ import { prisma } from "../config/prisma.js";
 import type { BookingStatus, Prisma } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 import { uploadBookingInvoiceToSpaces } from "./pdf.service.js";
+import { sendBookingCancellationNotification, sendBookingConfirmationNotification } from "../utils/push-notification.util.js";
+
+type CancellationNotificationContext = {
+    userId: number;
+    bookingId: number;
+    flightDetails: string;
+};
+
+function formatFlightDetailsForNotification({
+    originCode,
+    destinationCode,
+    departureTime,
+    confirmationCode,
+    bookingId,
+}: {
+    originCode?: string | null;
+    destinationCode?: string | null;
+    departureTime?: Date | null;
+    confirmationCode?: string | null;
+    bookingId: number;
+}): string {
+    const routeSegment =
+        originCode && destinationCode
+            ? `${originCode} → ${destinationCode}`
+            : confirmationCode
+                ? `booking ${confirmationCode}`
+                : `booking #${bookingId}`;
+
+    if (!departureTime) {
+        return routeSegment;
+    }
+
+    const date = new Date(departureTime);
+    const datePart = date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+    const timePart = date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+    });
+
+    return `${routeSegment} on ${datePart} at ${timePart}`;
+}
 
 /**
  * Generate a unique confirmation code (6 uppercase alphanumeric characters)
@@ -217,6 +262,25 @@ export async function createBooking(input: CreateBookingInput) {
             // Don't throw - this is best-effort, user can request it later
         });
 
+        setTimeout(() => {
+            (async () => {
+                try {
+                    const flight = await prisma.flight.findUnique({
+                        where: { flight_id: booking.flight_id },
+                        select: { departure_time: true },
+                    });
+                    await sendBookingConfirmationNotification(
+                        user_id,
+                        booking.confirmation_code,
+                        booking.booking_id,
+                        flight?.departure_time || null
+                    );
+                } catch (error) {
+                    console.error(`Failed to send confirmation notification for booking ${booking.booking_id}:`, error);
+                }
+            })();
+        }, 5000);
+
         return booking;
     });
 }
@@ -280,6 +344,30 @@ export async function createRoundTripBooking(input: RoundTripBookingInput) {
             );
         }
     });
+
+    const schedulePush = (booking: { booking_id: number; confirmation_code: string | null; flight_id: number }) => {
+        setTimeout(() => {
+            (async () => {
+                try {
+                    const flight = await prisma.flight.findUnique({
+                        where: { flight_id: booking.flight_id },
+                        select: { departure_time: true },
+                    });
+                    await sendBookingConfirmationNotification(
+                        user_id,
+                        booking.confirmation_code,
+                        booking.booking_id,
+                        flight?.departure_time || null
+                    );
+                } catch (error) {
+                    console.error(`Failed to send confirmation notification for booking ${booking.booking_id}:`, error);
+                }
+            })();
+        }, 5000);
+    };
+
+    schedulePush(result.outbound);
+    schedulePush(result.inbound);
 
     return result;
 }
@@ -607,7 +695,7 @@ export async function changeBookingSeat(params: {
  * 3. Create notification
  */
 export async function cancelBooking(bookingId: number, userId: number) {
-    return prisma.$transaction(async (tx) => {
+    const { updatedBooking, notificationContext } = await prisma.$transaction(async (tx) => {
         // 1. Get the booking
         const booking = await tx.booking.findFirst({
             where: {
@@ -623,6 +711,20 @@ export async function cancelBooking(bookingId: number, userId: number) {
                 flight: {
                     select: {
                         departure_time: true,
+                        route: {
+                            select: {
+                                origin_airport: {
+                                    select: {
+                                        airport_code: true,
+                                    },
+                                },
+                                destination_airport: {
+                                    select: {
+                                        airport_code: true,
+                                    },
+                                },
+                            },
+                        },
                     },
                 },
             },
@@ -686,8 +788,38 @@ export async function cancelBooking(bookingId: number, userId: number) {
             },
         });
 
-        return updatedBooking;
+        const flightDetails = formatFlightDetailsForNotification({
+            originCode: booking.flight.route?.origin_airport?.airport_code,
+            destinationCode: booking.flight.route?.destination_airport?.airport_code,
+            departureTime: booking.flight.departure_time,
+            confirmationCode: booking.confirmation_code,
+            bookingId: booking.booking_id,
+        });
+
+        return {
+            updatedBooking,
+            notificationContext: {
+                userId,
+                bookingId,
+                flightDetails,
+            } satisfies CancellationNotificationContext,
+        };
     });
+
+    if (notificationContext) {
+        sendBookingCancellationNotification(
+            notificationContext.userId,
+            notificationContext.bookingId,
+            notificationContext.flightDetails
+        ).catch((error) => {
+            console.error(
+                `Error sending cancellation push notification for booking ${notificationContext.bookingId}:`,
+                error
+            );
+        });
+    }
+
+    return updatedBooking;
 }
 
 /**
@@ -919,7 +1051,7 @@ export async function getAllBookings(): Promise<BookingWithDetails[]> {
  * This allows admins to cancel any booking without user_id restriction
  */
 export async function cancelAnyBooking(bookingId: number) {
-    return prisma.$transaction(async (tx) => {
+    const { updatedBooking, notificationContext } = await prisma.$transaction(async (tx) => {
         // 1. Get the booking (no user_id check for admin)
         const booking = await tx.booking.findUnique({
             where: {
@@ -935,6 +1067,20 @@ export async function cancelAnyBooking(bookingId: number) {
                 flight: {
                     select: {
                         departure_time: true,
+                        route: {
+                            select: {
+                                origin_airport: {
+                                    select: {
+                                        airport_code: true,
+                                    },
+                                },
+                                destination_airport: {
+                                    select: {
+                                        airport_code: true,
+                                    },
+                                },
+                            },
+                        },
                     },
                 },
             },
@@ -998,6 +1144,36 @@ export async function cancelAnyBooking(bookingId: number) {
             },
         });
 
-        return updatedBooking;
+        const flightDetails = formatFlightDetailsForNotification({
+            originCode: booking.flight.route?.origin_airport?.airport_code,
+            destinationCode: booking.flight.route?.destination_airport?.airport_code,
+            departureTime: booking.flight.departure_time,
+            confirmationCode: booking.confirmation_code,
+            bookingId: booking.booking_id,
+        });
+
+        return {
+            updatedBooking,
+            notificationContext: {
+                userId: booking.user_id,
+                bookingId,
+                flightDetails,
+            } satisfies CancellationNotificationContext,
+        };
     });
+
+    if (notificationContext) {
+        sendBookingCancellationNotification(
+            notificationContext.userId,
+            notificationContext.bookingId,
+            notificationContext.flightDetails
+        ).catch((error) => {
+            console.error(
+                `Error sending admin cancellation push notification for booking ${notificationContext.bookingId}:`,
+                error
+            );
+        });
+    }
+
+    return updatedBooking;
 }
