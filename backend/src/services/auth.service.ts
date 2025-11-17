@@ -5,6 +5,7 @@ import { generateToken } from "../utils/jwt.util.js";
 export interface RegisterInput {
   email: string;
   password: string;
+  phone?: string;
 }
 
 export interface LoginInput {
@@ -13,7 +14,7 @@ export interface LoginInput {
 }
 
 export async function registerUser(input: RegisterInput) {
-  const { email, password } = input;
+  const { email, password, phone } = input;
 
   // Check if user already exists
   const existingUser = await prisma.user.findUnique({
@@ -33,11 +34,13 @@ export async function registerUser(input: RegisterInput) {
       email,
       password_hash,
       role: "customer",
+      phone: phone ?? null,
     },
     select: {
       user_id: true,
       email: true,
       role: true,
+      phone: true,
       created_at: true,
     },
   });
@@ -91,8 +94,8 @@ export async function loginUser(input: LoginInput) {
       user_id: user.user_id,
       email: user.email,
       role: user.role,
+      phone: user.phone,
     },
     token,
   };
 }
-
