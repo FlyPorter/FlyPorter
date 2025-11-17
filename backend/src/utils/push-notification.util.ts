@@ -101,3 +101,42 @@ export async function sendBookingCancellationNotification(
   );
 }
 
+export async function sendBookingConfirmationNotification(
+  userId: number,
+  confirmationCode: string | null | undefined,
+  bookingId: number,
+  flightDate?: Date | string | null
+): Promise<boolean> {
+  let readableDate: string | null = null;
+  if (flightDate) {
+    try {
+      const date = new Date(flightDate);
+      if (!Number.isNaN(date.getTime())) {
+        readableDate = date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+      }
+    } catch {
+      readableDate = null;
+    }
+  }
+
+  const confirmationText = confirmationCode ? ` ${confirmationCode}` : '';
+  const body = readableDate
+    ? `Your booking${confirmationText} has been confirmed for flight on ${readableDate}.`
+    : `Your booking${confirmationText} has been confirmed.`;
+
+  return sendPushNotification(
+    userId,
+    'Booking Confirmed',
+    body.trim(),
+    {
+      bookingId,
+      confirmationCode,
+      type: 'BOOKING_CONFIRMATION',
+    }
+  );
+}
+
