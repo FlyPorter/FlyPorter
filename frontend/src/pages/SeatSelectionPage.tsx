@@ -112,7 +112,7 @@ const SeatSelectionPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50/50 via-cyan-50/50 to-teal-100/20">
-      <NavigationBar onBack={handleBack} onForward={handleForward} />
+      <NavigationBar />
       <div className="container mx-auto px-4 py-8">
         {isRoundTrip && (
           <div className="mb-6">
@@ -172,6 +172,10 @@ const SeatSelectionPage: React.FC = () => {
           </button>
         </div>
       </div>
+      {/* Footer */}
+      <footer className="mt-4 py-2 text-center text-gray-600 text-xs">
+        © 2025 FlyPorter
+      </footer>
     </div>
   );
 };

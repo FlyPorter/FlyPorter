@@ -45,7 +45,8 @@ export const getFlightSeats = async (flightId: string): Promise<Seat[]> => {
       seatNumber: seat.seat_number,
       status: seat.is_available ? 'AVAILABLE' : 'UNAVAILABLE',
       price: Number(seat.price_modifier || 1),
-      version: seat.class === 'first' ? 2 : seat.class === 'business' ? 1 : 0
+      version: seat.class === 'first' ? 2 : seat.class === 'business' ? 1 : 0,
+      class: seat.class || 'economy' // Include class for color coding
     }));
   } catch (error) {
     console.error('Error fetching flight seats:', error);

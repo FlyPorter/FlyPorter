@@ -5,9 +5,11 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getUserProfile, updateProfile } from '../../profile/api/profileApi';
-import { UpdatePassengerPayload } from '../../profile/types';
+import { UpdatePassengerPayload, Passenger } from '../../profile/types';
 import { Pencil, X, Check } from 'lucide-react';
 import { validatePayment as validatePaymentApi } from '../api/paymentApi';
+import { getStoredPassengers, addPassenger, setBookingPassenger } from '../../../utils/passengerStorage';
+import { getStoredPayments, getDefaultPayment, addPayment, PaymentInfo, maskCardNumber } from '../../../utils/paymentStorage';
 
 const BookingForm: React.FC<BookingFormProps> = ({
   outboundFlight,
@@ -23,7 +25,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [passengerMode, setPassengerMode] = useState<'existing' | 'new'>('new'); // 'existing' for using saved info, 'new' for entering new info
+  const [passengers, setPassengers] = useState<Passenger[]>([]);
+  const [selectedPassengerId, setSelectedPassengerId] = useState<number | null>(null);
+  const [passengerMode, setPassengerMode] = useState<'existing' | 'new'>('new'); // 'existing' for using saved passenger, 'new' for entering new info
   const [editForm, setEditForm] = useState<UpdatePassengerPayload>({
     name: '',
     birth_date: '',
@@ -67,6 +71,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
   };
   
   // Payment form state
+  const [savedPayments, setSavedPayments] = useState<PaymentInfo[]>([]);
+  const [selectedPaymentId, setSelectedPaymentId] = useState<number | null>(null);
+  const [paymentMode, setPaymentMode] = useState<'existing' | 'new'>('existing'); // 'existing' for using saved payment, 'new' for entering new info
   const [paymentData, setPaymentData] = useState({
     cardNumber: '',
     expiryDate: '',
@@ -82,6 +89,49 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [validatingPayment, setValidatingPayment] = useState(false);
   const [paymentValidationError, setPaymentValidationError] = useState<string | null>(null);
 
+  // Effect to check if selected passenger still exists (for detecting deletions from Profile page)
+  useEffect(() => {
+    if (profile?.user_id && selectedPassengerId !== null) {
+      const storedPassengers = getStoredPassengers(profile.user_id);
+      const selectedPassenger = storedPassengers.find(p => p.id === selectedPassengerId);
+      if (!selectedPassenger) {
+        // Selected passenger was deleted, clear selection
+        setSelectedPassengerId(null);
+        setPassengerMode('new');
+        setIsEditingProfile(true);
+        setPassengers(storedPassengers);
+        
+        // Reset form to profile customer_info if available
+        if (profile?.customer_info) {
+          setEditForm({
+            name: profile.customer_info.full_name || '',
+            birth_date: profile.customer_info.date_of_birth 
+              ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
+              : '',
+            address: '',
+            phone_number: profile.customer_info.phone || '',
+            passport_number: profile.customer_info.passport_number || ''
+          });
+        } else {
+          setEditForm({
+            name: '',
+            birth_date: '',
+            address: '',
+            phone_number: '',
+            passport_number: ''
+          });
+        }
+      } else {
+        // Update passengers list in case it changed
+        setPassengers(storedPassengers);
+      }
+    } else if (profile?.user_id && selectedPassengerId === null) {
+      // Reload passengers list even if nothing is selected
+      const storedPassengers = getStoredPassengers(profile.user_id);
+      setPassengers(storedPassengers);
+    }
+  }, [profile?.user_id, selectedPassengerId]);
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -89,24 +139,85 @@ const BookingForm: React.FC<BookingFormProps> = ({
         const userProfile = await getUserProfile();
         setProfile(userProfile);
         setProfileError(null);
-        // Initialize edit form with current profile data
-        if (userProfile.customer_info) {
-          setEditForm({
-            name: userProfile.customer_info.full_name || '',
-            birth_date: userProfile.customer_info.date_of_birth 
-              ? new Date(userProfile.customer_info.date_of_birth).toISOString().split('T')[0]
-              : '',
-            address: '',
-            phone_number: userProfile.customer_info.phone || '',
-            passport_number: userProfile.customer_info.passport_number || ''
-          });
-          // If profile exists, default to using existing info
-          setPassengerMode('existing');
-          setIsEditingProfile(false);
+        
+        // Load passengers from localStorage
+        const storedPassengers = getStoredPassengers(userProfile?.user_id);
+        setPassengers(storedPassengers);
+        
+        // Load saved payments from localStorage
+        const storedPayments = getStoredPayments(userProfile?.user_id);
+        setSavedPayments(storedPayments);
+        
+        // If payments exist, select default or first one
+        if (storedPayments.length > 0) {
+          const defaultPayment = getDefaultPayment(userProfile?.user_id);
+          if (defaultPayment) {
+            setSelectedPaymentId(defaultPayment.id);
+            setPaymentMode('existing');
+            // Pre-fill payment data from saved payment (but we still need CVV)
+            setPaymentData({
+              cardNumber: defaultPayment.fullCardNumber || defaultPayment.cardNumber,
+              expiryDate: defaultPayment.expiryDate,
+              cvv: '', // CVV is never saved
+              cardholderName: defaultPayment.cardholderName
+            });
+          }
+        }
+        
+        // If passengers exist, select the first one by default
+        // But only if selectedPassengerId is not already set (to preserve user selection)
+        if (storedPassengers.length > 0) {
+          // Check if currently selected passenger still exists
+          if (selectedPassengerId !== null) {
+            const selectedPassenger = storedPassengers.find(p => p.id === selectedPassengerId);
+            if (!selectedPassenger) {
+              // Selected passenger was deleted, clear selection
+              setSelectedPassengerId(null);
+              setPassengerMode('new');
+              setIsEditingProfile(true);
+            } else {
+              // Selected passenger still exists, keep it selected
+              setPassengerMode('existing');
+              setIsEditingProfile(false);
+            }
+          } else {
+            // No passenger selected, select the first one
+            setSelectedPassengerId(storedPassengers[0].id);
+            setPassengerMode('existing');
+            setIsEditingProfile(false);
+            const firstPassenger = storedPassengers[0];
+            setEditForm({
+              name: firstPassenger.name || '',
+              birth_date: firstPassenger.birth_date || '',
+              address: firstPassenger.address || '',
+              phone_number: firstPassenger.phone_number || '',
+              passport_number: firstPassenger.passport_number || ''
+            });
+          }
         } else {
-          // If no profile exists, show the form for user to enter information
+          // No passengers, clear selection
+          setSelectedPassengerId(null);
           setPassengerMode('new');
           setIsEditingProfile(true);
+          
+          if (userProfile.customer_info) {
+            // Fallback to backend customer_info if no stored passengers
+            setEditForm({
+              name: userProfile.customer_info.full_name || '',
+              birth_date: userProfile.customer_info.date_of_birth 
+                ? new Date(userProfile.customer_info.date_of_birth).toISOString().split('T')[0]
+                : '',
+              address: '',
+              phone_number: userProfile.customer_info.phone || '',
+              passport_number: userProfile.customer_info.passport_number || ''
+            });
+            setPassengerMode('existing');
+            setIsEditingProfile(false);
+          } else {
+            // If no profile exists, show the form for user to enter information
+            setPassengerMode('new');
+            setIsEditingProfile(true);
+          }
         }
       } catch (error: any) {
         console.error('Failed to fetch user profile:', error);
@@ -226,8 +337,50 @@ const BookingForm: React.FC<BookingFormProps> = ({
       // updateProfile API supports both creating and updating
       const updatedProfile = await updateProfile(editForm);
       setProfile(updatedProfile);
-      setIsEditingProfile(false);
-      setPassengerMode('existing'); // Switch to existing mode after saving
+      
+      // Save passenger to localStorage and auto-select it
+      if (updatedProfile?.user_id) {
+        try {
+          // Check if passenger already exists
+          const existingPassengers = getStoredPassengers(updatedProfile.user_id);
+          let savedPassenger = existingPassengers.find((p) => {
+            if (editForm.passport_number && p.passport_number) {
+              return p.passport_number === editForm.passport_number;
+            }
+            if (editForm.birth_date && p.birth_date) {
+              return p.name === editForm.name && p.birth_date === editForm.birth_date;
+            }
+            return p.name === editForm.name;
+          });
+          
+          if (!savedPassenger) {
+            // Create new passenger
+            savedPassenger = addPassenger({
+              name: editForm.name,
+              birth_date: editForm.birth_date,
+              address: editForm.address,
+              phone_number: editForm.phone_number,
+              passport_number: editForm.passport_number || '',
+              account_id: updatedProfile.user_id
+            }, updatedProfile.user_id);
+          }
+          
+          // Update passengers list and auto-select the saved passenger
+          const updatedPassengers = getStoredPassengers(updatedProfile.user_id);
+          setPassengers(updatedPassengers);
+          setSelectedPassengerId(savedPassenger.id);
+          setPassengerMode('existing');
+          setIsEditingProfile(false);
+        } catch (err) {
+          console.error('Failed to save passenger to localStorage:', err);
+          // Still switch to existing mode even if localStorage save fails
+          setIsEditingProfile(false);
+          setPassengerMode('existing');
+        }
+      } else {
+        setIsEditingProfile(false);
+        setPassengerMode('existing');
+      }
       
       setSaveError(null);
       setFieldErrors({});
@@ -252,7 +405,52 @@ const BookingForm: React.FC<BookingFormProps> = ({
     return name.trim().length >= 2;
   };
 
+  const validateExpiryDate = (expiryDate: string): string => {
+    if (!expiryDate || expiryDate.trim() === '') {
+      return 'Expiry date is required';
+    }
+    
+    // Check format MM/YY
+    const datePattern = /^(\d{2})\/(\d{2})$/;
+    const match = expiryDate.match(datePattern);
+    if (!match) {
+      return 'Please enter a valid expiry date (MM/YY)';
+    }
+    
+    const month = parseInt(match[1], 10);
+    const year = parseInt(match[2], 10);
+    
+    // Validate month (01-12)
+    if (month < 1 || month > 12) {
+      return 'Month must be between 01 and 12';
+    }
+    
+    // Convert YY to full year (assuming 20YY for years 00-99)
+    const fullYear = 2000 + year;
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-11
+    
+    // Check if card is expired
+    if (fullYear < currentYear || (fullYear === currentYear && month < currentMonth)) {
+      return 'This card has expired. Please use a valid card.';
+    }
+    
+    // Check if card is too far in the future (more than 20 years)
+    if (fullYear > currentYear + 20) {
+      return 'Expiry date seems too far in the future. Please check your card.';
+    }
+    
+    return '';
+  };
+
   const handlePaymentChange = (field: string, value: string) => {
+    // Switch to new payment mode if user starts editing
+    if (paymentMode === 'existing') {
+      setPaymentMode('new');
+      setSelectedPaymentId(null);
+    }
+    
     // Clear error when user starts typing
     setPaymentErrors(prev => ({ ...prev, [field]: '' }));
     // Clear payment validation error when user modifies payment fields
@@ -301,6 +499,39 @@ const BookingForm: React.FC<BookingFormProps> = ({
     setPaymentData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleSelectPayment = (paymentId: number | null) => {
+    if (paymentId === null) {
+      setPaymentMode('new');
+      setSelectedPaymentId(null);
+      setPaymentData({
+        cardNumber: '',
+        expiryDate: '',
+        cvv: '',
+        cardholderName: ''
+      });
+      return;
+    }
+    
+    const payment = savedPayments.find(p => p.id === paymentId);
+    if (payment) {
+      setSelectedPaymentId(paymentId);
+      setPaymentMode('existing');
+      setPaymentData({
+        cardNumber: payment.fullCardNumber || payment.cardNumber,
+        expiryDate: payment.expiryDate,
+        cvv: '', // CVV is never saved, user must enter it
+        cardholderName: payment.cardholderName
+      });
+      // Clear errors when selecting a saved payment
+      setPaymentErrors({
+        cardNumber: '',
+        expiryDate: '',
+        cvv: '',
+        cardholderName: ''
+      });
+    }
+  };
+
   const validatePayment = (): boolean => {
     const errors = {
       cardNumber: '',
@@ -311,6 +542,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
     if (!validateCardNumber(paymentData.cardNumber)) {
       errors.cardNumber = 'Please enter a valid 16-digit card number';
+    }
+
+    const expiryError = validateExpiryDate(paymentData.expiryDate);
+    if (expiryError) {
+      errors.expiryDate = expiryError;
     }
 
     if (!validateCVV(paymentData.cvv)) {
@@ -329,8 +565,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const isPaymentValid = useMemo(() => {
     return validateCardNumber(paymentData.cardNumber) &&
            validateCVV(paymentData.cvv) &&
-           validateCardholderName(paymentData.cardholderName);
-  }, [paymentData.cardNumber, paymentData.cvv, paymentData.cardholderName]);
+           validateCardholderName(paymentData.cardholderName) &&
+           validateExpiryDate(paymentData.expiryDate) === '';
+  }, [paymentData.cardNumber, paymentData.cvv, paymentData.cardholderName, paymentData.expiryDate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -343,24 +580,28 @@ const BookingForm: React.FC<BookingFormProps> = ({
     
     // Get passenger info based on mode
     let passengerData: PassengerInfo;
+    let bookingPassengerId: number | null = null;
     
-    if (passengerMode === 'existing' && profile?.customer_info) {
-      // Check if passport number exists when using saved info
-      if (!profile.customer_info.passport_number || profile.customer_info.passport_number.trim() === '') {
-        alert('Passport number is required for booking. Please enter your passport information in the passenger information section.');
+    if (passengerMode === 'existing' && selectedPassengerId !== null) {
+      // Use selected passenger from localStorage
+      const selectedPassenger = passengers.find(p => p.id === selectedPassengerId);
+      if (!selectedPassenger) {
+        alert('Selected passenger not found. Please select a passenger or enter new information.');
+        return;
+      }
+      
+      // Check if passport number exists
+      if (!selectedPassenger.passport_number || selectedPassenger.passport_number.trim() === '') {
+        alert('Passport number is required for booking. Please enter passport information for this passenger.');
         setIsEditingProfile(true);
         setPassengerMode('new');
-        // Clear form and set passport field as required
         setEditForm({
-          name: profile.customer_info.full_name || '',
-          birth_date: profile.customer_info.date_of_birth 
-            ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
-            : '',
-          address: '',
-          phone_number: profile.customer_info.phone || '',
+          name: selectedPassenger.name || '',
+          birth_date: selectedPassenger.birth_date || '',
+          address: selectedPassenger.address || '',
+          phone_number: selectedPassenger.phone_number || '',
           passport_number: '' // User needs to enter this
         });
-        // Scroll to passenger information section
         setTimeout(() => {
           const passengerSection = document.querySelector('[data-passenger-section]');
           if (passengerSection) {
@@ -370,12 +611,78 @@ const BookingForm: React.FC<BookingFormProps> = ({
         return;
       }
       
-      // Use existing profile info
+      // Use selected passenger info
+      passengerData = {
+        name: selectedPassenger.name,
+        birth_date: selectedPassenger.birth_date,
+        gender: 'male',
+        address: selectedPassenger.address || '',
+        phone_number: selectedPassenger.phone_number || ''
+      };
+      bookingPassengerId = selectedPassenger.id;
+    } else if (passengerMode === 'existing' && profile?.customer_info) {
+      // Fallback to backend customer_info if no stored passengers
+      if (!profile.customer_info.passport_number || profile.customer_info.passport_number.trim() === '') {
+        alert('Passport number is required for booking. Please enter your passport information in the passenger information section.');
+        setIsEditingProfile(true);
+        setPassengerMode('new');
+        setEditForm({
+          name: profile.customer_info.full_name || '',
+          birth_date: profile.customer_info.date_of_birth 
+            ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
+            : '',
+          address: '',
+          phone_number: profile.customer_info.phone || '',
+          passport_number: ''
+        });
+        setTimeout(() => {
+          const passengerSection = document.querySelector('[data-passenger-section]');
+          if (passengerSection) {
+            passengerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+        return;
+      }
+      
+      // Check if passenger already exists in localStorage, if not create it
+      const existingPassengers = getStoredPassengers(profile.user_id);
+      const dobStr = profile.customer_info.date_of_birth 
+        ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
+        : '';
+      
+      let existingPassenger = existingPassengers.find((p) => {
+        if (p.passport_number && profile.customer_info.passport_number) {
+          return p.passport_number === profile.customer_info.passport_number;
+        }
+        if (p.birth_date && dobStr) {
+          return p.name === profile.customer_info.full_name && p.birth_date === dobStr;
+        }
+        return p.name === profile.customer_info.full_name;
+      });
+      
+      if (!existingPassenger) {
+        // Create passenger from profile customer_info
+        try {
+          existingPassenger = addPassenger({
+            name: profile.customer_info.full_name,
+            birth_date: dobStr,
+            phone_number: profile.customer_info.phone || undefined,
+            passport_number: profile.customer_info.passport_number || undefined,
+            account_id: profile.user_id
+          }, profile.user_id);
+          setPassengers(getStoredPassengers(profile.user_id));
+        } catch (err) {
+          console.error('Failed to create passenger from profile:', err);
+        }
+      }
+      
+      if (existingPassenger) {
+        bookingPassengerId = existingPassenger.id;
+      }
+      
       passengerData = {
         name: profile.customer_info.full_name,
-        birth_date: profile.customer_info.date_of_birth 
-          ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
-          : '',
+        birth_date: dobStr,
         gender: 'male',
         address: '',
         phone_number: profile.customer_info.phone || ''
@@ -435,7 +742,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         name: editForm.name,
         birth_date: editForm.birth_date,
         gender: 'male',
-        address: '',
+        address: editForm.address || '',
         phone_number: editForm.phone_number || ''
       };
     }
@@ -464,23 +771,90 @@ const BookingForm: React.FC<BookingFormProps> = ({
       setValidatingPayment(false);
     }
     
-    // If new passenger info was entered, save it to profile after booking
-    if (passengerMode === 'new' && (!profile?.customer_info || 
-        profile.customer_info.full_name !== editForm.name ||
-        profile.customer_info.passport_number !== editForm.passport_number)) {
-      // Save will happen after successful booking, but we don't wait for it here
-      // to avoid blocking the booking process
-      updateProfile(editForm).then((updatedProfile) => {
-        setProfile(updatedProfile);
-        // Update mode to existing after saving
-        setPassengerMode('existing');
-      }).catch((err) => {
-        console.error('Failed to save passenger info to profile:', err);
-        // Don't block booking if profile save fails
-      });
+    // If new passenger info was entered, check if it already exists, if not create it
+    if (passengerMode === 'new' && profile?.user_id) {
+      try {
+        const existingPassengers = getStoredPassengers(profile.user_id);
+        // Check if passenger already exists (by passport number or name+birth_date)
+        let existingPassenger = existingPassengers.find((p) => {
+          if (editForm.passport_number && p.passport_number) {
+            return p.passport_number === editForm.passport_number;
+          }
+          if (editForm.birth_date && p.birth_date) {
+            return p.name === editForm.name && p.birth_date === editForm.birth_date;
+          }
+          return false;
+        });
+        
+        if (!existingPassenger) {
+          // Create new passenger
+          existingPassenger = addPassenger({
+            name: editForm.name,
+            birth_date: editForm.birth_date,
+            address: editForm.address,
+            phone_number: editForm.phone_number,
+            passport_number: editForm.passport_number || '',
+            account_id: profile.user_id
+          }, profile.user_id);
+          setPassengers(getStoredPassengers(profile.user_id));
+        }
+        
+        bookingPassengerId = existingPassenger.id;
+      } catch (err) {
+        console.error('Failed to save passenger info:', err);
+        // Don't block booking if passenger save fails
+      }
     }
     
-    await onSubmit(passengerData);
+    // Submit booking
+    try {
+      const result = await onSubmit(passengerData);
+      
+      // Associate passenger with booking if we have a booking ID
+      if (bookingPassengerId && result && profile?.user_id) {
+        if ((result as any).booking_id) {
+          // Single booking
+          setBookingPassenger((result as any).booking_id, bookingPassengerId, profile.user_id);
+        } else if ((result as any).outbound?.booking_id) {
+          // Round-trip bookings
+          const roundTripResult = result as any;
+          if (roundTripResult.outbound?.booking_id) {
+            setBookingPassenger(roundTripResult.outbound.booking_id, bookingPassengerId, profile.user_id);
+          }
+          if (roundTripResult.inbound?.booking_id) {
+            setBookingPassenger(roundTripResult.inbound.booking_id, bookingPassengerId, profile.user_id);
+          }
+        }
+      }
+      
+      // Save payment information if it's new (first time booking or new payment method)
+      if (profile?.user_id && paymentMode === 'new') {
+        try {
+          // Check if this payment already exists
+          const existingPayments = getStoredPayments(profile.user_id);
+          const cardNumber = paymentData.cardNumber.replace(/\s/g, '');
+          const existingPayment = existingPayments.find(p => 
+            (p.fullCardNumber || p.cardNumber) === cardNumber
+          );
+          
+          if (!existingPayment) {
+            // Save new payment method
+            addPayment({
+              cardNumber: paymentData.cardNumber,
+              expiryDate: paymentData.expiryDate,
+              cardholderName: paymentData.cardholderName,
+              account_id: profile.user_id
+            }, profile.user_id);
+          }
+        } catch (err) {
+          console.error('Failed to save payment info:', err);
+          // Don't block booking if payment save fails
+        }
+      }
+    } catch (error) {
+      // Error is already handled in onSubmit, just re-throw
+      throw error;
+    }
   };
 
   // Calculate final prices with multipliers
@@ -568,13 +942,44 @@ const BookingForm: React.FC<BookingFormProps> = ({
       <div className="space-y-3 sm:space-y-4" data-passenger-section>
         <div className="flex items-center justify-between">
           <h2 className="text-lg sm:text-xl font-semibold">Passenger Information</h2>
-          {!profileLoading && profile?.customer_info && (
+          {!profileLoading && (passengers.length > 0 || profile?.customer_info) && (
             <Select
-              value={passengerMode}
-              onValueChange={(value: 'existing' | 'new') => {
-                setPassengerMode(value);
-                if (value === 'existing' && profile.customer_info) {
-                  // Load existing info
+              value={passengerMode === 'existing' && selectedPassengerId !== null 
+                ? `passenger-${selectedPassengerId}` 
+                : passengerMode === 'existing' && !selectedPassengerId && profile?.customer_info
+                ? 'profile'
+                : 'new'}
+              onValueChange={(value: string) => {
+                if (value === 'new') {
+                  setPassengerMode('new');
+                  setSelectedPassengerId(null);
+                  setIsEditingProfile(true);
+                  setEditForm({
+                    name: '',
+                    birth_date: '',
+                    address: '',
+                    phone_number: '',
+                    passport_number: ''
+                  });
+                } else if (value.startsWith('passenger-')) {
+                  const passengerId = parseInt(value.replace('passenger-', ''));
+                  const passenger = passengers.find(p => p.id === passengerId);
+                  if (passenger) {
+                    setSelectedPassengerId(passengerId);
+                    setPassengerMode('existing');
+                    setIsEditingProfile(false);
+                    setEditForm({
+                      name: passenger.name || '',
+                      birth_date: passenger.birth_date || '',
+                      address: passenger.address || '',
+                      phone_number: passenger.phone_number || '',
+                      passport_number: passenger.passport_number || ''
+                    });
+                  }
+                } else if (value === 'profile' && profile?.customer_info) {
+                  setSelectedPassengerId(null);
+                  setPassengerMode('existing');
+                  setIsEditingProfile(false);
                   setEditForm({
                     name: profile.customer_info.full_name || '',
                     birth_date: profile.customer_info.date_of_birth 
@@ -584,27 +989,40 @@ const BookingForm: React.FC<BookingFormProps> = ({
                     phone_number: profile.customer_info.phone || '',
                     passport_number: profile.customer_info.passport_number || ''
                   });
-                  setIsEditingProfile(false);
-                } else {
-                  // Clear form for new info
-                  setEditForm({
-                    name: '',
-                    birth_date: '',
-                    address: '',
-                    phone_number: '',
-                    passport_number: ''
-                  });
-                  setIsEditingProfile(true);
                 }
                 setSaveError(null);
                 setFieldErrors({});
               }}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Select passenger" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="existing">Use Saved Info</SelectItem>
+                {passengers.map((passenger) => (
+                  <SelectItem key={passenger.id} value={`passenger-${passenger.id}`}>
+                    {passenger.name}
+                  </SelectItem>
+                ))}
+                {profile?.customer_info && (() => {
+                  // Only show Profile option if it's not already in passengers list
+                  const profileInPassengers = passengers.some((p) => {
+                    if (p.passport_number && profile.customer_info.passport_number) {
+                      return p.passport_number === profile.customer_info.passport_number;
+                    }
+                    const profileDob = profile.customer_info.date_of_birth 
+                      ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
+                      : '';
+                    if (p.birth_date && profileDob) {
+                      return p.name === profile.customer_info.full_name && p.birth_date === profileDob;
+                    }
+                    return p.name === profile.customer_info.full_name;
+                  });
+                  return !profileInPassengers ? (
+                    <SelectItem value="profile">
+                      {profile.customer_info.full_name} (Profile)
+                    </SelectItem>
+                  ) : null;
+                })()}
                 <SelectItem value="new">Enter New Info</SelectItem>
               </SelectContent>
             </Select>
@@ -626,7 +1044,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
               </div>
             </CardContent>
           </Card>
-        ) : (isEditingProfile || passengerMode === 'new' || !profile?.customer_info) ? (
+        ) : (isEditingProfile || passengerMode === 'new' || (!selectedPassengerId && !profile?.customer_info)) ? (
           <Card>
             <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
               <div className="space-y-3 sm:space-y-4">
@@ -654,8 +1072,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
                   <p className="text-xs sm:text-sm text-teal-700 mb-1 font-medium">Birth Date *</p>
                   <Input
                     type="date"
-                    value={editForm.birth_date}
-                    onChange={(e) => setEditForm({ ...editForm, birth_date: e.target.value })}
+                    value={editForm.birth_date || ''}
+                    onChange={(e) => setEditForm({ ...editForm, birth_date: e.target.value || '' })}
                     max={getTodayDate()}
                     required
                     className="border-teal-200 focus:border-teal-400 text-sm sm:text-base"
@@ -716,30 +1134,75 @@ const BookingForm: React.FC<BookingFormProps> = ({
               </div>
             </CardContent>
           </Card>
-        ) : passengerMode === 'existing' && profile?.customer_info ? (
+        ) : passengerMode === 'existing' && (selectedPassengerId !== null || profile?.customer_info) ? (
           <Card>
             <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
               <div className="space-y-2 sm:space-y-3">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-500">Full Name</p>
-                  <p className="text-base sm:text-lg font-medium break-words">{profile.customer_info.full_name}</p>
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-500">Birth Date</p>
-                  <p className="text-base sm:text-lg">
-                    {profile.customer_info.date_of_birth 
-                      ? new Date(profile.customer_info.date_of_birth).toLocaleDateString()
-                      : 'Not provided'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-500">Phone Number</p>
-                  <p className="text-base sm:text-lg">{profile.customer_info.phone || 'Not provided'}</p>
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-500">Passport Number</p>
-                  <p className="text-base sm:text-lg break-words">{profile.customer_info.passport_number || 'Not provided'}</p>
-                </div>
+                {selectedPassengerId !== null ? (
+                  <>
+                    {(() => {
+                      const passenger = passengers.find(p => p.id === selectedPassengerId);
+                      if (!passenger) return null;
+                      return (
+                        <>
+                          <div>
+                            <p className="text-xs sm:text-sm text-gray-500">Full Name</p>
+                            <p className="text-base sm:text-lg font-medium break-words">{passenger.name}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs sm:text-sm text-gray-500">Birth Date</p>
+                            <p className="text-base sm:text-lg">
+                              {passenger.birth_date && passenger.birth_date.trim() !== '' 
+                                ? (() => {
+                                    const date = new Date(passenger.birth_date);
+                                    return !isNaN(date.getTime()) ? date.toLocaleDateString() : 'Not provided';
+                                  })()
+                                : 'Not provided'}
+                            </p>
+                          </div>
+                          {passenger.phone_number && (
+                            <div>
+                              <p className="text-xs sm:text-sm text-gray-500">Phone Number</p>
+                              <p className="text-base sm:text-lg">{passenger.phone_number}</p>
+                            </div>
+                          )}
+                          {passenger.passport_number && (
+                            <div>
+                              <p className="text-xs sm:text-sm text-gray-500">Passport Number</p>
+                              <p className="text-base sm:text-lg break-words font-mono">{passenger.passport_number}</p>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </>
+                ) : profile?.customer_info ? (
+                  <>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-500">Full Name</p>
+                      <p className="text-base sm:text-lg font-medium break-words">{profile.customer_info.full_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-500">Birth Date</p>
+                      <p className="text-base sm:text-lg">
+                        {profile.customer_info.date_of_birth 
+                          ? (() => {
+                              const date = new Date(profile.customer_info.date_of_birth);
+                              return !isNaN(date.getTime()) ? date.toLocaleDateString() : 'Not provided';
+                            })()
+                          : 'Not provided'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-500">Phone Number</p>
+                      <p className="text-base sm:text-lg">{profile.customer_info.phone || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-gray-500">Passport Number</p>
+                      <p className="text-base sm:text-lg break-words">{profile.customer_info.passport_number || 'Not provided'}</p>
+                    </div>
+                  </>
+                ) : null}
                 <div className="pt-2">
                   <Button
                     onClick={handleEditProfile}
@@ -760,6 +1223,38 @@ const BookingForm: React.FC<BookingFormProps> = ({
       {/* Payment Section */}
       <div className="space-y-3 sm:space-y-4 mt-6 sm:mt-8">
         <h2 className="text-lg sm:text-xl font-semibold">Payment Information</h2>
+        
+        {/* Saved Payment Methods Selection */}
+        {savedPayments.length > 0 && (
+          <div className="mb-4">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+              Select Payment Method
+            </label>
+            <Select
+              value={paymentMode === 'existing' && selectedPaymentId !== null ? selectedPaymentId.toString() : 'new'}
+              onValueChange={(value) => {
+                if (value === 'new') {
+                  handleSelectPayment(null);
+                } else {
+                  handleSelectPayment(parseInt(value, 10));
+                }
+              }}
+            >
+              <SelectTrigger className="w-full text-sm sm:text-base">
+                <SelectValue placeholder="Select a payment method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="new">Enter New Payment Method</SelectItem>
+                {savedPayments.map((payment) => (
+                  <SelectItem key={payment.id} value={payment.id.toString()}>
+                    {maskCardNumber(payment.fullCardNumber || payment.cardNumber)} - {payment.cardholderName}
+                    {payment.isDefault && ' (Default)'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         
         <Card>
           <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">

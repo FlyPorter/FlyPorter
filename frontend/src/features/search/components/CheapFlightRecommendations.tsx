@@ -91,8 +91,6 @@ const CheapFlightRecommendations: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-2xl font-semibold mb-4">Cheap Flight Recommendations</h3>
-      <p className="text-gray-600 mb-4">Top 10 cheapest flights under $200</p>
       <FlightList
         flights={recommendations}
         onSelectFlight={handleSelectFlight}

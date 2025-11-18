@@ -75,6 +75,7 @@ export interface Seat {
   status: 'AVAILABLE' | 'BOOKED' | 'UNAVAILABLE';
   price: number;
   version: number;
+  class?: 'economy' | 'business' | 'first';
 }
 
 export interface SeatSelectionProps {

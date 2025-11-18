@@ -5,17 +5,43 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getFlightSeats} from '../api/seatApi';
 
-// get seat style based on status
+// Get seat class color based on class type
+const getSeatClassColor = (seatClass?: string) => {
+  switch (seatClass) {
+    case 'first':
+      return {
+        available: 'bg-gradient-to-br from-purple-100 to-purple-200 hover:from-purple-200 hover:to-purple-300 text-purple-800 border-purple-400 hover:border-purple-500',
+        selected: 'bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:from-purple-700 hover:to-purple-800 border-purple-500 shadow-lg'
+      };
+    case 'business':
+      return {
+        available: 'bg-gradient-to-br from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 text-blue-800 border-blue-400 hover:border-blue-500',
+        selected: 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 border-blue-500 shadow-lg'
+      };
+    case 'economy':
+    default:
+      return {
+        available: 'bg-gradient-to-br from-teal-50 to-teal-100 hover:from-teal-100 hover:to-teal-200 text-teal-700 border-teal-300 hover:border-teal-400',
+        selected: 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700 border-teal-400 shadow-lg'
+      };
+  }
+};
+
+// get seat style based on status and class
 const getSeatStyle = (seat: Seat, selectedSeat: Seat | null) => {
   if (seat.status !== 'AVAILABLE') {
     return seat.status === 'BOOKED'
       ? 'bg-gray-200 text-gray-500 cursor-not-allowed border-2 border-gray-300'
       : 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-200 before:absolute before:inset-0 before:bg-gradient-to-br before:from-gray-300 before:to-transparent before:opacity-50';
   }
-  // If the seat is available, check if it's selected
+  
+  // If the seat is available, get class-based colors
+  const classColors = getSeatClassColor(seat.class);
+  
+  // Check if it's selected
   return selectedSeat?.seatNumber === seat.seatNumber
-    ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700 border-teal-400 shadow-lg'
-    : 'bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-300 hover:border-teal-400';
+    ? classColors.selected
+    : classColors.available;
 };
 
 const SeatSelection: React.FC<SeatSelectionProps> = ({
@@ -146,18 +172,33 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({
           </div>
 
           {/* Legend */}
-          <div className="flex flex-wrap gap-3 sm:gap-4 items-center justify-center text-sm sm:text-base">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="w-4 h-4 sm:w-6 sm:h-6 bg-teal-50 border-teal-300"></Badge>
-              <span className="text-teal-700">Available</span>
+          <div className="space-y-3 sm:space-y-4">
+            {/* Seat Class Colors */}
+            <div className="flex flex-wrap gap-3 sm:gap-4 items-center justify-center text-sm sm:text-base">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="w-4 h-4 sm:w-6 sm:h-6 bg-gradient-to-br from-teal-50 to-teal-100 border-teal-300"></Badge>
+                <span className="text-teal-700">Economy</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="w-4 h-4 sm:w-6 sm:h-6 bg-gradient-to-br from-blue-100 to-blue-200 border-blue-400"></Badge>
+                <span className="text-blue-700">Business</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="w-4 h-4 sm:w-6 sm:h-6 bg-gradient-to-br from-purple-100 to-purple-200 border-purple-400"></Badge>
+                <span className="text-purple-700">First Class</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="w-4 h-4 sm:w-6 sm:h-6 bg-gray-200 border-2 border-gray-300"></Badge>
-              <span className="text-gray-600">Booked</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="w-4 h-4 sm:w-6 sm:h-6 bg-gray-50 relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-gray-300 before:to-transparent before:opacity-50 border-gray-200"></Badge>
-              <span className="text-gray-600">Unavailable</span>
+            
+            {/* Seat Status */}
+            <div className="flex flex-wrap gap-3 sm:gap-4 items-center justify-center text-sm sm:text-base border-t border-gray-200 pt-3">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="w-4 h-4 sm:w-6 sm:h-6 bg-gray-200 border-2 border-gray-300"></Badge>
+                <span className="text-gray-600">Booked</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="w-4 h-4 sm:w-6 sm:h-6 bg-gray-50 relative before:absolute before:inset-0 before:bg-gradient-to-br before:from-gray-300 before:to-transparent before:opacity-50 border-gray-200"></Badge>
+                <span className="text-gray-600">Unavailable</span>
+              </div>
             </div>
           </div>
 

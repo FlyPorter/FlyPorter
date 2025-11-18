@@ -77,6 +77,7 @@ export interface Route {
     status: 'AVAILABLE' | 'UNAVAILABLE' | 'BOOKED';
     price: number;
     version: number;  // 0: Economy, 1: Business, 2: First Class
+    class?: 'economy' | 'business' | 'first';
   }
   
   export interface SeatSelectionProps {
