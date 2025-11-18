@@ -7,7 +7,9 @@ node_modules
 .DS_Store
 .env
 /node_modules
-package-lock.json
+# package-lock.json - Allow backend/package-lock.json to be committed for deterministic builds
+# Uncomment if you want to ignore all package-lock.json files:
+# package-lock.json
 /backend/node_modules
 /backend/prisma/ERD.svg
 .idea
