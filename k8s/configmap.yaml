@@ -33,5 +33,9 @@ data:
   # Port configuration
   PORT: "3000"
   
+  # SendGrid email configuration (non-sensitive)
+  SENDGRID_FROM_EMAIL: "flyporterairlines@protonmail.com"
+  SENDGRID_FROM_NAME: "FlyPorter"
+  
   # Note: Sensitive values (secrets) should be in secrets.yaml
   # These are non-sensitive configuration values

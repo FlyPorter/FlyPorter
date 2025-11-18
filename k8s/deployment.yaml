@@ -73,6 +73,11 @@ spec:
             secretKeyRef:
               name: flyporter-secrets
               key: SPACES_SECRET_KEY
+        - name: SENDGRID_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: flyporter-secrets
+              key: SENDGRID_API_KEY
         - name: PORT
           valueFrom:
             configMapKeyRef:
@@ -128,6 +133,16 @@ spec:
             configMapKeyRef:
               name: flyporter-config
               key: FRONTEND_URL
+        - name: SENDGRID_FROM_EMAIL
+          valueFrom:
+            configMapKeyRef:
+              name: flyporter-config
+              key: SENDGRID_FROM_EMAIL
+        - name: SENDGRID_FROM_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: flyporter-config
+              key: SENDGRID_FROM_NAME
         resources:
           requests:
             cpu: 100m

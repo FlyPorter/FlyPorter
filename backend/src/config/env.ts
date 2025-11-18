@@ -32,5 +32,8 @@ export const env = {
   SPACES_BUCKET: process.env.SPACES_BUCKET || "",
   SPACES_CDN_BASE_URL: process.env.SPACES_CDN_BASE_URL || "",
   SPACES_INVOICE_PREFIX: process.env.SPACES_INVOICE_PREFIX || "invoices",
+  SENDGRID_API_KEY: process.env.SENDGRID_API_KEY || "",
+  SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL || "flyporterairlines@protonmail.com",
+  SENDGRID_FROM_NAME: process.env.SENDGRID_FROM_NAME || "FlyPorter",
 } as const;
 

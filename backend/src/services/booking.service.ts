@@ -3,12 +3,151 @@ import type { BookingStatus, Prisma } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 import { uploadBookingInvoiceToSpaces } from "./pdf.service.js";
 import { sendBookingCancellationNotification, sendBookingConfirmationNotification } from "../utils/push-notification.util.js";
+import { sendBookingConfirmationEmail as sendEmail, sendBookingCancellationEmail } from "../utils/email.util.js";
 
 type CancellationNotificationContext = {
     userId: number;
     bookingId: number;
     flightDetails: string;
 };
+
+/**
+ * Send booking confirmation email with all details
+ */
+async function sendBookingConfirmationEmail(bookingId: number, userId: number): Promise<void> {
+    const booking = await prisma.booking.findFirst({
+        where: { booking_id: bookingId, user_id: userId },
+        select: {
+            booking_id: true,
+            confirmation_code: true,
+            total_price: true,
+            user: {
+                select: {
+                    email: true,
+                    customer_info: {
+                        select: {
+                            full_name: true,
+                        },
+                    },
+                },
+            },
+            flight: {
+                select: {
+                    flight_id: true,
+                    departure_time: true,
+                    arrival_time: true,
+                    route: {
+                        select: {
+                            origin_airport: {
+                                select: {
+                                    airport_code: true,
+                                },
+                            },
+                            destination_airport: {
+                                select: {
+                                    airport_code: true,
+                                },
+                            },
+                        },
+                    },
+                    airline: {
+                        select: {
+                            airline_code: true,
+                        },
+                    },
+                },
+            },
+            seat: {
+                select: {
+                    seat_number: true,
+                },
+            },
+        },
+    });
+
+    if (!booking) {
+        throw new Error("Booking not found");
+    }
+
+    const customerName = booking.user.customer_info?.full_name || booking.user.email.split('@')[0];
+    const flightNumber = `${booking.flight?.airline?.airline_code || 'FP'}${booking.flight?.flight_id || ''}`;
+    const departureTime = booking.flight?.departure_time ? new Date(booking.flight.departure_time) : new Date();
+    const arrivalTime = booking.flight?.arrival_time ? new Date(booking.flight.arrival_time) : new Date();
+
+    // Map airport codes to IANA timezones
+    const airportTimezones: { [key: string]: string } = {
+        'YVR': 'America/Vancouver',
+        'YYZ': 'America/Toronto',
+        'YYC': 'America/Calgary',
+        'YEG': 'America/Edmonton',
+        'YUL': 'America/Montreal',
+        'YHZ': 'America/Halifax',
+        'YOW': 'America/Toronto',
+        'YWG': 'America/Winnipeg',
+        'YYJ': 'America/Vancouver',
+        'YQR': 'America/Regina',
+        'YXE': 'America/Regina',
+        'YQT': 'America/Thunder_Bay',
+        'YFC': 'America/Moncton',
+        'YQM': 'America/Moncton',
+        'YQB': 'America/Toronto',
+        'YDF': 'America/St_Johns',
+        'YYT': 'America/St_Johns',
+    };
+
+    const originCode = booking.flight?.route?.origin_airport?.airport_code || '';
+    const destCode = booking.flight?.route?.destination_airport?.airport_code || '';
+    const originTimezone = airportTimezones[originCode] || 'America/Toronto';
+    const destTimezone = airportTimezones[destCode] || 'America/Toronto';
+
+    const formatDate = (date: Date, timezone: string) => {
+        return date.toLocaleDateString('en-US', { 
+            weekday: 'short',
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric',
+            timeZone: timezone
+        });
+    };
+
+    const formatTime = (date: Date, timezone: string) => {
+        return date.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false,
+            timeZone: timezone
+        });
+    };
+
+    // Calculate flight duration (in UTC, timezone doesn't matter for duration)
+    const durationMs = arrivalTime.getTime() - departureTime.getTime();
+    const hours = Math.floor(durationMs / (1000 * 60 * 60));
+    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    const flightDuration = `${hours}hr ${minutes}m`;
+
+    await sendEmail({
+        bookingId: booking.booking_id,
+        userId,
+        emailData: {
+            customerName,
+            customerEmail: booking.user.email,
+            confirmationCode: booking.confirmation_code || `BKG-${booking.booking_id}`,
+            flightNumber,
+            departureAirport: booking.flight?.route?.origin_airport?.airport_code || 'N/A',
+            destinationAirport: booking.flight?.route?.destination_airport?.airport_code || 'N/A',
+            departureDate: formatDate(departureTime, originTimezone),
+            departureTime: formatTime(departureTime, originTimezone),
+            arrivalTime: formatTime(arrivalTime, destTimezone),
+            seatNumber: booking.seat?.seat_number || 'N/A',
+            totalPrice: Number(booking.total_price).toFixed(2),
+            departureCity: booking.flight?.route?.origin_airport?.city_name,
+            destinationCity: booking.flight?.route?.destination_airport?.city_name,
+            departureAirportName: booking.flight?.route?.origin_airport?.airport_name,
+            destinationAirportName: booking.flight?.route?.destination_airport?.airport_name,
+            flightDuration,
+        },
+    });
+}
 
 function formatFlightDetailsForNotification({
     originCode,
@@ -262,6 +401,16 @@ export async function createBooking(input: CreateBookingInput) {
             // Don't throw - this is best-effort, user can request it later
         });
 
+        // Send booking confirmation email with PDF invoice
+        // Done async (fire-and-forget) to not block the response
+        (async () => {
+            try {
+                await sendBookingConfirmationEmail(booking.booking_id, user_id);
+            } catch (error) {
+                console.error(`Failed to send confirmation email for booking ${booking.booking_id}:`, error);
+            }
+        })();
+
         setTimeout(() => {
             (async () => {
                 try {
@@ -344,6 +493,23 @@ export async function createRoundTripBooking(input: RoundTripBookingInput) {
             );
         }
     });
+
+    // Send confirmation emails for both bookings
+    (async () => {
+        try {
+            await sendBookingConfirmationEmail(result.outbound.booking_id, user_id);
+        } catch (error) {
+            console.error(`Failed to send confirmation email for outbound booking ${result.outbound.booking_id}:`, error);
+        }
+    })();
+
+    (async () => {
+        try {
+            await sendBookingConfirmationEmail(result.inbound.booking_id, user_id);
+        } catch (error) {
+            console.error(`Failed to send confirmation email for inbound booking ${result.inbound.booking_id}:`, error);
+        }
+    })();
 
     const schedulePush = (booking: { booking_id: number; confirmation_code: string | null; flight_id: number }) => {
         setTimeout(() => {

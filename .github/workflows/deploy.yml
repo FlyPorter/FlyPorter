@@ -73,6 +73,7 @@ jobs:
         GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         SPACES_ACCESS_KEY: ${{ secrets.SPACES_ACCESS_KEY }}
         SPACES_SECRET_KEY: ${{ secrets.SPACES_SECRET_KEY }}
+        SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
       run: |
         # Create namespace first (idempotent)
         kubectl apply -f k8s/namespace.yaml || true
@@ -86,6 +87,7 @@ jobs:
           --from-literal=GOOGLE_CLIENT_SECRET="$GOOGLE_CLIENT_SECRET" \
           --from-literal=SPACES_ACCESS_KEY="$SPACES_ACCESS_KEY" \
           --from-literal=SPACES_SECRET_KEY="$SPACES_SECRET_KEY" \
+          --from-literal=SENDGRID_API_KEY="$SENDGRID_API_KEY" \
           --namespace=flyporter \
           --dry-run=client -o yaml | kubectl apply -f -
     
