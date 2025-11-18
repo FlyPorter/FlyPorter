@@ -121,15 +121,24 @@ export async function generateBookingInvoicePdf(
 
   const customerProfile = booking.user.customer_info;
   const totalPrice = booking.total_price ? Number(booking.total_price) : null;
-  const basePrice = booking.flight?.base_price ? Number(booking.flight.base_price) : null;
-  const priceModifier = booking.seat?.price_modifier
-    ? Number(booking.seat.price_modifier)
-    : null;
+  const airline = booking.flight?.airline;
+  const origin = booking.flight?.route?.origin_airport;
+  const destination = booking.flight?.route?.destination_airport;
 
-  const doc = new PDFDocument({ size: "A4", margin: 48 });
+  const doc = new PDFDocument({ size: "A4", margin: 40 });
   const chunks: Buffer[] = [];
 
-  const filename = `invoice-booking-${booking.booking_id}.pdf`;
+  const filename = `booking-confirmation-${booking.confirmation_code ?? booking.booking_id}.pdf`;
+
+  // Define colors
+  const brandRed = "#DC143C";
+  const textBlack = "#000000";
+  const textGray = "#666666";
+  const lightGray = "#F5F5F5";
+  const darkGray = "#4A4A4A";
+
+  const pageWidth = 595;
+  const margin = 40;
 
   return new Promise<InvoicePdfResult>((resolve, reject) => {
     doc.on("data", (chunk) => chunks.push(chunk as Buffer));
@@ -142,100 +151,379 @@ export async function generateBookingInvoicePdf(
     });
     doc.on("error", reject);
 
-    doc.fontSize(22).text("FlyPorter Airlines", { align: "center" });
-    doc.moveDown(0.5);
-    doc.fontSize(16).text("Booking Invoice", { align: "center" });
-    doc.moveDown(1.5);
-
-    doc.fontSize(11);
-    const issuedAt = formatDateTime(new Date());
-    doc.text(`Invoice #: ${booking.confirmation_code ?? `BKG-${booking.booking_id}`}`);
-    doc.text(`Booking ID: ${booking.booking_id}`);
-    doc.text(`Issued: ${issuedAt}`);
-    doc.moveDown(1);
-
-    doc.fontSize(13).text("Bill To", { underline: true });
+    // ===== HEADER =====
+    doc.font("Helvetica-Bold")
+      .fontSize(18)
+      .fillColor(textBlack)
+      .text("FlyPorter Airlines", margin, margin);
+    
     doc.moveDown(0.3);
-    if (customerProfile?.full_name) {
-      doc.text(customerProfile.full_name);
-    }
-    doc.text(booking.user.email);
-    if (customerProfile?.phone) {
-      doc.text(`Phone: ${customerProfile.phone}`);
-    }
-    if (customerProfile?.passport_number) {
-      doc.text(`Passport: ${customerProfile.passport_number}`);
-    }
-    doc.moveDown(1);
-
-    doc.fontSize(13).text("Booking Details", { underline: true });
-    doc.moveDown(0.3);
-
-    const airline = booking.flight?.airline;
-    const origin = booking.flight?.route?.origin_airport;
-    const destination = booking.flight?.route?.destination_airport;
-
-    if (airline) {
-      doc.fontSize(11).text(`Airline: ${airline.airline_name} (${airline.airline_code})`);
-    }
-    if (origin && destination) {
-      doc
-        .fontSize(11)
-        .text(
-          `Route: ${origin.city_name} (${origin.airport_code}) → ${destination.city_name} (${destination.airport_code})`
-        );
-    }
-
-    doc
-      .fontSize(11)
-      .text(
-        `Departure: ${formatDateTime(booking.flight?.departure_time)}`
-      );
-    doc
-      .fontSize(11)
-      .text(
-        `Arrival: ${formatDateTime(booking.flight?.arrival_time)}`
-      );
-    doc
-      .fontSize(11)
-      .text(`Seat: ${booking.seat?.seat_number ?? "—"} (${humanizeSeatClass(booking.seat?.class)})`);
-    doc
-      .fontSize(11)
-      .text(`Status: ${humanizeSeatClass(booking.status)}`);
-    if (booking.confirmation_code) {
-      doc.fontSize(11).text(`Confirmation Code: ${booking.confirmation_code}`);
-    }
+    doc.font("Helvetica")
+      .fontSize(14)
+      .fillColor(textBlack)
+      .text("Booking Confirmation", margin);
 
     doc.moveDown(1);
 
-    doc.fontSize(13).text("Fare Summary", { underline: true });
-    doc.moveDown(0.3);
-
-    doc
-      .fontSize(11)
-      .text(`Base Fare: ${formatCurrency(basePrice)}`);
-    doc
-      .fontSize(11)
+    // Gray box for booking reference
+    const boxY = doc.y;
+    doc.rect(margin, boxY, pageWidth - 2 * margin, 30).fill(lightGray);
+    
+    doc.font("Helvetica")
+      .fontSize(10)
+      .fillColor(textBlack)
       .text(
-        `Seat Multiplier: ${priceModifier ? `${priceModifier.toFixed(2)}x` : "—"}`
+        `Booking Reference: ${booking.confirmation_code ?? `BKG-${booking.booking_id}`}`,
+        margin + 10,
+        boxY + 10
       );
-
-    doc.moveDown(0.8);
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(12)
-      .text(`Total Due: ${formatCurrency(totalPrice)}`);
-    doc.font("Helvetica");
+    
+    const issueDate = new Date().toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    doc.text(`Date of issue: ${issueDate}`, pageWidth - 180, boxY + 10);
 
     doc.moveDown(2);
-    doc
-      .fontSize(9)
-      .fillColor("#555555")
+
+    // Legal notice
+    doc.font("Helvetica")
+      .fontSize(7)
+      .fillColor(textGray)
       .text(
-        "Thank you for choosing FlyPorter. This invoice serves as proof of purchase for your booking. Please contact support if you require any adjustments.",
-        { align: "left" }
-      )
-      .fillColor("#000000");
+        "This is your official itinerary/receipt. Please keep it for your records and bring it to the airport for check-in.",
+        margin,
+        doc.y,
+        { width: pageWidth - 2 * margin, align: "left" }
+      );
+
+    doc.moveDown(1.5);
+
+    // ===== DEPART SECTION =====
+    doc.font("Helvetica")
+      .fontSize(12)
+      .fillColor(textBlack)
+      .text("Depart", margin);
+
+    doc.moveDown(0.3);
+
+    // Dark gray header bar
+    const headerY = doc.y;
+    doc.rect(margin, headerY, pageWidth - 2 * margin, 20).fill(darkGray);
+    doc.font("Helvetica")
+      .fontSize(10)
+      .fillColor("#FFFFFF")
+      .text("Economy - Basic", pageWidth - 160, headerY + 5);
+
+    doc.moveDown(1.5);
+
+    // Flight details
+    const flightY = doc.y;
+    const departureDate = booking.flight?.departure_time
+      ? new Date(booking.flight.departure_time)
+      : new Date();
+
+    // Map airport codes to IANA timezones
+    const airportTimezones: { [key: string]: string } = {
+      'YVR': 'America/Vancouver',
+      'YYZ': 'America/Toronto',
+      'YYC': 'America/Calgary',
+      'YEG': 'America/Edmonton',
+      'YUL': 'America/Montreal',
+      'YHZ': 'America/Halifax',
+      'YOW': 'America/Toronto',
+      'YWG': 'America/Winnipeg',
+      'YYJ': 'America/Vancouver',
+      'YQR': 'America/Regina',
+      'YXE': 'America/Regina',
+      'YQT': 'America/Thunder_Bay',
+      'YFC': 'America/Moncton',
+      'YQM': 'America/Moncton',
+      'YQB': 'America/Toronto',
+      'YDF': 'America/St_Johns',
+      'YYT': 'America/St_Johns',
+    };
+
+    const originCode = origin?.airport_code || '';
+    const destCode = destination?.airport_code || '';
+    const originTimezone = airportTimezones[originCode] || 'America/Toronto';
+    const destTimezone = airportTimezones[destCode] || 'America/Toronto';
+
+    const dayOfWeek = departureDate.toLocaleDateString("en-US", { 
+      weekday: "long",
+      timeZone: originTimezone
+    });
+    const flightDate = departureDate.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone: originTimezone
+    });
+
+    doc.font("Helvetica")
+      .fontSize(9)
+      .fillColor(textGray)
+      .text(dayOfWeek, margin, flightY);
+    doc.text(flightDate, margin, flightY + 12);
+
+    const depTime = booking.flight?.departure_time
+      ? new Date(booking.flight.departure_time).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: originTimezone
+        })
+      : "—";
+    const arrTime = booking.flight?.arrival_time
+      ? new Date(booking.flight.arrival_time).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: destTimezone
+        })
+      : "—";
+
+    // Departure airport code with city beneath it
+    doc.font("Helvetica-Bold")
+      .fontSize(16)
+      .fillColor(textBlack)
+      .text(originCode || "—", 120, flightY);
+    doc.font("Helvetica")
+      .fontSize(11)
+      .fillColor(textBlack)
+      .text(origin?.city_name ?? "—", 120, flightY + 18);
+    doc.fontSize(9)
+      .fillColor(textGray)
+      .text(depTime, 120, flightY + 32);
+    doc.fontSize(8)
+      .fillColor(textGray)
+      .text(
+        `${origin?.airport_name ?? ""}`, 
+        120, 
+        flightY + 44,
+        { width: 150 }
+      );
+
+    // Arrow - use simple ASCII instead of unicode
+    doc.fontSize(16)
+      .fillColor(textGray)
+      .text("-->", 280, flightY + 10);
+
+    // Arrival city and time
+    doc.font("Helvetica-Bold")
+      .fontSize(16)
+      .fillColor(textBlack)
+      .text(destCode || "—", 330, flightY);
+    doc.font("Helvetica")
+      .fontSize(11)
+      .fillColor(textBlack)
+      .text(destination?.city_name ?? "—", 330, flightY + 18);
+    doc.fontSize(9)
+      .fillColor(textGray)
+      .text(arrTime, 330, flightY + 32);
+    doc.fontSize(8)
+      .fillColor(textGray)
+      .text(
+        `${destination?.airport_name ?? ""}`,
+        330,
+        flightY + 44,
+        { width: 150 }
+      );
+
+    // Flight info on right - moved down to avoid overlap
+    const flightNumber = airline?.airline_code
+      ? `${airline.airline_code}${booking.flight_id}`
+      : `FP${booking.flight_id}`;
+    
+    let infoY = flightY + 55;
+    
+    doc.fontSize(10)
+      .fillColor(textBlack)
+      .text(flightNumber, pageWidth - 120, infoY, { width: 80, align: "right" });
+    infoY += 15;
+    
+    // Calculate flight duration
+    if (booking.flight?.departure_time && booking.flight?.arrival_time) {
+      const depTimeMs = new Date(booking.flight.departure_time).getTime();
+      const arrTimeMs = new Date(booking.flight.arrival_time).getTime();
+      const durationMs = arrTimeMs - depTimeMs;
+      const hours = Math.floor(durationMs / (1000 * 60 * 60));
+      const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+      doc.fontSize(9)
+        .fillColor(textGray)
+        .text(`${hours}h ${minutes}m`, pageWidth - 120, infoY, { width: 80, align: "right" });
+      infoY += 15;
+    }
+    
+    const seatClass = booking.seat?.class ?? "Economy";
+    doc.fontSize(8)
+      .fillColor(textGray)
+      .text(
+        `Cabin: ${humanizeSeatClass(seatClass)}`,
+        pageWidth - 120,
+        infoY,
+        { width: 80, align: "right" }
+      );
+    infoY += 12;
+    
+    doc.text(
+      `Operated by: ${airline?.airline_name ?? "FlyPorter"}`, 
+      pageWidth - 120, 
+      infoY,
+      { width: 80, align: "right" }
+    );
+
+    doc.moveDown(5);
+
+    // ===== PASSENGERS SECTION =====
+    doc.font("Helvetica-Bold")
+      .fontSize(12)
+      .fillColor(textBlack)
+      .text("Passengers", margin);
+
+    doc.moveDown(0.5);
+
+    const passengerY = doc.y;
+    doc.font("Helvetica")
+      .fontSize(10)
+      .fillColor(textBlack)
+      .text(`${customerProfile?.full_name ?? "Passenger"}`, margin, passengerY);
+
+    doc.font("Helvetica")
+      .fontSize(9)
+      .fillColor(textGray)
+      .text("Seats", 300, passengerY);
+    doc.font("Helvetica")
+      .fontSize(10)
+      .fillColor(textBlack)
+      .text(booking.seat?.seat_number ?? "—", 300, passengerY + 15);
+
+    doc.font("Helvetica")
+      .fontSize(9)
+      .fillColor(textGray)
+      .text("Ticket number", margin, passengerY + 20);
+    doc.fontSize(9)
+      .fillColor(textBlack)
+      .text(`${booking.confirmation_code ?? booking.booking_id}`, margin, passengerY + 32);
+
+    doc.moveDown(4);
+
+    // ===== PURCHASE SUMMARY =====
+    doc.font("Helvetica-Bold")
+      .fontSize(12)
+      .fillColor(textBlack)
+      .text("Purchase summary", margin);
+
+    doc.moveDown(0.5);
+
+    // Calculate price breakdown
+    const basePrice = booking.flight?.base_price ? Number(booking.flight.base_price) : 0;
+    const taxes = totalPrice ? totalPrice * 0.13 : 0; // 13% tax
+    const airportFee = 35;
+    const securityCharge = 9.46;
+
+    doc.fontSize(9).fillColor(textGray).text("1 adult", pageWidth - 100, doc.y, { align: "right" });
+
+    doc.moveDown(0.5);
+
+    const summaryY = doc.y;
+    doc.font("Helvetica")
+      .fontSize(9)
+      .fillColor(textBlack)
+      .text("Base fare Economy - Basic", margin + 20, summaryY);
+    doc.text(formatCurrency(basePrice), pageWidth - 100, summaryY, { align: "right" });
+
+    doc.moveDown(0.8);
+    doc.fontSize(9)
+      .fillColor(textBlack)
+      .text("Goods and Services Tax - Canada", margin + 20, doc.y);
+    doc.text(formatCurrency(taxes), pageWidth - 100, doc.y, { align: "right" });
+
+    doc.moveDown(0.8);
+    doc.text("Airport Improvement Fee - Canada", margin + 20, doc.y);
+    doc.text(formatCurrency(airportFee), pageWidth - 100, doc.y, { align: "right" });
+
+    doc.moveDown(0.8);
+    doc.text("Air Travellers Security Charge - Canada", margin + 20, doc.y);
+    doc.text(formatCurrency(securityCharge), pageWidth - 100, doc.y, { align: "right" });
+
+    doc.moveDown(1);
+    doc.font("Helvetica-Bold")
+      .fontSize(10)
+      .fillColor(textBlack)
+      .text("GRAND TOTAL (Canadian dollars)", margin + 20, doc.y);
+    doc.text(formatCurrency(totalPrice), pageWidth - 100, doc.y, { align: "right" });
+
+    // ===== NEW PAGE - CHECK-IN DEADLINES =====
+    doc.addPage();
+
+    doc.font("Helvetica-Bold")
+      .fontSize(12)
+      .fillColor(textBlack)
+      .text("Check-in and boarding gate deadlines", margin, margin);
+
+    doc.moveDown(1);
+
+    const checkInInfo = [
+      { time: "240", label: "Check-in and baggage drop-off opens", desc: "Get a head start and drop your bags off as early as four hours before departure." },
+      { time: "45", label: "Check-in and baggage drop-off closes", desc: "Make sure you've checked in, have your boarding pass and have dropped off your bags before the end of the check-in period for your flight." },
+      { time: "30", label: "Boarding gate deadline", desc: "This is the latest you should be at the departure gate, ready to board." },
+      { time: "15", label: "Boarding gate closes", desc: "Arriving after this time could result in reassignment of reserved seats, cancellation of reservations, or disqualification from denied boarding compensation." },
+    ];
+
+    checkInInfo.forEach((info) => {
+      const infoY = doc.y;
+      doc.rect(margin, infoY, 60, 40).fill(lightGray);
+      doc.font("Helvetica-Bold")
+        .fontSize(20)
+        .fillColor(textBlack)
+        .text(info.time, margin + 10, infoY + 5);
+      doc.fontSize(8).fillColor(textGray).text("minutes", margin + 10, infoY + 28);
+
+      doc.font("Helvetica-Bold")
+        .fontSize(10)
+        .fillColor(textBlack)
+        .text(info.label, margin + 75, infoY + 5, { width: pageWidth - margin * 2 - 75 });
+      doc.font("Helvetica")
+        .fontSize(8)
+        .fillColor(textGray)
+        .text(info.desc, margin + 75, infoY + 20, { width: pageWidth - margin * 2 - 75 });
+
+      doc.moveDown(2.5);
+    });
+
+    doc.moveDown(1);
+
+    // ===== IMPORTANT NOTICE =====
+    doc.rect(margin, doc.y, pageWidth - 2 * margin, 40).fill(lightGray);
+    doc.font("Helvetica-Bold")
+      .fontSize(9)
+      .fillColor(textBlack)
+      .text(
+        "Important: ",
+        margin + 10,
+        doc.y + 10,
+        { continued: true }
+      );
+    doc.font("Helvetica")
+      .fontSize(9)
+      .text(
+        "Please arrive at the airport at least 2 hours before departure for domestic flights and 3 hours for international flights.",
+        { width: pageWidth - 2 * margin - 20 }
+      );
+
+    doc.moveDown(1.5);
+
+    doc.font("Helvetica")
+      .fontSize(9)
+      .fillColor(textBlack)
+      .text(
+        "For any queries, please contact us at support@flyporter.com or call +1-800-FLY-PORT",
+        margin,
+        doc.y,
+        { width: pageWidth - 2 * margin }
+      );
 
     doc.end();
   });

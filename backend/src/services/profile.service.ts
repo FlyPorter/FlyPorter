@@ -140,7 +140,6 @@ export async function updateProfile(userId: number, input: UpdateProfileInput) {
             } else {
                 const requiredFields: Array<keyof typeof customerData> = [
                     "full_name",
-                    "passport_number",
                     "date_of_birth",
                 ];
                 const missingRequired = requiredFields.filter(
@@ -149,21 +148,23 @@ export async function updateProfile(userId: number, input: UpdateProfileInput) {
 
                 if (missingRequired.length > 0) {
                     throw new Error(
-                        "full_name, passport_number, and date_of_birth are required to create passenger information"
+                        "full_name and date_of_birth are required to create passenger information"
                     );
                 }
 
                 customerInfo = await tx.customerInfo.create({
                     data: {
-                        user_id: userId,
+                        user: {
+                            connect: {
+                                user_id: userId,
+                            },
+                        },
                         full_name: customerData.full_name as string,
-                        passport_number: customerData.passport_number as string,
                         date_of_birth: customerData.date_of_birth as Date,
-                        phone: (customerData.phone as string | null | undefined) ?? null,
-                        emergency_contact_name:
-                            (customerData.emergency_contact_name as string | null | undefined) ?? null,
-                        emergency_contact_phone:
-                            (customerData.emergency_contact_phone as string | null | undefined) ?? null,
+                        ...(customerData.phone && { phone: customerData.phone as string }),
+                        ...(customerData.passport_number && { passport_number: customerData.passport_number as string }),
+                        ...(customerData.emergency_contact_name && { emergency_contact_name: customerData.emergency_contact_name as string }),
+                        ...(customerData.emergency_contact_phone && { emergency_contact_phone: customerData.emergency_contact_phone as string }),
                     },
                     select,
                 });
