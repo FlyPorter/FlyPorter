@@ -38,13 +38,15 @@ export const getFlightSeats = async (flightId: string): Promise<Seat[]> => {
       const row = match ? parseInt(match[1]) : 0;
       const column = match && match[2] ? match[2].charCodeAt(0) - 65 : 0;
       
+      const version = seat.class === 'first' ? 2 : seat.class === 'business' ? 1 : 0;
       return {
         id: seat.seat_number.toString(),
         row: row,
         column: column,
         status: seat.is_available ? 'AVAILABLE' : 'UNAVAILABLE',
         price: Number(seat.price_modifier || 1),
-        version: seat.class === 'first' ? 2 : seat.class === 'business' ? 1 : 0
+        version: version,
+        class: seat.class || 'economy' // Include class for color coding
       };
     });
   } catch (error) {

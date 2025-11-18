@@ -2,10 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Pencil } from "lucide-react";
+import { Pencil, Plus, Trash2, X, Check } from "lucide-react";
 import NavigationBar from '../../../components/NavigationBar';
 import { getUserProfile, updateProfile } from '../api/profileApi';
-import { UpdatePassengerPayload } from '../types';
+import { UpdatePassengerPayload, Passenger } from '../types';
+import { 
+  getStoredPassengers, 
+  addPassenger, 
+  updatePassenger, 
+  deletePassenger,
+  initializePassengersFromBackend 
+} from '../../../utils/passengerStorage';
 
 // Helper function to get today's date in YYYY-MM-DD format
 const getTodayDate = (): string => {
@@ -15,7 +22,9 @@ const getTodayDate = (): string => {
 
 const ProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<any>(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [passengers, setPassengers] = useState<Passenger[]>([]);
+  const [editingPassengerId, setEditingPassengerId] = useState<number | null>(null);
+  const [isAddingNew, setIsAddingNew] = useState(false);
   const [editForm, setEditForm] = useState<UpdatePassengerPayload>({
     name: '',
     birth_date: '',
@@ -62,112 +71,149 @@ const ProfilePage: React.FC = () => {
 
   const fetchProfile = async () => {
     try {
+      setIsLoading(true);
+      setError(null);
       const data = await getUserProfile();
       setProfile(data);
-      if (data.customer_info) {
-        setEditForm({
-          name: data.customer_info.full_name || '',
-          birth_date: data.customer_info.date_of_birth 
-            ? new Date(data.customer_info.date_of_birth).toISOString().split('T')[0]
-            : '',
-          address: '',
-          phone_number: data.customer_info.phone || '',
-          passport_number: data.customer_info.passport_number || ''
-        });
+      
+      // Initialize passengers from backend customer_info (only if customer_info exists)
+      if (data?.customer_info && data?.user_id) {
+        try {
+          initializePassengersFromBackend(data.customer_info, data.user_id);
+        } catch (initError) {
+          console.error('Error initializing passengers:', initError);
+          // Don't fail the whole profile load if initialization fails
+        }
       }
+      
+      // Load all passengers from localStorage
+      try {
+        const storedPassengers = getStoredPassengers(data?.user_id);
+        setPassengers(storedPassengers);
+      } catch (storageError) {
+        console.error('Error loading passengers from storage:', storageError);
+        setPassengers([]);
+      }
+      
       setIsLoading(false);
-    } catch (err) {
-      setError('Failed to load profile');
-      setIsLoading(false);
-    }
-  };
-
-  const handleEdit = () => {
-    if (profile?.customer_info) {
-      setEditForm({
-        name: profile.customer_info.full_name || '',
-        birth_date: profile.customer_info.date_of_birth 
-          ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
-          : '',
-        address: '',
-        phone_number: profile.customer_info.phone || '',
-        passport_number: profile.customer_info.passport_number || ''
-      });
-    } else {
-      // Initialize empty form for creating new profile
-      setEditForm({
-        name: '',
-        birth_date: '',
-        address: '',
-        phone_number: '',
-        passport_number: ''
-      });
-    }
-    setIsEditing(true);
-  };
-
-  const handleSave = async () => {
-    try {
-      // Clear previous errors
-      setError(null);
-      setFieldErrors({});
-
-      // Validate required fields
-      if (!editForm.name || !editForm.birth_date || !editForm.passport_number) {
-        setError('Please fill in all required fields (Name, Birth Date, Passport Number)');
-        return;
-      }
-
-      // Validate field formats
-      const nameError = validateName(editForm.name);
-      const phoneError = editForm.phone_number ? validatePhone(editForm.phone_number) : null;
-      const passportError = validatePassport(editForm.passport_number);
-
-      const errors: typeof fieldErrors = {};
-      if (nameError) errors.name = nameError;
-      if (phoneError) errors.phone_number = phoneError;
-      if (passportError) errors.passport_number = passportError;
-
-      if (Object.keys(errors).length > 0) {
-        setFieldErrors(errors);
-        setError('Please fix the validation errors before saving');
-        return;
-      }
-
-      const updatedProfile = await updateProfile(editForm);
-      setProfile(updatedProfile);
-      setIsEditing(false);
-      setError(null);
-      setFieldErrors({});
     } catch (err: any) {
-      setError(err.message || 'Failed to update profile information');
+      console.error('Error fetching profile:', err);
+      setError(err?.message || 'Failed to load profile');
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddNew = () => {
+    setEditForm({
+      name: '',
+      birth_date: '',
+      address: '',
+      phone_number: '',
+      passport_number: ''
+    });
+    setIsAddingNew(true);
+    setEditingPassengerId(null);
+    setError(null);
+    setFieldErrors({});
+  };
+
+  const handleEdit = (passenger: Passenger) => {
+    setEditForm({
+      name: passenger.name || '',
+      birth_date: passenger.birth_date || '',
+      address: passenger.address || '',
+      phone_number: passenger.phone_number || '',
+      passport_number: passenger.passport_number || ''
+    });
+    setEditingPassengerId(passenger.id);
+    setIsAddingNew(false);
+    setError(null);
+    setFieldErrors({});
+  };
+
+  const handleSave = () => {
+    // Clear previous errors
+    setError(null);
+    setFieldErrors({});
+
+    // Validate required fields
+    if (!editForm.name || !editForm.birth_date || !editForm.passport_number) {
+      setError('Please fill in all required fields (Name, Birth Date, Passport Number)');
+      return;
+    }
+
+    // Validate field formats
+    const nameError = validateName(editForm.name);
+    const phoneError = editForm.phone_number ? validatePhone(editForm.phone_number) : null;
+    const passportError = validatePassport(editForm.passport_number);
+
+    const errors: typeof fieldErrors = {};
+    if (nameError) errors.name = nameError;
+    if (phoneError) errors.phone_number = phoneError;
+    if (passportError) errors.passport_number = passportError;
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError('Please fix the validation errors before saving');
+      return;
+    }
+
+    try {
+      if (editingPassengerId !== null) {
+        // Update existing passenger
+        const updated = updatePassenger(editingPassengerId, {
+          name: editForm.name,
+          birth_date: editForm.birth_date,
+          address: editForm.address,
+          phone_number: editForm.phone_number,
+          passport_number: editForm.passport_number,
+          account_id: profile?.user_id || 0
+        }, profile?.user_id);
+        if (updated) {
+          setPassengers(getStoredPassengers(profile?.user_id));
+          setEditingPassengerId(null);
+          setIsAddingNew(false);
+          setError(null);
+          setFieldErrors({});
+        }
+      } else if (isAddingNew) {
+        // Add new passenger
+        addPassenger({
+          name: editForm.name,
+          birth_date: editForm.birth_date,
+          address: editForm.address,
+          phone_number: editForm.phone_number,
+          passport_number: editForm.passport_number,
+          account_id: profile?.user_id || 0
+        }, profile?.user_id);
+        setPassengers(getStoredPassengers(profile?.user_id));
+        setIsAddingNew(false);
+        setError(null);
+        setFieldErrors({});
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to save passenger information');
     }
   };
 
   const handleCancel = () => {
-    setIsEditing(false);
+    setIsAddingNew(false);
+    setEditingPassengerId(null);
     setError(null);
     setFieldErrors({});
-    // Reset form to current profile data
-    if (profile?.customer_info) {
-      setEditForm({
-        name: profile.customer_info.full_name || '',
-        birth_date: profile.customer_info.date_of_birth 
-          ? new Date(profile.customer_info.date_of_birth).toISOString().split('T')[0]
-          : '',
-        address: '',
-        phone_number: profile.customer_info.phone || '',
-        passport_number: profile.customer_info.passport_number || ''
-      });
-    } else {
-      // Reset to empty form if no profile exists
-      setEditForm({
-        name: '',
-        birth_date: '',
-        address: '',
-        phone_number: '',
-        passport_number: ''
-      });
+    setEditForm({
+      name: '',
+      birth_date: '',
+      address: '',
+      phone_number: '',
+      passport_number: ''
+    });
+  };
+
+  const handleDelete = (passengerId: number) => {
+    if (window.confirm('Are you sure you want to delete this passenger?')) {
+      deletePassenger(passengerId, profile?.user_id);
+      setPassengers(getStoredPassengers(profile?.user_id));
     }
   };
 
@@ -216,15 +262,6 @@ const ProfilePage: React.FC = () => {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Profile</h1>
-          {!isEditing && profile?.customer_info && (
-            <Button 
-              onClick={handleEdit}
-              className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl transition-all"
-            >
-              <Pencil className="h-4 w-4 mr-2" />
-              Edit Profile
-            </Button>
-          )}
         </div>
         
         {error && (
@@ -250,24 +287,24 @@ const ProfilePage: React.FC = () => {
         <Card className="mt-6 border-teal-200/50 shadow-2xl bg-white/90 backdrop-blur-sm">
           <CardHeader>
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-teal-800">Personal Information</h2>
-              {!isEditing && !profile?.customer_info && (
+              <h2 className="text-xl font-semibold text-teal-800">Passengers</h2>
+              {!isAddingNew && editingPassengerId === null && (
                 <Button 
-                  onClick={handleEdit}
+                  onClick={handleAddNew}
                   className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl transition-all"
                 >
-                  Create Profile
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Passenger
                 </Button>
               )}
             </div>
           </CardHeader>
           <CardContent>
-            {!profile?.customer_info && !isEditing ? (
-              <div className="text-center py-8">
-                <p className="text-teal-700 mb-4 font-medium">No profile information found. Please create your profile.</p>
-              </div>
-            ) : isEditing ? (
-              <div className="space-y-4">
+            {(isAddingNew || editingPassengerId !== null) ? (
+              <div className="space-y-4 mb-6 p-4 bg-teal-50 rounded-lg border border-teal-200">
+                <h3 className="text-lg font-semibold text-teal-800">
+                  {isAddingNew ? 'Add New Passenger' : 'Edit Passenger'}
+                </h3>
                 <div>
                   <p className="text-sm text-teal-700 mb-1 font-medium">Full Name *</p>
                   <Input
@@ -287,8 +324,8 @@ const ProfilePage: React.FC = () => {
                   <p className="text-sm text-teal-700 mb-1 font-medium">Birth Date *</p>
                   <Input
                     type="date"
-                    value={editForm.birth_date}
-                    onChange={(e) => setEditForm({ ...editForm, birth_date: e.target.value })}
+                    value={editForm.birth_date || ''}
+                    onChange={(e) => setEditForm({ ...editForm, birth_date: e.target.value || '' })}
                     max={getTodayDate()}
                     required
                     className="border-teal-200 focus:border-teal-400"
@@ -330,44 +367,91 @@ const ProfilePage: React.FC = () => {
                     onClick={handleSave}
                     className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl transition-all"
                   >
-                    {profile?.customer_info ? 'Save' : 'Create Profile'}
+                    <Check className="h-4 w-4 mr-2" />
+                    Save
                   </Button>
                   <Button 
                     variant="outline" 
                     onClick={handleCancel}
                     className="border-teal-300 text-teal-700 hover:bg-teal-50 hover:border-teal-400"
                   >
+                    <X className="h-4 w-4 mr-2" />
                     Cancel
                   </Button>
                 </div>
               </div>
+            ) : null}
+            
+            {passengers.length === 0 && !isAddingNew && editingPassengerId === null ? (
+              <div className="text-center py-8">
+                <p className="text-teal-700 mb-4 font-medium">No passengers found. Please add a passenger.</p>
+              </div>
             ) : (
               <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-teal-600 font-medium">Full Name</p>
-                  <p className="text-lg text-teal-900">{profile.customer_info.full_name || 'Not provided'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-teal-600 font-medium">Birth Date</p>
-                  <p className="text-lg text-teal-900">
-                    {profile.customer_info.date_of_birth 
-                      ? new Date(profile.customer_info.date_of_birth).toLocaleDateString()
-                      : 'Not provided'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-teal-600 font-medium">Phone Number</p>
-                  <p className="text-lg text-teal-900">{profile.customer_info.phone || 'Not provided'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-teal-600 font-medium">Passport Number</p>
-                  <p className="text-lg text-teal-900">{profile.customer_info.passport_number || 'Not provided'}</p>
-                </div>
+                {passengers.map((passenger) => (
+                  <Card key={passenger.id} className="border-teal-200/50 shadow-md bg-white">
+                    <CardContent className="pt-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 space-y-2">
+                          <div>
+                            <p className="text-xs text-teal-600 font-medium">Full Name</p>
+                            <p className="text-base font-semibold text-teal-900">{passenger.name || 'Not provided'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-teal-600 font-medium">Birth Date</p>
+                            <p className="text-sm text-teal-900">
+                              {passenger.birth_date && passenger.birth_date.trim() !== '' 
+                                ? (() => {
+                                    const date = new Date(passenger.birth_date);
+                                    return !isNaN(date.getTime()) ? date.toLocaleDateString() : 'Not provided';
+                                  })()
+                                : 'Not provided'}
+                            </p>
+                          </div>
+                          {passenger.phone_number && (
+                            <div>
+                              <p className="text-xs text-teal-600 font-medium">Phone Number</p>
+                              <p className="text-sm text-teal-900">{passenger.phone_number}</p>
+                            </div>
+                          )}
+                          {passenger.passport_number && (
+                            <div>
+                              <p className="text-xs text-teal-600 font-medium">Passport Number</p>
+                              <p className="text-sm text-teal-900 font-mono">{passenger.passport_number}</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <Button
+                            onClick={() => handleEdit(passenger)}
+                            variant="outline"
+                            size="sm"
+                            className="border-teal-300 text-teal-700 hover:bg-teal-50 hover:border-teal-400"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => handleDelete(passenger.id)}
+                            variant="outline"
+                            size="sm"
+                            className="border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+      {/* Footer */}
+      <footer className="mt-4 py-2 text-center text-gray-600 text-xs">
+        © 2025 FlyPorter
+      </footer>
     </div>
   );
 };

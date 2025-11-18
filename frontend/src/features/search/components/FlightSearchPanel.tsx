@@ -247,6 +247,12 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
       }
     }
 
+    // Validate round trip: origin and destination must be different
+    if (tripType === 'roundTrip' && originCode && destinationCode && originCode === destinationCode) {
+      setError('For round trip, please select different cities for origin and destination');
+      return;
+    }
+
     const searchData: SearchData = {
       tripType,
       route: {
@@ -290,15 +296,17 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
     : airlines;
 
   return (
-    <div className="border border-teal-200/50 rounded-xl p-4 sm:p-5 md:p-6 lg:p-7 bg-white/90 backdrop-blur-sm shadow-2xl overflow-visible">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-4 sm:mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Search Flights</h2>
-        <button
+    <div className="border border-teal-200/50 rounded-lg p-3 sm:p-4 bg-white/95 backdrop-blur-sm shadow-md overflow-visible">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-2 sm:mb-3 pb-2 border-b border-gray-100">
+        <h2 className="text-base sm:text-lg font-bold bg-gradient-to-r from-teal-700 to-cyan-700 bg-clip-text text-transparent">Where can we take you?</h2>
+        <Button
           onClick={handleClearFilters}
-          className="text-xs sm:text-sm text-teal-600 hover:text-teal-800 underline cursor-pointer font-medium transition-colors self-start sm:self-auto"
+          variant="outline"
+          size="sm"
+          className="text-xs h-7 px-3 border-teal-200 text-teal-700 hover:bg-teal-50 hover:text-teal-900"
         >
           Clear Filters
-        </button>
+        </Button>
       </div>
 
       {error && (
@@ -313,42 +321,12 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
         </div>
       )}
 
-      {/* Trip Type Toggle */}
-      <div className="mb-4 sm:mb-6">
-        <div className="flex gap-2 p-1 bg-teal-50 rounded-lg border border-teal-200/50">
-          <button
-            type="button"
-            onClick={() => handleTripTypeChange('oneWay')}
-            disabled={disabled}
-            className={`flex-1 px-3 sm:px-4 py-2 rounded-md font-medium transition-all text-sm sm:text-base ${
-              tripType === 'oneWay'
-                ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg'
-                : 'text-teal-700 hover:text-teal-900 hover:bg-teal-100'
-            }`}
-          >
-            One Way
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTripTypeChange('roundTrip')}
-            disabled={disabled}
-            className={`flex-1 px-3 sm:px-4 py-2 rounded-md font-medium transition-all text-sm sm:text-base ${
-              tripType === 'roundTrip'
-                ? 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-lg'
-                : 'text-teal-700 hover:text-teal-900 hover:bg-teal-100'
-            }`}
-          >
-            Round Trip
-          </button>
-        </div>
-      </div>
-
-      {/* Route Information */}
+      {/* Route Information with Trip Type */}
       {compactLayout ? (
-        <div className="mb-4 space-y-3">
+        <div className="mb-2 space-y-2">
           {/* From Field */}
           <div className="relative w-full" ref={originRef}>
-            <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">From</label>
+            <label className="block mb-1 text-xs font-medium text-teal-700">From</label>
             <Input
               type="text"
               value={route.origin}
@@ -389,7 +367,7 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
 
           {/* To Field */}
           <div className="relative w-full" ref={destinationRef}>
-            <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">To</label>
+            <label className="block mb-1 text-xs font-medium text-teal-700">To</label>
             <Input
               type="text"
               value={route.destination}
@@ -415,11 +393,27 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
           </div>
         </div>
       ) : (
-        <div className="mb-4">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4">
+        <div className="mb-2">
+          <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto_1fr] gap-2 items-end">
+            {/* Trip Type Dropdown */}
+            <div className="md:mr-2">
+              <Select 
+                value={tripType} 
+                onValueChange={(value) => handleTripTypeChange(value as TripType)}
+                disabled={disabled}
+              >
+                <SelectTrigger className="w-full md:w-32 text-sm h-9">
+                  <SelectValue placeholder="Trip Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="oneWay">One Way</SelectItem>
+                  <SelectItem value="roundTrip">Round Trip</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             {/* From Field */}
             <div className="relative w-full" ref={originRef}>
-              <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">From</label>
+              <label className="block mb-1 text-xs font-medium text-teal-700">From</label>
               <Input
                 type="text"
                 value={route.origin}
@@ -460,7 +454,7 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
 
             {/* To Field */}
             <div className="relative w-full" ref={destinationRef}>
-              <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">To</label>
+              <label className="block mb-1 text-xs font-medium text-teal-700">To</label>
               <Input
                 type="text"
                 value={route.destination}
@@ -488,11 +482,30 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
         </div>
       )}
 
+      {/* Trip Type Dropdown for compact layout */}
+      {compactLayout && (
+        <div className="mb-2">
+          <Select 
+            value={tripType} 
+            onValueChange={(value) => handleTripTypeChange(value as TripType)}
+            disabled={disabled}
+          >
+            <SelectTrigger className="w-full text-sm">
+              <SelectValue placeholder="Trip Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="oneWay">One Way</SelectItem>
+              <SelectItem value="roundTrip">Round Trip</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Date Selection */}
       {compactLayout ? (
-        <div className="mb-4 space-y-4">
+        <div className="mb-2 space-y-2">
           <div className="relative w-full min-w-0">
-            <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">Departure Date</label>
+            <label className="block mb-1 text-xs font-medium text-teal-700">Departure Date</label>
             <Input
               type="date"
               value={route.departDate}
@@ -510,7 +523,7 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
 
           {tripType === 'roundTrip' && (
             <div className="relative w-full min-w-0">
-              <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">Return Date</label>
+              <label className="block mb-1 text-xs font-medium text-teal-700">Return Date</label>
               <Input
                 type="date"
                 value={returnDate}
@@ -528,9 +541,9 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
           <div className="relative w-full min-w-0">
-            <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">Departure Date</label>
+            <label className="block mb-1 text-xs font-medium text-teal-700">Departure Date</label>
             <Input
               type="date"
               value={route.departDate}
@@ -548,7 +561,7 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
 
           {tripType === 'roundTrip' && (
             <div className="relative w-full min-w-0">
-              <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">Return Date</label>
+              <label className="block mb-1 text-xs font-medium text-teal-700">Return Date</label>
               <Input
                 type="date"
                 value={returnDate}
@@ -568,70 +581,72 @@ const FlightSearchPanel: React.FC<FlightSearchPanelProps> = ({
       )}
 
       {/* Airlines and Price Range - Collapsible Advanced Options */}
-      <details className="mb-4 sm:mb-6">
-        <summary className="cursor-pointer text-xs sm:text-sm font-medium text-teal-700 hover:text-teal-900 mb-3 sm:mb-4 p-2 rounded-lg hover:bg-teal-50 transition-colors">
+      <details className="mb-2 sm:mb-3">
+        <summary className="cursor-pointer text-xs font-medium text-teal-700 hover:text-teal-900 mb-1.5 p-1.5 rounded-lg hover:bg-teal-50 transition-colors">
           Advanced Options
         </summary>
-        <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4">
-          {/* Airlines Dropdown Selection */}
-          <div>
-            <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">Preferred Airline</label>
-            <Select 
-              onValueChange={setAirline} 
-              value={airline}
-              disabled={disabled}
-            >
-              <SelectTrigger className="w-full text-sm sm:text-base">
-                <SelectValue placeholder="All Airlines" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Airlines</SelectItem>
-                {displayedAirlines.map((opt) => (
-                  <SelectItem value={opt.code} key={opt.code}>
-                    {opt.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Price Range */}
-          <div>
-            <label className="block mb-2 text-xs sm:text-sm font-medium text-teal-700">Price Range</label>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Input
-                type="number"
-                value={priceRange[0]}
-                onChange={(e) => handlePriceChange(0, e.target.value)}
-                placeholder="Min"
-                className="w-full text-sm sm:text-base"
-                min="0"
-              />
-              <span className="text-xs sm:text-sm text-gray-500">-</span>
-              <Input
-                type="number"
-                value={priceRange[1]}
-                onChange={(e) => handlePriceChange(1, e.target.value)}
-                placeholder="Max"
-                className="w-full text-sm sm:text-base"
-                min="0"
-              />
+        <div className="pt-1.5 sm:pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
+            {/* Airlines Dropdown Selection */}
+            <div>
+              <label className="block mb-1.5 text-xs font-medium text-teal-700">Preferred Airline</label>
+              <Select 
+                onValueChange={setAirline} 
+                value={airline}
+                disabled={disabled}
+              >
+                <SelectTrigger className="w-full text-sm">
+                  <SelectValue placeholder="All Airlines" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Airlines</SelectItem>
+                  {displayedAirlines.map((opt) => (
+                    <SelectItem value={opt.code} key={opt.code}>
+                      {opt.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            {priceError && (
-              <div className="mt-1 text-xs sm:text-sm text-red-500">
-                {priceError}
+
+            {/* Price Range */}
+            <div>
+              <label className="block mb-1.5 text-xs font-medium text-teal-700">Price Range</label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  value={priceRange[0]}
+                  onChange={(e) => handlePriceChange(0, e.target.value)}
+                  placeholder="Min"
+                  className="w-full text-sm"
+                  min="0"
+                />
+                <span className="text-xs text-gray-500">-</span>
+                <Input
+                  type="number"
+                  value={priceRange[1]}
+                  onChange={(e) => handlePriceChange(1, e.target.value)}
+                  placeholder="Max"
+                  className="w-full text-sm"
+                  min="0"
+                />
               </div>
-            )}
+              {priceError && (
+                <div className="mt-1 text-xs text-red-500">
+                  {priceError}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </details>
 
       {/* Search Button */}
-      <div className="mt-4 sm:mt-6">
+      <div className="mt-2 sm:mt-3 pt-2 border-t border-gray-100">
         <Button 
           onClick={handleSearch}
           variant="default"
-          className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold py-4 sm:py-6 text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer rounded-lg"
+          className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-medium py-2 text-sm shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer rounded-lg"
         >
           Search Flights
         </Button>

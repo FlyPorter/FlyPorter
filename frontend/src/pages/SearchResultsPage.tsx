@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate} from 'react-router-dom';
 import FlightSearchPanel from '../features/search/components/FlightSearchPanel';
 import FlightList from '../features/search/components/FlightList';
-import CheapFlightRecommendations from '../features/search/components/CheapFlightRecommendations';
+import TravelInfoSection from '../features/search/components/TravelInfoSection';
 import { SearchData, FlightDisplay } from '../features/search/types';
 import { searchFlights, getAllFlights, transformFlightToDisplay } from '../features/search/api/flightApi';
 import NavigationBar from '../components/NavigationBar';
@@ -267,22 +267,20 @@ const SearchResultsPage: React.FC = () => {
           </div>
 
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 items-start">
-              {/* Search Panel */}
-              <div className="lg:col-span-1">
-                <div className="lg:sticky lg:top-[5.5rem] z-40">
-                  <FlightSearchPanel 
-                    onSearch={handleSearch}
-                    onClearFilters={handleClearFilters}
-                    disabled={isSearchingReturn}
-                    initialSearchData={searchData}
-                    compactLayout={true}
-                  />
-                </div>
-              </div>
+            {/* Search Panel - Horizontal at top */}
+            <div className="mb-4 sm:mb-6">
+              <FlightSearchPanel 
+                onSearch={handleSearch}
+                onClearFilters={handleClearFilters}
+                disabled={isSearchingReturn}
+                initialSearchData={searchData}
+                compactLayout={false}
+              />
+            </div>
 
-              {/* Flight List or Recommendations */}
-              <div className="lg:col-span-3">
+            <div className="w-full">
+              {/* Flight List or Recommendations - Scrollable */}
+              <div>
                 {hasSearched ? (
                   <div ref={resultsRef} className="scroll-mt-20">
                     <div className="mb-4 sm:mb-6">
@@ -310,13 +308,17 @@ const SearchResultsPage: React.FC = () => {
                     />
                   </div>
                 ) : (
-                  <CheapFlightRecommendations />
+                  <TravelInfoSection />
                 )}
               </div>
             </div>
           </div>
         </div>
       </div>
+      {/* Footer */}
+      <footer className="mt-4 py-2 text-center text-gray-600 text-xs">
+        © 2025 FlyPorter
+      </footer>
     </div>
   );
 };

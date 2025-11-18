@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "../components/ui/button";
-import { Home, User, ArrowLeft, ArrowRight, ChevronDown, LogOut } from 'lucide-react';
+import { Home, User, ChevronDown, LogOut } from 'lucide-react';
 import { NotificationCenter } from '../features/notificationCenter';
 
 interface NavigationBarProps {
-  onBack?: () => void;
-  onForward?: () => void;
   minimal?: boolean; // When true, only show FlyPorter title
 }
 
-const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward, minimal = false }) => {
+const NavigationBar: React.FC<NavigationBarProps> = ({ minimal = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const token = localStorage.getItem('token');
@@ -29,34 +27,6 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward, minima
   const hasSidebar = pagesWithSidebar.includes(location.pathname);
 
   const homePath = role?.toUpperCase() === "ADMIN" ? '/admin' : '/dashboard';
-  const showBackButton = location.pathname !== homePath && !hasSidebar;
-
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-    } else {
-      // Smart back navigation based on current page and location state
-      if (location.pathname === '/profile') {
-        // Check if there's a 'from' state indicating where we came from
-        const locationState = location.state as { from?: string } | null;
-        if (locationState?.from) {
-          navigate(locationState.from);
-        } else {
-          navigate(homePath);
-        }
-      } else {
-        navigate(homePath);
-      }
-    }
-  };
-
-  const handleForward = () => {
-    if (onForward) {
-      onForward();
-    } else {
-      navigate(1);
-    }
-  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -114,24 +84,6 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ onBack, onForward, minima
             >
               {role === "ADMIN" ? "FlyPorter Admin" : "FlyPorter"}
             </h1>
-            {!minimal && isLoggedIn && !hasSidebar && showBackButton && (
-              <Button
-                variant="ghost"
-                onClick={handleBack}
-                size="icon"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            )}
-            {!minimal && isLoggedIn && !hasSidebar && (
-              <Button
-                variant="ghost"
-                onClick={handleForward}
-                size="icon"
-              >
-                <ArrowRight className="h-5 w-5" />
-              </Button>
-            )}
           </div>
           
           {!minimal && (

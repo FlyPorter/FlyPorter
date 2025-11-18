@@ -28,6 +28,10 @@ const AddAircraftPage = () => {
           Back to Admin
         </button>
       </div>
+      {/* Footer */}
+      <footer className="mt-4 py-2 text-center text-gray-600 text-xs">
+        © 2025 FlyPorter
+      </footer>
     </div>
   );
 };

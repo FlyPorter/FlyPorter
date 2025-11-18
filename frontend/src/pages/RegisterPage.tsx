@@ -6,12 +6,26 @@ import NavigationBar from "../components/NavigationBar";
 const RegisterPage = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
     const navigate = useNavigate();
   
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        
+        // Validate password match
+        if (password !== confirmPassword) {
+          setError('Passwords do not match');
+          return;
+        }
+        
+        // Validate password length
+        if (password.length < 6) {
+          setError('Password must be at least 6 characters long');
+          return;
+        }
+        
         try {
           const trimmedEmail = email.trim();
           const response = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -76,6 +90,14 @@ const RegisterPage = () => {
               className="w-full p-2 border rounded placeholder:text-gray-400" 
               required
             />
+            <input 
+              type="password" 
+              placeholder="Confirm Password" 
+              value={confirmPassword} 
+              onChange={(e) => setConfirmPassword(e.target.value)} 
+              className="w-full p-2 border rounded placeholder:text-gray-400" 
+              required
+            />
             <button 
               type="submit" 
               className="w-full py-2 rounded-lg text-white font-semibold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-xl transition-all cursor-pointer"
@@ -101,6 +123,10 @@ const RegisterPage = () => {
           </button>
         </div>
         </div>
+        {/* Footer */}
+        <footer className="mt-4 py-2 text-center text-gray-600 text-xs">
+          © 2025 FlyPorter
+        </footer>
       </div>
     );
   };

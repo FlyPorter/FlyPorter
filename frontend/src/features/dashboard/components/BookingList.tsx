@@ -4,6 +4,7 @@ import { BookingDisplay  } from '../types';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { API_BASE_URL } from "../../../config";
+import { getPassengerForBooking, getStoredPassengers } from '../../../utils/passengerStorage';
 
 const BookingList: React.FC = () => {
   const [bookings, setBookings] = useState<BookingDisplay[]>([]);
@@ -59,28 +60,40 @@ const BookingList: React.FC = () => {
         const activeBookings = bookingsData.filter((booking: any) => booking.status !== 'CANCELLED' && booking.status !== 'cancelled');
         console.log("Active Bookings (after filtering cancelled):", activeBookings);
 
-        // Get user profile to get passenger name from customer_info
+        // Get user profile to get passenger name from customer_info (fallback)
         const profileResponse = await fetch(`${API_BASE_URL}/profile`, {
           headers: { 
             'Authorization': `Bearer ${localStorage.getItem("token")}` 
           }
         });
-        let passengerName = "Passenger";
+        let defaultPassengerName = "Passenger";
+        let currentUserId: number | null = null;
         if (profileResponse.ok) {
           const profileData = await profileResponse.json();
           const profile = profileData.success && profileData.data ? profileData.data : profileData;
+          currentUserId = profile.user_id || null;
           
           // Use full_name from customer_info (this is the passenger name used for booking)
           // The profile endpoint already includes customer_info
           if (profile.customer_info && profile.customer_info.full_name) {
-            passengerName = profile.customer_info.full_name;
+            defaultPassengerName = profile.customer_info.full_name;
           } else {
             // Fallback to email if customer_info doesn't exist or doesn't have full_name
-            passengerName = profile.email || "Passenger";
+            defaultPassengerName = profile.email || "Passenger";
           }
         }
 
         const enrichedBookings = activeBookings.map((booking: any) => {
+          // Try to get passenger from localStorage first (with user ID)
+          const passenger = getPassengerForBooking(booking.booking_id, currentUserId || undefined);
+          let passengerName = defaultPassengerName;
+          
+          if (passenger) {
+            // Use passenger from localStorage mapping
+            passengerName = passenger.name;
+          }
+          // If no passenger mapping found, use defaultPassengerName (from profile)
+          // This handles old bookings that were made before the multi-passenger feature
           // Booking structure from backend
           const flight = booking.flight;
           const route = flight.route;
@@ -113,6 +126,7 @@ const BookingList: React.FC = () => {
           return {
             id: booking.booking_id,
             passenger_name: passengerName,
+            passenger_id: passenger?.id || null,
             flight_id: flight.flight_id,
             airlineCode: airline.airline_code,
             date: dateStr,
@@ -227,8 +241,17 @@ const BookingList: React.FC = () => {
 
   if (bookings.length === 0) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-gray-500">No bookings found</div>
+      <div className="flex flex-col justify-center items-center h-64 space-y-4">
+        <div className="text-center">
+          <div className="text-lg font-semibold text-gray-700 mb-2">No bookings found</div>
+          <div className="text-sm text-gray-500 mb-4">Ready to plan your next trip?</div>
+          <button
+            onClick={() => navigate('/search')}
+            className="px-6 py-2.5 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg font-medium hover:from-teal-700 hover:to-cyan-700 transition-all shadow-md hover:shadow-lg"
+          >
+            Search Flights
+          </button>
+        </div>
       </div>
     );
   }
@@ -382,8 +405,17 @@ const BookingList: React.FC = () => {
 
       {/* Show message if no bookings in either category */}
       {upcomingBookings.length === 0 && pastBookings.length === 0 && (
-        <div className="flex justify-center items-center h-64">
-          <div className="text-gray-500">No bookings found</div>
+        <div className="flex flex-col justify-center items-center h-64 space-y-4">
+          <div className="text-center">
+            <div className="text-lg font-semibold text-gray-700 mb-2">No bookings found</div>
+            <div className="text-sm text-gray-500 mb-4">Ready to plan your next trip?</div>
+            <button
+              onClick={() => navigate('/search')}
+              className="px-6 py-2.5 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg font-medium hover:from-teal-700 hover:to-cyan-700 transition-all shadow-md hover:shadow-lg"
+            >
+              Search Flights
+            </button>
+          </div>
         </div>
       )}
 

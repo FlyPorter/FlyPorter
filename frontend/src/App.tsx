@@ -19,6 +19,7 @@ import AddAirlinePage from './pages/AddAirlinePage';
 import AddRoutePage from './pages/AddRoutePage';
 import ProfilePage from './features/profile/pages/ProfilePage';
 import AllBookingsPage from './pages/AllBookingsPage';
+import DealsPage from './pages/DealsPage';
 
 function App() {
   return (
@@ -46,6 +47,7 @@ function App() {
           <Route path="/booking" element={<BookingPage />} />
           <Route path="/booking-confirmation" element={<BookingNotificationPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/deals" element={<DealsPage />} />
         </Routes>
       </div>
     </Router>

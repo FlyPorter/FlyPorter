@@ -93,7 +93,12 @@ const BookingPage: React.FC = () => {
 
       if (!outboundBookingResponse.ok) {
         const errorData = await outboundBookingResponse.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || 'Failed to create outbound booking');
+        const errorMessage = errorData.error || errorData.message || 'Failed to create outbound booking';
+        // Check if it's a seat availability error
+        if (errorMessage.toLowerCase().includes('seat') && errorMessage.toLowerCase().includes('not available')) {
+          throw new Error('The selected seat is no longer available. Please go back and select a different seat.');
+        }
+        throw new Error(errorMessage);
       }
 
       const outboundBookingData = await outboundBookingResponse.json();
@@ -153,6 +158,7 @@ const BookingPage: React.FC = () => {
 
       let returnTicket = undefined;
       let returnFlightForConfirmation = undefined;
+      let returnBooking = undefined;
 
       // If round trip, create return booking
       if (bookingData!.isRoundTrip && bookingData!.returnFlight && bookingData!.returnSeat) {
@@ -170,11 +176,16 @@ const BookingPage: React.FC = () => {
 
         if (!returnBookingResponse.ok) {
           const errorData = await returnBookingResponse.json().catch(() => ({}));
-          throw new Error(errorData.error || errorData.message || 'Failed to create return booking');
+          const errorMessage = errorData.error || errorData.message || 'Failed to create return booking';
+          // Check if it's a seat availability error
+          if (errorMessage.toLowerCase().includes('seat') && errorMessage.toLowerCase().includes('not available')) {
+            throw new Error('The selected return seat is no longer available. Please go back and select a different seat.');
+          }
+          throw new Error(errorMessage);
         }
 
         const returnBookingData = await returnBookingResponse.json();
-        const returnBooking = returnBookingData.success ? returnBookingData.data : returnBookingData;
+        returnBooking = returnBookingData.success ? returnBookingData.data : returnBookingData;
 
         // Calculate final price: base flight price * seat price modifier
         const returnBasePrice = parseFloat(bookingData!.returnFlight.price);
@@ -219,6 +230,14 @@ const BookingPage: React.FC = () => {
         };
       }
 
+      // Return booking data so BookingForm can associate passengers
+      const bookingResult = bookingData!.isRoundTrip && returnTicket && returnBooking
+        ? {
+            outbound: { booking_id: outboundBooking.booking_id },
+            inbound: { booking_id: returnBooking.booking_id }
+          }
+        : { booking_id: outboundBooking.booking_id };
+
       // Navigate to booking confirmation with all necessary data
       navigate('/booking-confirmation', {
         state: {
@@ -229,9 +248,12 @@ const BookingPage: React.FC = () => {
           isRoundTrip: bookingData!.isRoundTrip
         }
       });
+
+      return bookingResult;
     } catch (error: any) {
       console.error('Booking error:', error);
       alert(error.message || 'Failed to complete booking. Please try again.');
+      throw error; // Re-throw so BookingForm can handle it
     } finally {
       setIsLoading(false);
     }
@@ -279,6 +301,10 @@ const BookingPage: React.FC = () => {
           />
         </div>
       </div>
+      {/* Footer */}
+      <footer className="mt-4 py-2 text-center text-gray-600 text-xs">
+        © 2025 FlyPorter
+      </footer>
     </div>
   );
 };

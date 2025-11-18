@@ -5,6 +5,7 @@ import FlightList from '../features/search/components/FlightList';
 import NavigationBar from '../components/NavigationBar';
 import { SearchData, FlightDisplay } from '../features/search/types';
 import { searchFlights, transformFlightToDisplay } from '../features/search/api/flightApi';
+import { Smartphone, Sparkles } from 'lucide-react';
 
 const SearchPage: React.FC = () => {
   const navigate = useNavigate();
@@ -175,13 +176,69 @@ const SearchPage: React.FC = () => {
           </h1>
           
           {/* Search Form Card */}
-          <div className="sticky top-20 z-30 mb-4 sm:mb-6">
+          <div className="sticky top-20 z-30 mb-6 sm:mb-8">
             <FlightSearchPanel 
               onSearch={handleSearch} 
               onClearFilters={handleClearFilters}
             />
           </div>
-          
+
+          {/* Mobile App Promotion Banner */}
+          {!hasSearched && (
+            <div className="mb-6 sm:mb-8">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-500 to-blue-500 shadow-xl">
+                <div className="relative z-10 px-6 sm:px-8 lg:px-12 py-8 sm:py-10 lg:py-12">
+                  <div className="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
+                    {/* Left Section - Text Content */}
+                    <div className="flex-1 text-center lg:text-left">
+                      <div className="inline-flex items-center gap-2 mb-3">
+                        <span className="px-3 py-1 bg-yellow-400/20 backdrop-blur-sm border border-yellow-300/30 text-yellow-200 text-xs sm:text-sm font-semibold rounded-full">
+                          Coming Soon
+                        </span>
+                      </div>
+                      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-3 sm:mb-4">
+                        The FlyPorter Experience
+                      </h2>
+                      <p className="text-base sm:text-lg text-white/90 mb-4 sm:mb-6 max-w-2xl mx-auto lg:mx-0">
+                        Find out how we are elevating your travel experience. Our mobile app is coming soon!
+                      </p>
+                      <button
+                        onClick={() => {
+                          // Could navigate to a coming soon page or show a modal
+                          alert('Mobile app coming soon! Stay tuned for updates.');
+                        }}
+                        className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-gray-900 font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+                      >
+                        Learn More
+                      </button>
+                    </div>
+                    
+                    {/* Right Section - Mobile App Icon */}
+                    <div className="flex-shrink-0 flex items-center justify-center">
+                      <div className="relative">
+                        {/* Phone Icon with Gradient Background */}
+                        <div className="relative w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 flex items-center justify-center mx-auto">
+                          {/* Glow Effect */}
+                          <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/30 to-orange-400/30 rounded-full blur-2xl"></div>
+                          {/* Phone Icon */}
+                          <div className="relative z-10 bg-white/10 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-white/20 shadow-2xl">
+                            <Smartphone className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 text-white" strokeWidth={1.5} />
+                            {/* Sparkles for "coming soon" effect */}
+                            <Sparkles className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-6 h-6 sm:w-8 sm:h-8 text-yellow-300 animate-pulse" />
+                            <Sparkles className="absolute -bottom-1 -left-1 sm:-bottom-2 sm:-left-2 w-4 h-4 sm:w-6 sm:h-6 text-orange-300 animate-pulse" style={{ animationDelay: '0.5s' }} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Decorative Elements */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-400/20 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-400/20 rounded-full blur-3xl"></div>
+              </div>
+            </div>
+          )}
+
           {/* Show results below search panel if user is not logged in */}
           {!isLoggedIn && hasSearched && (
             <div ref={resultsRef} className="mt-6 sm:mt-8 scroll-mt-20">
@@ -199,6 +256,10 @@ const SearchPage: React.FC = () => {
           )}
         </div>
       </div>
+      {/* Footer */}
+      <footer className="mt-4 py-2 text-center text-gray-600 text-xs">
+        © 2025 FlyPorter
+      </footer>
     </div>
   );
 };
