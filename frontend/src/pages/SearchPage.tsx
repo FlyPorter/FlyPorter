@@ -204,8 +204,7 @@ const SearchPage: React.FC = () => {
                       </p>
                       <button
                         onClick={() => {
-                          // Could navigate to a coming soon page or show a modal
-                          alert('Mobile app coming soon! Stay tuned for updates.');
+                          window.open('https://youtube.com/shorts/rDhmTHRmC4o', '_blank', 'noopener,noreferrer');
                         }}
                         className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-gray-900 font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
                       >
