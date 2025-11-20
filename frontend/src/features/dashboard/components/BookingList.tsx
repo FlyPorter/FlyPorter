@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { API_BASE_URL } from "../../../config";
 import { getPassengerForBooking, getStoredPassengers } from '../../../utils/passengerStorage';
+import { addNotification } from '../../../utils/notificationStorage';
 
 const BookingList: React.FC = () => {
   const [bookings, setBookings] = useState<BookingDisplay[]>([]);
@@ -201,6 +202,16 @@ const BookingList: React.FC = () => {
       }
 
       setBookings((prev) => prev.filter((b) => b.id !== booking.id));
+      
+      // Add cancellation notification
+      const flightInfo = `${booking.departure.city} → ${booking.arrival.city}`;
+      addNotification({
+        message: `Your flight has been cancelled - ${flightInfo}`,
+        type: 'error'
+      });
+      
+      // Dispatch custom event to update notifications in other components
+      window.dispatchEvent(new Event('notificationUpdated'));
     } catch (err: any) {
       console.error("Error canceling booking:", err);
       alert(err.message || "Failed to cancel booking.");
