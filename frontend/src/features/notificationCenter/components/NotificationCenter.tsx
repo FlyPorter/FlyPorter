@@ -2,15 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Bell } from 'lucide-react';
 import NotificationDropdown from './NotificationDropdown';
-
-interface Notification {
-  id: number;
-  message: string;
-  time: string;
-  type: 'success' | 'info' | 'warning' | 'error';
-  read?: boolean;
-  createdAt?: string;
-}
+import { 
+  getStoredNotifications, 
+  markNotificationAsRead, 
+  markAllNotificationsAsRead, 
+  deleteNotification,
+  type Notification 
+} from '../../../utils/notificationStorage';
 
 interface NotificationCenterProps {
   className?: string;
@@ -23,52 +21,15 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ className = '' 
   const [error, setError] = useState<string | null>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
 
-  // Mock data for development
-  const getMockNotifications = (): Notification[] => [
-    {
-      id: 1,
-      message: "Your flight to Toronto has been cancelled",
-      time: "2 hours ago",
-      type: "error",
-      read: false,
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 2,
-      message: "Seat change request processed",
-      time: "1 day ago",
-      type: "info",
-      read: false,
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 3,
-      message: "Payment received for booking #12345",
-      time: "2 days ago",
-      type: "success",
-      read: true,
-      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 4,
-      message: "Flight delay notification for tomorrow's departure",
-      time: "3 days ago",
-      type: "warning",
-      read: true,
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-    }
-  ];
-
-  // Load notifications on component mount
+  // Load notifications from localStorage
   useEffect(() => {
-    const loadNotifications = async () => {
+    const loadNotifications = () => {
       setIsLoading(true);
       setError(null);
       
       try {
-        // For now, use mock data. In production, replace with actual API call
-        const mockNotifications = getMockNotifications();
-        setNotifications(mockNotifications);
+        const storedNotifications = getStoredNotifications();
+        setNotifications(storedNotifications);
       } catch (err) {
         setError('Failed to load notifications');
         console.error('Error loading notifications:', err);
@@ -78,6 +39,27 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ className = '' 
     };
 
     loadNotifications();
+    
+    // Listen for storage changes (when notifications are added from other tabs/components)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'flyporter_notifications') {
+        loadNotifications();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom events (for same-tab updates)
+    const handleNotificationUpdate = () => {
+      loadNotifications();
+    };
+    
+    window.addEventListener('notificationUpdated', handleNotificationUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('notificationUpdated', handleNotificationUpdate);
+    };
   }, []);
 
   // Close dropdown when clicking outside
@@ -95,6 +77,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ className = '' 
   }, []);
 
   const handleMarkAsRead = (notificationId: number) => {
+    markNotificationAsRead(notificationId);
     setNotifications(prev => 
       prev.map(notification => 
         notification.id === notificationId 
@@ -105,12 +88,14 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ className = '' 
   };
 
   const handleMarkAllAsRead = () => {
+    markAllNotificationsAsRead();
     setNotifications(prev => 
       prev.map(notification => ({ ...notification, read: true }))
     );
   };
 
   const handleDeleteNotification = (notificationId: number) => {
+    deleteNotification(notificationId);
     setNotifications(prev => 
       prev.filter(notification => notification.id !== notificationId)
     );

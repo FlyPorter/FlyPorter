@@ -5,6 +5,7 @@ import NavigationBar from '../components/NavigationBar';
 import { FlightDisplay } from '../features/search/types';
 import { Flight, PassengerInfo } from '../features/booking/types';
 import { API_BASE_URL } from '../config';
+import { addNotification } from '../utils/notificationStorage';
 
 // Helper function to convert FlightDisplay to Flight
 const convertFlightDisplayToFlight = (flightDisplay: FlightDisplay): Flight => {
@@ -237,6 +238,19 @@ const BookingPage: React.FC = () => {
             inbound: { booking_id: returnBooking.booking_id }
           }
         : { booking_id: outboundBooking.booking_id };
+
+      // Add success notification
+      const flightInfo = bookingData!.isRoundTrip 
+        ? `${bookingData!.outboundFlight.departure.city} → ${bookingData!.outboundFlight.arrival.city} (Round Trip)`
+        : `${bookingData!.outboundFlight.departure.city} → ${bookingData!.outboundFlight.arrival.city}`;
+      
+      addNotification({
+        message: `Booking confirmed and ticket issued - ${flightInfo}`,
+        type: 'success'
+      });
+      
+      // Dispatch custom event to update notifications in other components
+      window.dispatchEvent(new Event('notificationUpdated'));
 
       // Navigate to booking confirmation with all necessary data
       navigate('/booking-confirmation', {
