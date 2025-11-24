@@ -1,0 +1,533 @@
+openapi: 3.0.0
+info:
+  title: FlyPorter API
+  version: 1.0.0
+  description: >-
+    Complete API collection for the FlyPorter Mobile booking journey.
+
+
+    Suggested flow using seed data:
+
+    1. GET /flight → selects a seed flight and stores flightId/bookingDate
+
+    2. GET /seat/{{flightId}} → stores seatNumber
+
+    3. POST /auth/register or /auth/login → stores authToken/userId
+
+    4. PATCH /profile → add passenger info (required)
+
+    5. POST /payment/validate → mock card check
+
+    6. POST /bookings → confirm booking and store bookingId
+
+
+    Seed script also provisions admin helpers for creating custom flights when
+    needed.
+servers:
+  - url: http://localhost:3000/api
+  - url: ''
+paths:
+  /flight:
+    get:
+      summary: Search Flights
+      tags:
+        - Flights
+      responses: {}
+      description: >-
+        List all available flights (public). Automatically stores the first
+        flight for quick testing.
+    post:
+      summary: 3. Create Flight
+      tags:
+        - Admin Setup
+      responses: {}
+      description: 'Admin: Create a flight with seats automatically generated'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                origin_airport_code:
+                  type: string
+                destination_airport_code:
+                  type: string
+                airline_code:
+                  type: string
+                departure_time:
+                  type: string
+                  format: date-time
+                arrival_time:
+                  type: string
+                  format: date-time
+                base_price:
+                  type: number
+                seat_capacity:
+                  type: integer
+  /flight/{{fl:
+    get:
+      summary: Get Flight by ID
+      tags:
+        - Flights
+      responses: {}
+      description: Get flight details by ID (no auth required)
+  /flight/search/round-trip:
+    get:
+      summary: round-trip search
+      tags:
+        - Flights
+      parameters:
+        - name: departure_airport
+          in: query
+          required: false
+          deprecated: false
+          schema: {}
+        - name: destination_airport
+          in: query
+          required: false
+          deprecated: false
+          schema: {}
+        - name: date
+          in: query
+          required: false
+          deprecated: false
+          schema: {}
+        - name: return_date
+          in: query
+          required: false
+          deprecated: false
+          schema: {}
+      responses: {}
+  /seat/9:
+    get:
+      summary: Get Seats for Flight
+      tags:
+        - Seats
+      responses: {}
+      description: Get all seats for a flight (no auth required)
+  /bookings/1/seat:
+    patch:
+      summary: change seat
+      tags:
+        - Seats
+      responses: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                seat_number:
+                  type: string
+  /auth/register:
+    post:
+      summary: Register
+      tags:
+        - Auth
+      responses: {}
+      description: >-
+        Register a new customer account. All registered users are customers by
+        default.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+  /auth/login:
+    post:
+      summary: Login
+      tags:
+        - Auth
+      responses: {}
+      description: Login with email and password. Returns JWT token.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+  /auth/logout:
+    post:
+      summary: Logout
+      tags:
+        - Auth
+      responses: {}
+      description: Logout (primarily client-side token removal)
+  /profile:
+    get:
+      summary: Get Profile
+      tags:
+        - Profile
+      responses: {}
+      description: Get current user's profile (User + CustomerInfo)
+    patch:
+      summary: Update Profile
+      tags:
+        - Profile
+      responses: {}
+      description: >-
+        ⚠️ REQUIRED BEFORE BOOKING!
+
+
+        Update current user's profile with passenger information. You MUST
+        provide at least:
+
+        - full_name
+
+        - passport_number
+
+        - date_of_birth
+
+
+        Without this, booking will fail with 'Customer information required'
+        error.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                phone:
+                  type: string
+                  format: utc-millisec
+                passport_number:
+                  type: string
+                date_of_birth:
+                  type: string
+                  format: date
+                emergency_contact_name:
+                  type: string
+                emergency_contact_phone:
+                  type: string
+                  format: utc-millisec
+  /payment/validate:
+    post:
+      summary: Validate Payment
+      tags:
+        - Payment
+      responses: {}
+      description: Mock payment validation. Call before creating a booking.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cardNumber:
+                  type: string
+                  format: utc-millisec
+                expiry:
+                  type: string
+                ccv:
+                  type: string
+                  format: color
+                bookingDate:
+                  type: string
+  /bookings:
+    post:
+      summary: Create Booking
+      tags:
+        - Bookings
+      responses: {}
+      description: >-
+        Create a booking using the selected flight and seat variables. Requires
+        login, completed passenger profile, and a successful payment validation.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                flight_id:
+                  type: integer
+                seat_number:
+                  type: string
+    get:
+      summary: Get All Bookings
+      tags:
+        - Bookings
+      responses: {}
+      description: Get all bookings for logged-in user
+  /bookings/1:
+    get:
+      summary: Get Booking by ID
+      tags:
+        - Bookings
+      responses: {}
+      description: Get a specific booking by ID
+  /bookings/10:
+    delete:
+      summary: Cancel Booking
+      tags:
+        - Bookings
+      responses: {}
+      description: Cancel a booking (marks as cancelled and frees the seat)
+  /bookings/round-trip:
+    post:
+      summary: booking round trip
+      tags:
+        - Bookings
+      responses: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                outbound:
+                  type: object
+                  properties:
+                    flight_id:
+                      type: integer
+                    seat_number:
+                      type: string
+                inbound:
+                  type: object
+                  properties:
+                    flight_id:
+                      type: integer
+                    seat_number:
+                      type: string
+  /notifications:
+    get:
+      summary: Get All Notifications
+      tags:
+        - Notifications
+      responses: {}
+      description: Get all notifications for logged-in user
+  /notifications/unread/count:
+    get:
+      summary: Get Unread Count
+      tags:
+        - Notifications
+      responses: {}
+      description: Get count of unread notifications
+  /notifications/1/read:
+    patch:
+      summary: Mark as Read
+      tags:
+        - Notifications
+      responses: {}
+      description: Mark a specific notification as read
+  /notifications/read-all:
+    patch:
+      summary: Mark All as Read
+      tags:
+        - Notifications
+      responses: {}
+      description: Mark all notifications as read
+  /customers:
+    post:
+      summary: Create Customer Info
+      tags:
+        - Customers
+      responses: {}
+      description: >-
+        Create customer info. Customers can only create their own info, admins
+        can create for any user.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                full_name:
+                  type: string
+                phone:
+                  type: string
+                  format: utc-millisec
+                passport_number:
+                  type: string
+                date_of_birth:
+                  type: string
+                  format: date
+                emergency_contact_name:
+                  type: string
+                emergency_contact_phone:
+                  type: string
+                  format: utc-millisec
+  /customers/{userId}:
+    get:
+      summary: Get Customer Info
+      tags:
+        - Customers
+      responses: {}
+      description: >-
+        Get customer info by user ID. Customers can only view their own info,
+        admins can view any user's info.
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      summary: Update Customer Info
+      tags:
+        - Customers
+      responses: {}
+      description: >-
+        Update customer info by user ID. Customers can only update their own
+        info, admins can update any user's info.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                phone:
+                  type: string
+                  format: utc-millisec
+    delete:
+      summary: Delete Customer Info
+      tags:
+        - Customers
+      responses: {}
+      description: >-
+        Delete customer info by user ID. Customers can only delete their own
+        info, admins can delete any user's info.
+  /airline:
+    post:
+      summary: 1. Create Airline
+      tags:
+        - Admin Setup
+      responses: {}
+      description: 'Admin: Create an airline (FlyPorter Airlines)'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                airline_code:
+                  type: string
+                airline_name:
+                  type: string
+    get:
+      summary: Get All Airlines
+      tags:
+        - Admin Setup
+      responses: {}
+      description: Get all airlines (public)
+  /route:
+    post:
+      summary: 2. Create Route
+      tags:
+        - Admin Setup
+      responses: {}
+      description: 'Admin: Create a route (YYZ to YVR)'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                origin_airport_code:
+                  type: string
+                destination_airport_code:
+                  type: string
+    get:
+      summary: Get All Routes
+      tags:
+        - Admin Setup
+      responses: {}
+      description: Get all routes (public)
+  /seat/{flightId}:
+    get:
+      summary: 4. View Generated Seats
+      tags:
+        - Admin Setup
+      responses: {}
+      description: View all seats for the created flight
+    parameters:
+      - name: flightId
+        in: path
+        required: true
+        schema:
+          type: string
+  /flight/{flightId}:
+    put:
+      summary: Update Flight
+      tags:
+        - Admin Setup
+      responses: {}
+      description: 'Admin: Update flight details'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                base_price:
+                  type: number
+    parameters:
+      - name: flightId
+        in: path
+        required: true
+        schema:
+          type: string
+  /flight/1:
+    delete:
+      summary: Delete Flight
+      tags:
+        - Admin Setup
+      responses: {}
+      description: 'Admin: Delete a flight'
+  /airport:
+    get:
+      summary: Get All Airports
+      tags:
+        - Airports
+      responses: {}
+      description: Get all airports (no auth required)
+  /city:
+    get:
+      summary: Get All Cities
+      tags:
+        - Cities
+      responses: {}
+      description: Get all cities (no auth required)
+  /pdf/invoice/1:
+    get:
+      summary: get pdf
+      tags:
+        - Pdf
+      responses: {}
+  /pdf/invoice/1/upload:
+    post:
+      summary: upload pdf to DO
+      tags:
+        - Pdf
+      responses: {}
+      security:
+        - BearerAuth: []
+  /:
+    get:
+      summary: New Request
+      tags: []
+      responses: {}
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+security:
+  - BearerAuth: []
+
