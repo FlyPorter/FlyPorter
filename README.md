@@ -183,6 +183,12 @@ docker compose stop
 docker compose down
 ```
 
+Frontend: http://localhost:5173
+
+Backend: http://localhost:3000
+
+Database: http://localhost:5432
+
 ### Local Development Setup
 
 The following guide has been tested on:
@@ -351,10 +357,10 @@ Under `backend` folder:
 3. Access the backend API documentation at `https://editor.swagger.io/`
 
    ```
-   Import FlyPorterAPI_openapi.yaml
+   Import FlyPorter/FlyPorter.ymal
    ```
 
-   Or import `FlyPorterAPI.postman_collection.json` to your Postman
+   Or import `FlyPorter/backend/FlyPorterAPI.postman_collection.json` to your Postman
 
    > Note: To transfer Postman collection to OpenAPI format:
    >
@@ -434,7 +440,7 @@ Start by creating a new workspace in Postman.
 
 #### 2. Import API Collection
 
-Import the `FlyPorterAPI.postman_collection.json` file into your workspace.
+Import the `FlyPorter/FlyPorter.ymal` file into your workspace.
 
 #### 3. Create an Environment
 
@@ -443,6 +449,8 @@ The environment is used to store the authentication token after login (the token
 
 > Note:  
 > You must run the `Login API` first to authenticate and get the token before accessing other APIs. Check out environment variables.
+
+![Image](https://github.com/user-attachments/assets/ccecb479-7129-4099-aa6f-c14a52e4a7e5)
 
 #### API Usage Made Easy
 
@@ -475,6 +483,11 @@ We welcome contributions to FlyPorter! This document outlines the process and gu
 
 ### Development Process
 
+\*\*Follow the devlopment guide
+
+- Setup database and enviornments
+- Check APIs using Swagger or Postman
+
 **Make your changes following our coding standards:**
 
 - Use TypeScript for both frontend and backend development
@@ -485,7 +498,6 @@ We welcome contributions to FlyPorter! This document outlines the process and gu
 
 **Test your changes:**
 
-- Test with swagger editor, import `/openapi.json`
 - Test using the Postman Collection
 - Test the mobile app on both iOS and Android platforms
 - Write your own test cases
