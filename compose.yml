@@ -30,10 +30,29 @@ services:
       PORT: "3000"
       API_PREFIX: /api
       NODE_ENV: production
+      # Google OAuth (set these in .env file or override here)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:5173/auth/google/callback}
     ports:
       - "3000:3000"
     command: >
       sh -c "npx prisma migrate deploy && npx prisma db seed && npx tsx src/server.ts"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Frontend environment variables (Vite requires VITE_ prefix)
+        # You can override these by setting environment variables in .env file
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api}
+        VITE_GOOGLE_AUTH_URL: ${VITE_GOOGLE_AUTH_URL:-http://localhost:3000/api/auth/google}
+        VITE_AUTH_URL: ${VITE_AUTH_URL:-http://localhost:3000/api/auth}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:4173"
 
 volumes:
   db-data:
