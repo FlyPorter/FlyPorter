@@ -565,3 +565,16 @@ The frontend server is deployed on Digital Ocean App Platfom, you can access it 
   - Developed APIs to retrieve passenger tickets and generate ticket PDFs, storing them in DigitalOcean Spaces for download
   - Built admin-side operational APIs and prepared corresponding API documentation
   - Created Docker Compose configurations to run the database and backend services simultaneously
+
+---
+
+## Lessons Learned and Concluding Remarks
+
+Through this project, we have gained hands-on experience with various cloud service models (IaaS, PaaS, SaaS), containerization with Docker, orchestration using Kubernetes, serverless architectures, edge deployment with DigitalOcean, and monitoring of distributed applications. Additionally, we have implemented several advanced features, including auto-scaling, CI/CD pipelines, Google authentication, email notifications, and cloud PDF file storage.
+
+### Future Enhancements
+
+Looking ahead, we plan to enhance the system with the following improvements:
+
+- **Integrate external weather APIs** to enhance travel insights and provide users with real-time weather information for their destinations
+- **Integrate AI-powered services** for user consultation, enabling intelligent flight recommendations and personalized travel assistance
