@@ -86,6 +86,7 @@ Maintain a multi-container architecture locally using Docker Compose and a produ
 ## Technical Stack
 
 **Backend:** Express.js + TypeScript + Prisma + PostgreSQL
+
 **Frontend:** React + TypeScript + Vite + React Router
 
 ### Core Technologies
