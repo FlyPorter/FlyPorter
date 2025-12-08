@@ -18,8 +18,9 @@ metadata:
     nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, PATCH, OPTIONS"
     nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
     
-    # Rate limiting (optional)
-    nginx.ingress.kubernetes.io/limit-rps: "100"
+    # Rate limiting (disabled for demo load to allow HPA/alerts to trigger)
+    # Set to a higher value in production to protect backend.
+    nginx.ingress.kubernetes.io/limit-rps: "0"
     
     # Timeouts
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
