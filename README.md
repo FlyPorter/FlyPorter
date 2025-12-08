@@ -26,6 +26,7 @@
 | Yiyang Wang | 1010033278     | ydev.wang@mail.utoronto.ca     |
 
 ## Video Demo
+Watch the Demo here: [Demo](https://youtu.be/WjgvvVngZCI)
 
 ## Motivation
 
