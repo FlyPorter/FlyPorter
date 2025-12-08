@@ -57,7 +57,7 @@ Ensure stateful and resilient data storage using DigitalOcean Managed PostgreSQL
 
 **Modern DevOps and Orchestration**
 
-Use Kubernetes for orchestration, auto-scaling, and high availability, and set up a GitHub Actions CI/CD pipeline to automate building, testing, and deployment.
+Use Kubernetes for orchestration, auto-scaling, and high availability, and set up a GitHub Actions CI/CD pipeline to automate building and deployment.
 
 **Monitoring and Observability**
 
@@ -88,6 +88,72 @@ Maintain a multi-container architecture locally using Docker Compose and a produ
 **Backend:** Express.js + TypeScript + Prisma + PostgreSQL
 
 **Frontend:** React + TypeScript + Vite + React Router
+
+### Core Technologies
+
+**Containerization and Local Development:**
+- **Docker**: Containerized application components (backend, frontend, database)
+- **Docker Compose**: Multi-container setup for local development and testing
+
+**State Management:**
+- **PostgreSQL**: Relational database for persistent data storage.
+- **Prisma**: Type-safe ORM for database access and migrations
+- **DigitalOcean Managed PostgreSQL**: Production database with persistent storage
+
+**Deployment Provider:**
+- **DigitalOcean**: Cloud infrastructure provider (IaaS)
+- **DigitalOcean Kubernetes (DOKS)**: Managed Kubernetes cluster for orchestration
+- **DigitalOcean Container Registry**: Docker image storage and distribution
+
+**Orchestration Approach:**
+- **Kubernetes**: Container orchestration platform for production deployment
+  - Deployments with replica management
+  - Services for load balancing
+  - Ingress for HTTPS routing
+  - Horizontal Pod Autoscaler (HPA) for auto-scaling
+
+**Monitoring and Observability:**
+- **DigitalOcean Metrics**: System-level monitoring (CPU, memory, disk) via DigitalOcean's built-in monitoring tools
+- **Prometheus**: Metrics collection and alerting system with automated alerts for CPU, memory, disk usage, pod restarts, and crash loop detection
+- **Grafana**: Visualization and dashboarding for monitoring metrics
+
+### Application Stack
+
+**Backend:**
+- **Node.js**: Runtime environment
+- **Express.js**: Web framework
+- **TypeScript**: Type-safe JavaScript
+- **Prisma**: Database ORM and migration tool
+
+**Frontend:**
+- **React**: UI framework
+- **TypeScript**: Type-safe JavaScript
+- **Vite**: Build tool and development server
+- **React Router**: Client-side routing
+
+### Advanced Features
+
+**Auto-scaling and High Availability:**
+- **Kubernetes Horizontal Pod Autoscaler (HPA)**: Automatic scaling based on CPU and memory utilization (2-4 replicas)
+- **Pod Anti-Affinity**: Ensures high availability by distributing pods across nodes
+- **Rolling Updates**: Zero-downtime deployments
+
+**CI/CD Pipeline:**
+- **GitHub Actions**: Automated build and deployment pipeline
+  - Automated Docker image builds
+  - Push to DigitalOcean Container Registry
+  - Automated Kubernetes deployment on code push
+
+**Security Enhancements:**
+- **Google OAuth 2.0**: Authentication via Google accounts (using Passport.js)
+- **JWT (JSON Web Tokens)**: Secure session management
+- **HTTPS**: TLS/SSL encryption via NGINX Ingress Controller with Let's Encrypt certificates managed by cert-manager
+- **Kubernetes Secrets**: Secure management of sensitive credentials (database URLs, API keys)
+- **Role-Based Access Control (RBAC)**: Admin and customer user roles
+
+**Integration with External Services:**
+- **SendGrid**: Email notification service for booking confirmations and cancellations
+- **DigitalOcean Spaces**: Object storage for PDF invoice/receipt storage and retrieval
 
 ## Features
 
