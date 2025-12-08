@@ -88,7 +88,7 @@ Maintain a multi-container architecture locally using Docker Compose and a produ
 > **Quick Test:**
 >
 > - To test the app without setup, try the app live at https://app.flyporter.website.
-> - For local developemnt, follow the setup instructions in [Development Guide](#deployment-information).
+> - For local developemnt, follow the setup instructions in [Development Guide](#development-guide).
 
 ### Search without Logging in
 
