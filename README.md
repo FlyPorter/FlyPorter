@@ -21,6 +21,11 @@ Backend stack: Express.js + TypeScript + Prisma + PostgreSQL
 
 ## User Guide
 
+> **Quick Test:**
+>
+> - To test the app without setup, try the app live at https://app.flyporter.website.
+> - For local developemnt, follow the setup instructions in [Development Guide](#deployment-information).
+
 ### Search without Logging in
 
 FlyPorter supports flight search without logging in. All users can search available flights. But booking and seat selection require login. Users will be redirected to the login page if they try to select a flight without logging in.
@@ -103,6 +108,8 @@ Search for flights using the search panel. Features include:
 - View flight recommendations when no search is performed
 
 ![Image](https://github.com/user-attachments/assets/61a6391c-12e6-4d68-af56-e7e11a030583)
+
+**Current Available Flights: Canadian Flights between 12.7 - 12.31, 2025**
 
 #### Seat Selection
 
