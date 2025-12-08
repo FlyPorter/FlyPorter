@@ -157,6 +157,88 @@ Maintain a multi-container architecture locally using Docker Compose and a produ
 
 ## Features
 
+### Ⅰ. Application Features
+
+**User Authentication and Authorization**: Google OAuth 2.0 integration, email/password registration, role-based access control (admin/customer), and JWT-based session management.
+
+**Flight Search and Discovery**: One-way and round-trip searches with filtering by origin/destination, dates, airlines, and price ranges. Autocomplete suggestions and public access (no login required for search).
+
+**Seat Selection and Management**: Interactive seat maps with real-time availability (AVAILABLE, BOOKED, UNAVAILABLE), seat reservation during booking, and seat modification for existing bookings.
+
+**Booking Management**: Complete booking flow with passenger profile management, round-trip support, booking dashboard, cancellation with automatic seat release, and seat modification.
+
+**Payment Processing**: Mock payment processing with credit card validation and secure transaction handling.
+
+**Invoice and Receipt Management**: Automated PDF generation, cloud storage in DigitalOcean Spaces, download functionality, and email attachments.
+
+**Email Notifications**: Automated booking confirmations and cancellations via SendGrid with professional email templates and PDF invoice attachments.
+
+**Admin Dashboard**: Flight, route, airport, and airline management with comprehensive filtering, booking oversight, and system monitoring.
+
+**Profile Management**: User profile updates and multiple passenger profile storage for quick booking reuse.
+
+### Ⅱ. How Features Fulfill Course Project Requirements
+
+#### Core Technical Requirements 
+
+**1. Containerization and Local Development**
+- **Docker**: All components (frontend, backend, database) are containerized with individual Dockerfiles
+- **Docker Compose**: Multi-container local development setup (`compose.yml`) enables running the entire stack with `docker compose up`
+
+**2. State Management**
+- **PostgreSQL**: Relational database for all persistent data (users, flights, bookings, seats, routes, airports, airlines) managed with Prisma ORM
+- **Persistent Storage**: DigitalOcean Managed PostgreSQL ensures data persists across container restarts and deployments with automatic backups
+
+**3. Deployment Provider**
+- **DigitalOcean (IaaS)**: Deployment using DigitalOcean Kubernetes (DOKS), Container Registry, Managed PostgreSQL, and Spaces for object storage
+
+**4. Orchestration Approach (Kubernetes - Option B)**
+- **Kubernetes**: Production orchestration with Deployments (replica management), Services (load balancing), Ingress (HTTPS routing), HPA (auto-scaling 2-4 replicas), and Pod Anti-Affinity (fault tolerance)
+
+**5. Monitoring and Observability**
+- **DigitalOcean Metrics**: System-level monitoring for CPU, memory, and disk usage
+- **Prometheus**: Metrics collection with automated alerts for CPU (70%/90%), memory (75%/90%), disk (25%/10% available), pod health, and HPA status
+- **Grafana**: Visualization dashboards for application health and performance metrics
+
+#### Advanced Features 
+
+**1. Auto-scaling and High Availability**
+- **HPA**: Automatic scaling from 2 to 4 replicas based on CPU (60% threshold) and memory (70% threshold) utilization
+- **High Availability**: Pod anti-affinity across nodes, minimum 2 replicas, rolling updates, and Pod Disruption Budget
+
+**2. CI/CD Pipeline**
+- **GitHub Actions**: Automated pipeline that builds Docker images, pushes to DigitalOcean Container Registry, deploys to Kubernetes, and performs health checks on code push to main branch
+
+**3. Security Enhancements**
+- **Authentication/Authorization**: Google OAuth 2.0, JWT sessions, and role-based access control (admin/customer)
+- **HTTPS**: TLS/SSL via NGINX Ingress Controller with Let's Encrypt certificates managed by cert-manager
+- **Secrets Management**: Kubernetes Secrets for database URLs, JWT secrets, and API keys (created from GitHub Secrets during deployment)
+
+**4. Integration with External Services**
+- **SendGrid**: Email notifications for booking confirmations and cancellations with PDF invoice attachments
+- **DigitalOcean Spaces**: Cloud storage for PDF invoices with signed URL access
+- **Google OAuth**: External authentication service integration
+
+### Ⅲ. How Features Achieve Project Objectives
+
+**Cloud-Native Architecture**: React/TypeScript frontend, Node.js/Express.js backend, and PostgreSQL database, all containerized with Docker and orchestrated using Kubernetes for consistent deployment across environments.
+
+**Reliable Data Persistence**: DigitalOcean Managed PostgreSQL with automatic backups ensures all data persists reliably across deployments and container restarts.
+
+**Modern DevOps and Orchestration**: Kubernetes enables automatic scaling, load balancing, and high availability. GitHub Actions CI/CD automates builds and deployments.
+
+**Monitoring and Observability**: DigitalOcean Metrics, Prometheus, and Grafana provide visibility into system health, performance, and resource utilization.
+
+**Scalability and Performance**: HPA automatically adjusts pod replicas based on load. Load balancing distributes requests across multiple instances.
+
+**Security Enhancements**: OAuth authentication, HTTPS encryption, Kubernetes Secrets management, and role-based access control protect user data.
+
+**REST API Testing and Visualization**: RESTful API with Postman collection and Swagger documentation for testing and integration.
+
+**Integration with External Services**: SendGrid email notifications and DigitalOcean Spaces file storage enhance user experience.
+
+**Multi-Environment Consistency**: Docker Compose enables local development with the same containerized architecture as production.
+
 ## User Guide
 
 > **Quick Test:**
