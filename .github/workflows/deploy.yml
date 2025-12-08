@@ -49,11 +49,17 @@ jobs:
         docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
         docker push ${{ env.REGISTRY }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-    # Step 6: Set up kubectl
+    # Step 6: Set up kubectl with DigitalOcean cluster
     - name: Setup kubectl
       run: |
+        # Install kubectl if not already available
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        chmod +x kubectl
+        sudo mv kubectl /usr/local/bin/
+        
+        # Save kubeconfig using doctl (generates fresh credentials)
         mkdir -p $HOME/.kube
-        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+        doctl kubernetes cluster kubeconfig save ${{ secrets.DOKS_CLUSTER_NAME }} --expiry-seconds 1200
         chmod 600 $HOME/.kube/config
 
     # Step 7: Verify cluster connection
