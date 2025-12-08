@@ -39,31 +39,40 @@ The primary objective of the FlyPorter project is to design and implement a full
 
 Through this implementation, the project aims to achieve the following objectives:
 
-Cloud-Native Architecture
+**Cloud-Native Architecture**
+
 Build a modern application stack using React (TypeScript), Node.js (Express.js), and PostgreSQL, packaged and deployed through Docker and Kubernetes for consistent behavior across development and production.
 
-Reliable Data Persistence
+**Reliable Data Persistence**
+
 Ensure stateful and resilient data storage using DigitalOcean Managed PostgreSQL, allowing data to persist across deployments, container restarts, and system updates.
 
-Modern DevOps and Orchestration
+**Modern DevOps and Orchestration**
+
 Use Kubernetes for orchestration, auto-scaling, and high availability, and set up a GitHub Actions CI/CD pipeline to automate building, testing, and deployment.
 
-Monitoring and Observability
+**Monitoring and Observability**
+
 Implement system-level monitoring (CPU, memory, disk) using DigitalOcean metrics, Prometheus, and Grafana to gain full visibility into application health and performance.
 
-Scalability and Performance
+**Scalability and Performance**
+
 Achieve dynamic scaling using Horizontal Pod Autoscalers on DigitalOcean Kubernetes, ensuring the system automatically adapts to traffic load.
 
-Security Enhancements
+**Security Enhancements**
+
 Strengthen security with Google OAuth authentication, HTTPS enforcement, secure secrets management (GitHub Secrets + Kubernetes Secrets), and proper container isolation.
 
-REST API Testing and Visualization
+**REST API Testing and Visualization**
+
 Provide a robust API layer with proper testing and developer-facing visualization tools to ensure correctness and maintainability.
 
-Integration With External Services
+**Integration With External Services**
+
 Implement reliable communication features such as email notifications via SendGrid and automated PDF invoice generation stored securely in DigitalOcean Spaces.
 
-Multi-Environment Consistency
+**Multi-Environment Consistency**
+
 Maintain a multi-container architecture locally using Docker Compose and a production-grade distributed environment in Kubernetes, ensuring smooth transitions between development and deployment environments.
 
 ## Technical Stack
