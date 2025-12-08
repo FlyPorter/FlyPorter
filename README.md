@@ -803,6 +803,23 @@ The frontend server is deployed on Digital Ocean App Platfom, you can access it 
 - Frontend Deployment:
   - Configured and deployed frontend application on Digital Ocean App Platform
 
+### Zihan Wan
+
+- Backend (Customer):
+  - Implemented RESTful APIs for flights, routes, airports, airlines, bookings, and customer operations
+  - Developed flight search API with filtering by city, date, airline, and price
+  - Refactored booking logic and invoice generation for one-way and round-trip bookings
+  - Implemented payment validation, confirmation code generation, and booking notification system
+
+- Deployment and Infrastructure:
+  - Configured and deployed backend to DigitalOcean Kubernetes (DOKS) with Managed PostgreSQL
+  - Implemented GitHub Actions CI/CD pipeline for automated builds and deployments
+  - Set up HTTPS with Let's Encrypt certificates, Kubernetes configurations (Deployments, Services, Ingress, HPA), and GitHub Secrets integration
+  - Configured backend containerization with Docker
+  - Set up Prometheus and Grafana with alert rules for CPU, memory, disk usage, and pod health
+
+- External Services Integration:
+  - Integrated SendGrid for email notifications and DigitalOcean Spaces for PDF invoice storage
 ---
 
 ## Lessons Learned and Concluding Remarks
