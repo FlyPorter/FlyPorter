@@ -17,7 +17,60 @@
 
 ---
 
-Backend stack: Express.js + TypeScript + Prisma + PostgreSQL
+## Video Demo
+
+## Motivation
+
+In the digital age, people expect flight booking websites to work quickly and reliably. But many platforms still have problems, especially when lots of people try to book at the same time during holidays or sales. Users run into slow loading times, booking errors, or the site crashing completely when traffic spikes. These issues usually happen because the systems use outdated technology, don't have enough server power, and can't adjust when demand suddenly increases. Without a solid setup, these platforms can't handle many users at once or adapt to changes in traffic, which leads to frustrating experiences and frequent crashes.
+
+FlyPorter is built to fix these problems by creating a modern flight booking platform that runs on the cloud. The project focuses on making sure the system stays stable and responsive even when many people are using it at once, so users can always complete their bookings without issues. By using cloud technology like spreading the workload across multiple servers, storing data reliably, and automatically adjusting resources based on demand, FlyPorter can handle busy periods smoothly and recover quickly if something goes wrong. This not only makes the system more reliable but also keeps everything running well during peak travel times.
+
+FlyPorter is designed for people booking flights within Canada. The main users are business travellers who need quick and reliable booking, students and regular flyers looking for affordable options, and airline staff who manage flight schedules and seat availability. Travellers can easily search for flights, pick their seats, and complete bookings through a simple interface that shows seat availability in real time. Airline staff can add or update flight information quickly, and these changes sync immediately so users always see accurate schedules and seat options.
+
+For airline staff, FlyPorter includes a management dashboard that makes it easy to handle flights and routes. They can create, edit, and update flight details with instant synchronization, ensuring travellers always see the right information. This focus on both travellers and administrators makes FlyPorter practical for real use and good for showing how reliable systems work.
+
+This project is worth building because it shows how cloud-based solutions can solve the problems that older systems have. Many existing platforms still rely on outdated technology and rigid architectures with fixed setups that can't adapt during peak periods, sudden traffic spikes, or when handling access from different regions. FlyPorter, on the other hand, demonstrates the advantages of using the cloud, like being able to scale up or down, having backup systems, and automating processes. Features like load balancing, storing data securely, and monitoring performance help the system run better and last longer.
+
+Overall, FlyPorter aims to create a flight booking system that's both technically solid and easy to use. It shows how cloud computing ideas like scalability, backup systems, and constant availability can turn a regular website into a dependable platform. By improving reliability, speed, and ease of use, FlyPorter creates a better experience for both travellers and staff, while demonstrating how modern cloud technology can solve real problems in online services.
+
+## Objectives
+
+The primary objective of the FlyPorter project is to design and implement a fully cloud-native, scalable, and reliable flight booking platform that supports real-world operational requirements. The goal is to build an end-to-end system that allows users to efficiently search, book, and manage flights while ensuring high availability, security, and consistent performance across environments.
+
+Through this implementation, the project aims to achieve the following objectives:
+
+Cloud-Native Architecture
+Build a modern application stack using React (TypeScript), Node.js (Express.js), and PostgreSQL, packaged and deployed through Docker and Kubernetes for consistent behavior across development and production.
+
+Reliable Data Persistence
+Ensure stateful and resilient data storage using DigitalOcean Managed PostgreSQL, allowing data to persist across deployments, container restarts, and system updates.
+
+Modern DevOps and Orchestration
+Use Kubernetes for orchestration, auto-scaling, and high availability, and set up a GitHub Actions CI/CD pipeline to automate building, testing, and deployment.
+
+Monitoring and Observability
+Implement system-level monitoring (CPU, memory, disk) using DigitalOcean metrics, Prometheus, and Grafana to gain full visibility into application health and performance.
+
+Scalability and Performance
+Achieve dynamic scaling using Horizontal Pod Autoscalers on DigitalOcean Kubernetes, ensuring the system automatically adapts to traffic load.
+
+Security Enhancements
+Strengthen security with Google OAuth authentication, HTTPS enforcement, secure secrets management (GitHub Secrets + Kubernetes Secrets), and proper container isolation.
+
+REST API Testing and Visualization
+Provide a robust API layer with proper testing and developer-facing visualization tools to ensure correctness and maintainability.
+
+Integration With External Services
+Implement reliable communication features such as email notifications via SendGrid and automated PDF invoice generation stored securely in DigitalOcean Spaces.
+
+Multi-Environment Consistency
+Maintain a multi-container architecture locally using Docker Compose and a production-grade distributed environment in Kubernetes, ensuring smooth transitions between development and deployment environments.
+
+## Technical Stack
+
+**Backend:** Express.js + TypeScript + Prisma + PostgreSQL
+
+**Frontend:** React + TypeScript + Vite + React Router
 
 ## User Guide
 
@@ -565,6 +618,16 @@ The frontend server is deployed on Digital Ocean App Platfom, you can access it 
   - Developed APIs to retrieve passenger tickets and generate ticket PDFs, storing them in DigitalOcean Spaces for download
   - Built admin-side operational APIs and prepared corresponding API documentation
   - Created Docker Compose configurations to run the database and backend services simultaneously
+
+### Yueheng Shi
+
+- Frontend (Customer & Admin):
+  - Implemented customer features: flight search, seat selection, booking flow
+  - Built admin dashboard for flight, airport, airline, and route management
+  - Developed user profile and booking dashboard
+  - Connected frontend to backend APIs and integrated Google OAuth 2.0 authentication
+- Frontend Deployment:
+  - Configured and deployed frontend application on Digital Ocean App Platform
 
 ---
 
