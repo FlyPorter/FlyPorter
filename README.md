@@ -17,6 +17,14 @@
 
 ---
 
+## Team Information
+
+| Name        | Student Number | Email                          |
+| ----------- | -------------- | ------------------------------ |
+| Yueheng Shi | 1012569267     | shiyueheng@gmail.com           |
+| Zihan Wan   | 1011617779     | zihanzane.wan@mail.utoronto.ca |
+| Yiyang Wang | 1010033278     | ydev.wang@mail.utoronto.ca     |
+
 ## Video Demo
 
 ## Motivation
