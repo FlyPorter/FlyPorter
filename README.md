@@ -72,6 +72,8 @@ Maintain a multi-container architecture locally using Docker Compose and a produ
 
 **Frontend:** React + TypeScript + Vite + React Router
 
+## Features
+
 ## User Guide
 
 ### Search without Logging in
